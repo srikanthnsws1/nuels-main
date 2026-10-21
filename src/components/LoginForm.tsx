@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ArrowRightIcon, EyeIcon, EyeOffIcon, MailIcon } from "./icons";
 import Reveal from "./motion/Reveal";
-import { nameFromEmail, signIn } from "@/lib/session";
+import { authErrorMessage, homeFor, signIn } from "@/lib/auth";
 
 const field =
   "w-full rounded-2xl border bg-white px-4 py-3.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:shadow-lg focus:shadow-forest-900/5";
@@ -18,18 +18,24 @@ export default function LoginForm() {
   const [remember, setRemember] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
 
   const emailError = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? "Please enter a valid email address." : "";
   const passwordError = !password ? "Please enter your password." : "";
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
+    setAuthError("");
     if (emailError || passwordError) return;
     setLoading(true);
-    // Demo sign-in: no backend yet, so any well-formed credentials open the dashboard.
-    signIn({ name: nameFromEmail(email), email });
-    router.push("/dashboard");
+    try {
+      const user = await signIn(email.trim(), password, remember);
+      router.push(homeFor[user.role]);
+    } catch (err) {
+      setAuthError(authErrorMessage(err));
+      setLoading(false);
+    }
   };
 
   const inputBorder = (error: string) =>
@@ -102,6 +108,12 @@ export default function LoginForm() {
           />
           Keep me logged in
         </label>
+
+        {authError && (
+          <p role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {authError}
+          </p>
+        )}
 
         <button
           type="submit"

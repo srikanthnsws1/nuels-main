@@ -6,7 +6,7 @@ export const dynamic = "force-static";
 // Public pages are open to search engines and AI crawlers; account pages are not.
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: [{ userAgent: "*", allow: "/", disallow: ["/dashboard", "/login"] }],
+    rules: [{ userAgent: "*", allow: "/", disallow: ["/dashboard", "/mentor", "/admin", "/login"] }],
     sitemap: absoluteUrl("/sitemap.xml"),
     host: siteUrl,
   };

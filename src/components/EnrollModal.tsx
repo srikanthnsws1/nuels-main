@@ -7,7 +7,7 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 import { createPortal } from "react-dom";
 import { ArrowRightIcon, CheckIcon, CloseIcon, EyeIcon, EyeOffIcon } from "./icons";
 import type { Course } from "@/data/site";
-import { signIn } from "@/lib/session";
+import { authErrorMessage, register } from "@/lib/auth";
 
 const rupee = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
@@ -75,6 +75,8 @@ export default function EnrollModal({ course, onClose }: { course: Course; onClo
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [done, setDone] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const errors = validate(fields);
   const visibleError = (k: keyof Fields) => (touched[k] ? errors[k] : undefined);
@@ -96,16 +98,29 @@ export default function EnrollModal({ course, onClose }: { course: Course; onClo
   const set = <K extends keyof Fields>(k: K, v: Fields[K]) => setFields((f) => ({ ...f, [k]: v }));
   const blur = (k: keyof Fields) => () => setTouched((t) => ({ ...t, [k]: true }));
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (Object.keys(errors).length) {
       setTouched({ name: true, email: true, phone: true, password: true, confirm: true, terms: true });
       return;
     }
-    // No backend yet — start a demo session and drop the passwords from memory.
-    signIn({ name: fields.name.trim(), email: fields.email.trim() });
-    setFields((f) => ({ ...f, password: "", confirm: "" }));
-    setDone(true);
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      await register({
+        name: fields.name.trim(),
+        email: fields.email.trim(),
+        phone: fields.phone.replace(/\s/g, ""),
+        password: fields.password,
+      });
+      // Drop the passwords from memory once the account exists.
+      setFields((f) => ({ ...f, password: "", confirm: "" }));
+      setDone(true);
+    } catch (err) {
+      setSubmitError(authErrorMessage(err));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const inputClass = (k: keyof Fields) =>
@@ -333,6 +348,12 @@ export default function EnrollModal({ course, onClose }: { course: Course; onClo
               </div>
             </div>
 
+            {submitError && (
+              <p role="alert" className="mt-6 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                {submitError}
+              </p>
+            )}
+
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-center text-sm text-slate-500 sm:text-left">
                 Already have an account?{" "}
@@ -342,10 +363,11 @@ export default function EnrollModal({ course, onClose }: { course: Course; onClo
               </p>
               <button
                 type="submit"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-forest-700 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-forest-700/20 transition hover:bg-forest-600"
+                disabled={submitting}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-forest-700 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-forest-700/20 transition hover:bg-forest-600 disabled:opacity-70"
               >
-                Register &amp; Enroll
-                <ArrowRightIcon className="h-4 w-4" />
+                {submitting ? "Creating account…" : "Register & Enroll"}
+                {!submitting && <ArrowRightIcon className="h-4 w-4" />}
               </button>
             </div>
           </form>

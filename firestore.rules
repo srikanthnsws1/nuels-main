@@ -1,0 +1,34 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // One profile per Firebase Auth user. The role field decides which dashboard they can use.
+    match /users/{uid} {
+      allow read: if (signedIn() && request.auth.uid == uid) || isAdmin();
+
+      // Self-registration always starts as a student.
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.role == 'student'
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.keys().hasOnly(['name', 'email', 'phone', 'role', 'createdAt']);
+
+      // Users may edit their own profile but never their role or email; admins may edit anyone.
+      allow update: if isAdmin()
+        || (signedIn()
+          && request.auth.uid == uid
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'email']));
+
+      allow delete: if false;
+    }
+  }
+}

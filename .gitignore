@@ -42,3 +42,10 @@ next-env.d.ts
 
 # isolated audit builds
 /.next-audit/
+
+# firebase deploy cache
+/.firebase/
+
+# full-size image originals (the site uses the .webp versions)
+/public/images/*.png
+!/public/images/logo-mark.png
