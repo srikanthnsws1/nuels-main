@@ -1,0 +1,95 @@
+{
+  "summary": {
+    "health_score": 70,
+    "business_type": "Online education (mentor-led courses), India, Hyderabad-based hybrid",
+    "top_findings": [
+      "Critical: nuelsmart.com is a parked domain (JS redirect to /lander); canonicals and sitemap point to it",
+      "Critical: live Firebase deploy is outdated; robots.txt, sitemap.xml and llms.txt return 404",
+      "High: course pages ~510-560 words vs long-form competitor course pages",
+      "High: mentor and testimonial content unverified (E-E-A-T and consumer-law risk)",
+      "High: no backlinks, Google Business Profile or reviews yet"
+    ],
+    "quick_wins": [
+      "Connect custom domain in Firebase Hosting and deploy current build",
+      "Submit sitemap in Google Search Console and Bing Webmaster Tools",
+      "Create Google Business Profile with consistent NAP",
+      "Add real social profiles to footer and Organization sameAs",
+      "Remove unused 4 MB source images from public/"
+    ]
+  },
+  "categories": [
+    {
+      "name": "Technical SEO",
+      "score": 55,
+      "what_works": ["Static HTML", "Canonicals on all pages", "robots.txt + sitemap (13 URLs)", "noindex on login, dashboard, 404", "lang en-IN", "Web manifest"],
+      "findings": [
+        {"title": "Parked domain", "severity": "Critical", "description": "nuelsmart.com returns a 114-byte parking page redirecting to /lander.", "recommendation": "Add custom domain in Firebase Hosting and update DNS."},
+        {"title": "Outdated live deploy", "severity": "Critical", "description": "nuelsmart-fb72e.web.app lacks robots.txt, sitemap.xml and llms.txt (404).", "recommendation": "Build and firebase deploy."},
+        {"title": "Missing security headers", "severity": "Medium", "description": "Only Cache-Control headers configured in firebase.json.", "recommendation": "Add HSTS, X-Content-Type-Options, Referrer-Policy."}
+      ]
+    },
+    {
+      "name": "Content Quality",
+      "score": 60,
+      "what_works": ["Dedicated course pages with syllabus, outcomes, FAQs", "Honest comparison page", "No invented statistics"],
+      "findings": [
+        {"title": "Thin course pages", "severity": "High", "description": "510-560 words per course page.", "recommendation": "Add sample lessons, projects, batch details, mentor Q&A."},
+        {"title": "Unverified trust content", "severity": "High", "description": "Mentor profiles and learner stories need verification.", "recommendation": "Use real people with permission and LinkedIn links."},
+        {"title": "No informational content", "severity": "Medium", "description": "No guides/blog to capture question searches.", "recommendation": "Publish 2 guides per month."}
+      ]
+    },
+    {
+      "name": "On-Page SEO",
+      "score": 85,
+      "what_works": ["Unique keyword-led titles and H1s", "Descriptions 151-208 chars", "Strong internal links to course pages"],
+      "findings": [
+        {"title": "Long home description", "severity": "Low", "description": "208 characters; may truncate.", "recommendation": "Trim to ~155 characters."}
+      ]
+    },
+    {
+      "name": "Schema / Structured Data",
+      "score": 85,
+      "what_works": ["EducationalOrganization", "Course + Offer + CourseInstance", "FAQPage", "BreadcrumbList", "Article", "No fake AggregateRating"],
+      "findings": [
+        {"title": "No sameAs profiles", "severity": "Medium", "description": "Organization lacks social profile links.", "recommendation": "Add real profile URLs."}
+      ]
+    },
+    {
+      "name": "Performance (CWV)",
+      "score": 70,
+      "what_works": ["Images 79.7 MB -> 1.49 MB on home", "Static pages", "JS ~110-129 kB first load"],
+      "findings": [
+        {"title": "No lab CWV measurement", "severity": "Info", "description": "Chromium runtime not set up; score estimated.", "recommendation": "Run PageSpeed Insights after deploy."},
+        {"title": "No responsive srcset", "severity": "Medium", "description": "images.unoptimized in static export.", "recommendation": "Acceptable; consider image CDN later."}
+      ]
+    },
+    {
+      "name": "AI Search Readiness",
+      "score": 80,
+      "what_works": ["llms.txt", "AI crawlers allowed", "FAQ answers", "Consistent NAP"],
+      "findings": [
+        {"title": "No off-site brand mentions", "severity": "Medium", "description": "AI answers rely on third-party mentions.", "recommendation": "Directory listings, PR, mentor guest posts."}
+      ]
+    },
+    {
+      "name": "Images",
+      "score": 75,
+      "what_works": ["Alt text on all images", "WebP", "1200x630 OG image"],
+      "findings": [
+        {"title": "Unused originals deployed", "severity": "Medium", "description": "~79 MB of PNG/JPG originals remain in public/images.", "recommendation": "Move out of public/."}
+      ]
+    }
+  ],
+  "action_plan": {
+    "phases": [
+      {"name": "Phase 1: Critical Fixes", "timeframe": "Week 1", "items": ["Connect domain", "Deploy", "Search Console + Bing", "Rich Results Test"]},
+      {"name": "Phase 2: High-Impact Improvements", "timeframe": "Weeks 2-3", "items": ["Verify course content with mentors", "Real mentor and learner content", "Google Business Profile", "Social sameAs", "Remove source images", "Security headers"]},
+      {"name": "Phase 3: Content & Authority", "timeframe": "Month 2", "items": ["Hyderabad landing pages", "Expand course pages", "Guides section", "About page", "Directory listings and backlinks", "Real reviews"]},
+      {"name": "Phase 4: Monitoring & Iteration", "timeframe": "Ongoing", "items": ["Monthly GSC review", "CTR optimisation", "Quarterly comparison update", "Re-run audit"]}
+    ]
+  },
+  "artifacts": {
+    "findings_dir": "findings/",
+    "screenshots_dir": "screenshots/"
+  }
+}

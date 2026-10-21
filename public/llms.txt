@@ -1,0 +1,41 @@
+# Nuels (nuelsmart)
+
+> Nuels, by nuelsmart, is an online learning platform based in Hyderabad, India. Every course is taught by an experienced industry mentor (10–22+ years in their field). Learners get self-paced recorded lessons, weekly live doubt-clearing sessions, mentor-reviewed portfolio projects, lifetime access and a certificate of completion.
+
+Key facts:
+- Subjects: UI/UX design, full-stack web development, Python for data analysis, social media and content marketing, business strategy, spoken English.
+- Format: online, self-paced lessons plus scheduled live sessions; works on phone, tablet and laptop.
+- Payments: UPI, debit/credit cards, net banking, wallets; EMI on eligible courses. Prices in Indian rupees (INR).
+- Refunds: full refund within 7 days of enrolling if less than 25% of the course is completed.
+- Contact: info@nuelsmart.com · +91 81218 46844 · +91 81218 46845 · Hyderabad, Telangana, India.
+
+## Pages
+
+- [Home](https://nuelsmart.com/): Overview of Nuels, course categories, why learners choose mentor-led courses.
+- [Courses](https://nuelsmart.com/courses): Full course catalogue with levels, duration, mentors and prices.
+- [Mentors](https://nuelsmart.com/mentors): Profiles of the industry mentors who teach on Nuels.
+- [Success Stories](https://nuelsmart.com/stories): Outcomes from learners who changed careers or found clients.
+- [FAQ](https://nuelsmart.com/faq): Course access, live sessions, certificates, payments and refunds.
+- [Contact](https://nuelsmart.com/contact): Phone, email and a message form for course guidance.
+- [Mentor-led vs self-paced vs bootcamp courses](https://nuelsmart.com/compare/mentor-led-vs-self-paced-courses): How to choose an online course format in India.
+
+## Courses
+
+- [UI/UX Design Masterclass](https://nuelsmart.com/courses/ui-ux-design-masterclass): Beginner · 42 lessons · 18 hours · mentor Priya Nair · ₹2,499. User research, wireframing, Figma prototyping, design systems and a portfolio case study.
+- [Full-Stack Web Development Bootcamp](https://nuelsmart.com/courses/full-stack-web-development-bootcamp): Intermediate · 86 lessons · 52 hours · mentor Arjun Mehta · ₹3,999. HTML, CSS, JavaScript, React, Node.js, databases and deployment.
+- [Python for Data Analysis](https://nuelsmart.com/courses/python-for-data-analysis): Beginner · 38 lessons · 22 hours · mentor Arjun Mehta · ₹2,999. Python, pandas, NumPy and data visualisation on real datasets.
+- [Social Media & Content Marketing](https://nuelsmart.com/courses/social-media-content-marketing): Beginner · 30 lessons · 14 hours · mentor Kavita Sharma · ₹1,999. Content calendars, Instagram, LinkedIn and YouTube growth, paid campaigns and analytics.
+- [Business Strategy for Founders](https://nuelsmart.com/courses/business-strategy-for-founders): Advanced · 26 lessons · 16 hours · mentor Rajesh Iyer · ₹3,499. Idea validation, pricing, go-to-market and financial models.
+- [Spoken English & Communication](https://nuelsmart.com/courses/spoken-english-communication): Beginner · 34 lessons · 20 hours · mentor Kavita Sharma · ₹1,499. Confident English for interviews, meetings and presentations.
+
+## Mentors
+
+- Arjun Mehta: Full-Stack & Data Mentor, 14+ years, ex-senior engineer at product startups.
+- Priya Nair: UI/UX Design Mentor, 10+ years, design lead for SaaS products.
+- Kavita Sharma: Marketing & Communication Mentor, 16+ years, ex-marketing director.
+- Rajesh Iyer: Business Strategy Mentor, 22+ years, management consultant.
+
+## Optional
+
+- [Sitemap](https://nuelsmart.com/sitemap.xml)
+- [Robots](https://nuelsmart.com/robots.txt)

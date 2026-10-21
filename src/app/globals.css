@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand palette — taken from the nuelsmart logo */
+  --color-forest-50: #eef7f2;
+  --color-forest-100: #d6ece0;
+  --color-forest-200: #acd8c2;
+  --color-forest-300: #7cbf9f;
+  --color-forest-400: #3f9a73;
+  --color-forest-500: #1f7a5a;
+  --color-forest-600: #17634a;
+  --color-forest-700: #114b3c;
+  --color-forest-800: #0d3b30;
+  --color-forest-900: #082a22;
+  --color-forest-950: #051a15;
+
+  --color-spark-300: #cdf57a;
+  --color-spark-400: #b8ef45;
+  --color-spark-500: #a6e81f;
+  --color-spark-600: #86c010;
+
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-spin-slow: spin 40s linear infinite;
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+}
+
+
+body {
+  background: #ffffff;
+  color: var(--color-forest-950);
+  -webkit-font-smoothing: antialiased;
+  /* reveal animations start slightly off-screen; never let them cause sideways scroll.
+     hidden is the fallback for browsers without clip (Safari < 16). */
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+/* Above-the-fold entrance: pure CSS, runs on first paint without waiting for JavaScript. */
+@keyframes reveal-now {
+  from {
+    opacity: 0;
+    transform: var(--reveal-from, translateY(16px));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.reveal-now {
+  animation: reveal-now 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.reveal-now-fade {
+  --reveal-from: none;
+}
+.reveal-now-scale {
+  --reveal-from: scale(0.96);
+}
+.reveal-now-left {
+  --reveal-from: translateY(16px);
+}
+.reveal-now-right {
+  --reveal-from: translateY(16px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-now,
+  .animate-float,
+  .animate-spin-slow {
+    animation: none;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
