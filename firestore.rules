@@ -6,29 +6,109 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isAdmin() {
+    // Bootstrap admins: only once they've verified they own the address, so nobody can
+    // claim admin by signing up with an unregistered address. Keep in sync with
+    // ADMIN_EMAILS in src/lib/auth.ts.
+    function isBootstrapAdmin() {
       return signedIn()
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() in [
+          'admin@nuelsmart.com',
+          'admin@nuels.com',
+          'anirudhjyothula@gmail.com',
+          'srikanth.nsws1@gmail.com'
+        ];
     }
 
-    // One profile per Firebase Auth user. The role field decides which dashboard they can use.
-    match /users/{uid} {
-      allow read: if (signedIn() && request.auth.uid == uid) || isAdmin();
-
-      // Self-registration always starts as a student.
-      allow create: if signedIn()
-        && request.auth.uid == uid
-        && request.resource.data.role == 'student'
-        && request.resource.data.email == request.auth.token.email
-        && request.resource.data.keys().hasOnly(['name', 'email', 'phone', 'role', 'createdAt']);
-
-      // Users may edit their own profile but never their role or email; admins may edit anyone.
-      allow update: if isAdmin()
+    // Admin = bootstrap admin, or someone an admin has given the admin role.
+    function isAdmin() {
+      return isBootstrapAdmin()
         || (signedIn()
-          && request.auth.uid == uid
-          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'email']));
+            && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
 
-      allow delete: if false;
+    // Member IDs: "T" + 4 digits for tutors (or tutor applicants), "S" + 4 digits for everyone
+    // else, and reserved for this user in memberIds/{id} within the same write.
+    function isTutorProfile(data) {
+      return data.get('role', '') == 'mentor' || data.get('requestedRole', '') == 'mentor';
+    }
+    function validMemberId(data) {
+      return !('memberId' in data) || (
+        data.memberId is string
+        && data.memberId.matches(isTutorProfile(data) ? '^T[0-9]{4}$' : '^S[0-9]{4}$')
+        && getAfter(/databases/$(database)/documents/memberIds/$(data.memberId)).data.uid == request.auth.uid
+      );
+    }
+
+    // Keep profiles small: the photo is a cropped 256px JPEG data URL.
+    function validProfileFields(data) {
+      return (!('photo' in data) || (data.photo is string && data.photo.size() < 200000 && data.photo.matches('^data:image/(jpeg|png|webp);base64,.*')))
+        && (!('nickname' in data) || (data.nickname is string && data.nickname.size() <= 30))
+        && (!('whatsappOptIn' in data) || data.whatsappOptIn is bool)
+        && (!('whatsappWelcome' in data) || (resource != null && resource.data.get('whatsappWelcome', null) == data.whatsappWelcome));
+    }
+
+    match /users/{uid} {
+      // Your own profile, any profile for admins, and mentor profiles for signed-in users.
+      allow get: if signedIn() && (
+        request.auth.uid == uid
+        || isAdmin()
+        || resource.data.role == 'mentor'
+      );
+
+      allow list: if isAdmin();
+
+      // Self sign-up always creates a student. Instructor applicants are stored with
+      // requestedRole 'mentor' and stay students until an admin approves them.
+      // Bootstrap admins may create their own profile as admin.
+      allow create: if isAdmin()
+        || (
+          signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.email == request.auth.token.email
+          && validProfileFields(request.resource.data)
+          && validMemberId(request.resource.data)
+          && (
+            (request.resource.data.role == 'student'
+              && (!('requestedRole' in request.resource.data) || request.resource.data.requestedRole == 'mentor'))
+            || (request.resource.data.role == 'admin' && isBootstrapAdmin())
+          )
+        );
+
+      // Users may edit their own profile but never their role, email, application or member ID.
+      // The one exception: an older account without a member ID may claim one, once.
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && request.auth.uid == uid
+          && validProfileFields(request.resource.data)
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'email', 'requestedRole', 'memberId', 'whatsappWelcome'])
+            || (
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberId'])
+              && !('memberId' in resource.data)
+              && validMemberId(request.resource.data)
+            )
+          )
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    match /memberIds/{id} {
+      // Needed to check whether an ID is free; reveals only which account holds it.
+      allow get: if signedIn();
+      allow list: if isAdmin();
+
+      // Reserve an ID only together with writing it onto your own profile.
+      allow create: if signedIn()
+        && id.matches('^[ST][0-9]{4}$')
+        && request.resource.data.uid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.memberId == id;
+
+      allow update: if false;
+      allow delete: if isAdmin();
     }
   }
 }

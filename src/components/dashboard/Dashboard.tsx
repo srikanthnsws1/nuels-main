@@ -1,5 +1,7 @@
 "use client";
 
+import { greetingName } from "@/lib/auth";
+
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRightIcon, BookIcon, CalendarIcon, ClipboardIcon, GraduationIcon, GridIcon, SparkIcon } from "../icons";
@@ -34,7 +36,7 @@ export default function Dashboard() {
     <DashboardShell role="student" sections={sections} sidebarCard={sidebarCard}>
       {(user) => (
         <>
-          <WelcomeBanner id="overview" title={<>Welcome, {user.name.split(" ")[0] || "there"}! 👋</>}>
+          <WelcomeBanner id="overview" title={<>Welcome, {greetingName(user)}! 👋</>}>
             <p className="mt-3 text-sm leading-relaxed text-forest-100 sm:text-base">
               Your courses, live sessions and mentor feedback will show up here once you enroll.
             </p>

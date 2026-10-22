@@ -2,13 +2,16 @@
 
 import { useLenis } from "lenis/react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Logo from "./Logo";
 import { CloseIcon, MenuIcon } from "./icons";
 import { navLinks } from "@/data/site";
+import { homeFor, signOut, useAuth } from "@/lib/auth";
 
 export default function Navbar() {
+  const router = useRouter();
+  const { user, ready } = useAuth();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
@@ -20,10 +23,13 @@ export default function Navbar() {
   // Close the mobile menu after navigating.
   useEffect(() => setOpen(false), [pathname]);
 
+  const handleLogout = async () => {
+    await signOut();
+    router.push("/");
+  };
+
   return (
-    <header
-      className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-4 sm:pt-4 lg:pt-5"
-    >
+    <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-4 sm:pt-4 lg:pt-5">
       <nav
         className={`mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 rounded-full border pl-4 pr-2 transition-[background-color,border-color,box-shadow] duration-500 sm:h-16 sm:pl-5 lg:grid lg:grid-cols-[1fr_auto_1fr] xl:max-w-7xl ${
           scrolled || open
@@ -55,15 +61,36 @@ export default function Navbar() {
         </ul>
 
         <div className="flex items-center gap-2 justify-self-end sm:gap-3">
-          <Link href="/login" className="hidden px-2 text-sm font-semibold text-forest-700 hover:text-forest-500 lg:block">
-            Log in
-          </Link>
-          <Link
-            href="/courses"
-            className="hidden rounded-full bg-spark-500 px-5 py-2.5 text-sm font-bold text-forest-900 shadow-lg shadow-spark-500/30 transition hover:bg-spark-400 sm:block"
-          >
-            Get Started
-          </Link>
+          {ready && user ? (
+            <div className="hidden items-center gap-2 lg:flex">
+              <Link
+                href={homeFor[user.role]}
+                className="rounded-full bg-forest-700 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-forest-700/20 transition hover:bg-forest-600"
+              >
+                {user.role === "admin" ? "Admin Panel" : user.role === "mentor" ? "Tutor Hub" : "Dashboard"}
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="px-2 text-xs font-medium text-slate-500 hover:text-red-600 transition"
+              >
+                Log out
+              </button>
+            </div>
+          ) : (
+            <>
+              <Link href="/login" className="hidden px-2 text-sm font-semibold text-forest-700 hover:text-forest-500 lg:block">
+                Log in
+              </Link>
+              <Link
+                href="/register"
+                className="hidden rounded-full bg-spark-500 px-5 py-2.5 text-sm font-bold text-forest-900 shadow-lg shadow-spark-500/30 transition hover:bg-spark-400 sm:block"
+              >
+                Get Started
+              </Link>
+            </>
+          )}
+
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
@@ -98,17 +125,46 @@ export default function Navbar() {
             </li>
           ))}
         </ul>
+
         <div className="flex gap-3 border-t border-forest-100 p-3">
-          <Link href="/login" className="flex-1 rounded-full border border-forest-200 py-2.5 text-center font-semibold text-forest-700">
-            Log in
-          </Link>
-          <Link
-            href="/courses"
-            onClick={() => setOpen(false)}
-            className="flex-1 rounded-full bg-forest-700 py-2.5 text-center font-semibold text-white"
-          >
-            Get Started
-          </Link>
+          {ready && user ? (
+            <>
+              <Link
+                href={homeFor[user.role]}
+                onClick={() => setOpen(false)}
+                className="flex-1 rounded-full bg-forest-700 py-2.5 text-center font-semibold text-white"
+              >
+                {user.role === "admin" ? "Admin Panel" : user.role === "mentor" ? "Tutor Hub" : "Dashboard"}
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  handleLogout();
+                }}
+                className="flex-1 rounded-full border border-forest-200 py-2.5 text-center font-semibold text-slate-700 hover:bg-forest-50"
+              >
+                Log out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="flex-1 rounded-full border border-forest-200 py-2.5 text-center font-semibold text-forest-700"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setOpen(false)}
+                className="flex-1 rounded-full bg-forest-700 py-2.5 text-center font-semibold text-white"
+              >
+                Create Account
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

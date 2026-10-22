@@ -1,5 +1,7 @@
 "use client";
 
+import { greetingName } from "@/lib/auth";
+
 import Image from "next/image";
 import Link from "next/link";
 import { BookIcon, CalendarIcon, ClipboardIcon, ClockIcon, GridIcon, PlayIcon, UsersIcon } from "../icons";
@@ -29,7 +31,7 @@ export default function MentorDashboard() {
 
         return (
           <>
-            <WelcomeBanner id="overview" title={<>Welcome, {user.name.split(" ")[0] || "there"}!</>}>
+            <WelcomeBanner id="overview" title={<>Welcome, {greetingName(user)}!</>}>
               <p className="mt-3 text-sm leading-relaxed text-forest-100 sm:text-base">
                 Manage your courses, students, live sessions and project reviews from here.
               </p>

@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRightIcon, EyeIcon, EyeOffIcon, MailIcon } from "./icons";
 import Reveal from "./motion/Reveal";
-import { authErrorMessage, homeFor, signIn } from "@/lib/auth";
+import { authErrorMessage, homeFor, resetPassword, signIn, useAuth } from "@/lib/auth";
 
 const field =
   "w-full rounded-2xl border bg-white px-4 py-3.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:shadow-lg focus:shadow-forest-900/5";
@@ -19,6 +19,28 @@ export default function LoginForm() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [resetMsg, setResetMsg] = useState("");
+  const { user, ready } = useAuth();
+
+  // Already signed in: go straight to the right dashboard.
+  useEffect(() => {
+    if (ready && user && !loading) router.replace(homeFor[user.role]);
+  }, [ready, user, loading, router]);
+
+  const forgot = async () => {
+    setAuthError("");
+    setResetMsg("");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setAuthError("Enter your email above, then click “Forgot password?” to get a reset link.");
+      return;
+    }
+    try {
+      await resetPassword(email.trim());
+      setResetMsg(`If an account exists for ${email.trim()}, we've emailed a link to reset your password. Check your inbox and spam folder.`);
+    } catch (err) {
+      setAuthError(authErrorMessage(err));
+    }
+  };
 
   const emailError = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? "Please enter a valid email address." : "";
   const passwordError = !password ? "Please enter your password." : "";
@@ -72,9 +94,9 @@ export default function LoginForm() {
             <label htmlFor="login-password" className="text-sm font-medium text-forest-900">
               Password
             </label>
-            <a href="#" className="text-xs font-semibold text-forest-600 hover:text-forest-500">
+            <button type="button" onClick={forgot} className="-my-2 py-2 text-xs font-semibold text-forest-600 hover:text-forest-500">
               Forgot password?
-            </a>
+            </button>
           </div>
           <div className="relative">
             <input
@@ -109,6 +131,12 @@ export default function LoginForm() {
           Keep me logged in
         </label>
 
+        {resetMsg && (
+          <p role="status" className="rounded-2xl bg-forest-50 px-4 py-3 text-sm font-medium text-forest-800">
+            {resetMsg}
+          </p>
+        )}
+
         {authError && (
           <p role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
             {authError}
@@ -132,11 +160,20 @@ export default function LoginForm() {
       </div>
 
       <Link
-        href="/courses"
+        href="/register"
         className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-forest-700 px-7 py-3 text-sm font-semibold text-forest-700 transition hover:bg-forest-700 hover:text-white"
       >
-        Browse courses &amp; create an account
+        Create an account (Student or Instructor)
       </Link>
+
+      <div className="mt-6 flex items-center justify-between border-t border-forest-100 pt-5 text-xs text-slate-500">
+        <Link href="/tutor/login" className="font-medium hover:text-forest-700">
+          Tutor &amp; Mentor Portal →
+        </Link>
+        <Link href="/admin/login" className="font-medium hover:text-forest-700">
+          Admin Portal →
+        </Link>
+      </div>
     </Reveal>
   );
 }

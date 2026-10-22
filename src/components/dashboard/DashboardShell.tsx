@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import Logo from "../Logo";
 import { LogoutIcon, type IconProps } from "../icons";
-import { homeFor, roleLabel, signOut, useAuth, type AppUser, type Role } from "@/lib/auth";
+import { greetingName, homeFor, roleLabel, signOut, useAuth, type AppUser, type Role } from "@/lib/auth";
 import { initials } from "./ui";
 
 export type Section = { id: string; label: string; icon: ComponentType<IconProps> };
@@ -44,7 +44,7 @@ export default function DashboardShell({
 
   const logout = async () => {
     await signOut();
-    router.push("/login");
+    router.push("/");
   };
 
   const navLink = (s: Section, compact = false) => {
@@ -107,12 +107,20 @@ export default function DashboardShell({
             </div>
             <div className="ml-auto flex items-center gap-2 sm:gap-3">
               <div className="flex items-center gap-3 rounded-full bg-forest-50 py-1 pl-1 pr-1 sm:pr-4">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-forest-700 text-sm font-bold text-spark-400">
-                  {initials(user.name) || roleLabel[role][0]}
+                <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-forest-700 text-sm font-bold text-spark-400">
+                  {user.photo ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- data URL avatar
+                    <img src={user.photo} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    initials(user.name) || roleLabel[role][0]
+                  )}
                 </span>
                 <div className="hidden leading-tight sm:block">
-                  <p className="text-sm font-semibold text-forest-950">{user.name}</p>
-                  <p className="text-xs text-slate-500">{roleLabel[role]}</p>
+                  <p className="text-sm font-semibold text-forest-950">{greetingName(user)}</p>
+                  <p className="text-xs text-slate-500">
+                    {roleLabel[role]}
+                    {user.memberId && <span className="ml-1.5 font-mono font-semibold text-forest-700">· {user.memberId}</span>}
+                  </p>
                 </div>
               </div>
               <button
