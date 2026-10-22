@@ -17,11 +17,8 @@ const whatsappToken = defineSecret("WHATSAPP_TOKEN");
 const phoneNumberId = defineString("WHATSAPP_PHONE_NUMBER_ID");
 const templateLanguage = defineString("WHATSAPP_TEMPLATE_LANGUAGE", { default: "en" });
 
-// Approved message templates (see WHATSAPP-SETUP.md for their exact text).
-const TEMPLATES = {
-  student: "nuelsmart_welcome_student",
-  tutor: "nuelsmart_welcome_tutor",
-} as const;
+// One approved message template for everyone (see WHATSAPP-SETUP.md for its exact text).
+const TEMPLATE = "nuelsmart_welcome";
 
 const GRAPH_API = "https://graph.facebook.com/v21.0";
 
@@ -36,8 +33,9 @@ export function toWhatsAppNumber(phone: string, country = "India"): string | nul
 
 /**
  * Sends the welcome WhatsApp message once a new profile is created, but only if the person
- * gave a mobile number and ticked the WhatsApp consent box. Separate templates for students
- * and tutor/instructor applicants. The outcome is recorded on the profile as `whatsappWelcome`.
+ * gave a mobile number and ticked the WhatsApp consent box. Everyone gets the same message,
+ * filled in with their name, member ID and login email. The outcome is recorded on the
+ * profile as `whatsappWelcome`.
  */
 export const sendWhatsAppWelcome = onDocumentCreated(
   { document: "users/{uid}", region: "asia-south1", secrets: [whatsappToken], retry: false },
@@ -50,14 +48,13 @@ export const sendWhatsAppWelcome = onDocumentCreated(
     const to = typeof user.phone === "string" ? toWhatsAppNumber(user.phone, user.country) : null;
     if (!to) return logger.warn("No valid mobile number; skipping", { uid: event.params.uid });
 
-    const tutor = user.requestedRole === "mentor" || user.role === "mentor";
     const firstName = String(user.nickname || user.name || "there").split(" ")[0];
     const body = {
       messaging_product: "whatsapp",
       to,
       type: "template",
       template: {
-        name: tutor ? TEMPLATES.tutor : TEMPLATES.student,
+        name: TEMPLATE,
         language: { code: templateLanguage.value() },
         components: [
           {
@@ -89,3 +86,5 @@ export const sendWhatsAppWelcome = onDocumentCreated(
     else logger.error("WhatsApp welcome failed", { uid: event.params.uid, status: res.status, error: result.error });
   },
 );
+
+export { createRazorpayOrder, verifyRazorpayPayment } from "./payments";

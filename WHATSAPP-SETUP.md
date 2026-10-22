@@ -1,57 +1,99 @@
-# WhatsApp welcome message: setup (free)
+# WhatsApp welcome message: automatic setup
 
-After registering, everyone sees a green **"Get your welcome message on WhatsApp"** button. It opens
-WhatsApp with a short hello addressed to Nuel Smart (their name, Student/Tutor ID and email). When they
-send it, the free **WhatsApp Business app** automatically replies with the congratulations message below.
-This costs nothing and needs no server.
+When someone registers, gives a mobile number and **ticks "Send me a welcome message on WhatsApp"**,
+the Cloud Function `sendWhatsAppWelcome` (`functions/src/index.ts`) automatically sends them the
+Nuel Smart welcome message from **+91 81218 46844**. No extra tap is needed after registering.
+The result is saved on their profile as `whatsappWelcome` (`sent`, or `failed` with the reason).
 
-The number the button opens is `contactInfo.whatsapp` in `src/data/site.ts` (currently `918121846844`,
-i.e. +91 81218 46844). Change it there if your WhatsApp Business account uses another number, then
-rebuild and deploy.
+Passwords are never sent: Firebase can't read them back, and sending them over chat is unsafe.
 
-## 1. Install WhatsApp Business
+## Why this isn't free
 
-Install **WhatsApp Business** (free, Android or iPhone) on the phone with **+91 81218 46844** and register
-that number. Fill in the business profile: name *Nuel Smart*, website *https://nuelsmart.com*,
-email *info@nuelsmart.com*, and category *Education*.
+WhatsApp only lets a business message people **automatically** through Meta's official
+**WhatsApp Business Platform (Cloud API)**. The normal WhatsApp / WhatsApp Business apps can't do it.
+Unofficial "WhatsApp Web automation" tools break WhatsApp's terms and get numbers banned, so don't
+use them on 8121846844.
 
-## 2. Turn on the greeting message
+| Cost | What it's for | Roughly |
+|---|---|---|
+| Firebase **Blaze** plan | runs the sending function | free allowance covers this site's volume; card required |
+| **Meta per-message fee** (Utility template, India) | each welcome message | a fraction of a rupee per message; check Meta's current India rate card |
+| *(Optional)* a WhatsApp partner (AiSensy, Interakt, Wati, Gupshup…) | easier setup, inbox, support | monthly subscription on top of Meta's fee |
 
-WhatsApp Business → **⋮ / Settings → Business tools → Greeting message** → turn on → **Send to:
-Everyone** → paste this message → Save:
+Meta updates rates at the start of each quarter: https://developers.facebook.com/docs/whatsapp/pricing
+
+## 1. Upgrade Firebase to Blaze
+
+https://console.firebase.google.com/project/nuelsmart-fb72e/usage/details. Add a budget alert
+(e.g. ₹200) while you're there.
+
+## 2. Connect 8121846844 to the WhatsApp Business Platform
+
+Go to business.facebook.com → **WhatsApp Manager → Add phone number** → +91 81218 46844.
+
+- **If the number is in the WhatsApp Business app:** Meta's *coexistence* option can let you keep using
+  the app on the same number while the API sends messages. Availability in India and eligibility (account
+  age, quality) are decided by Meta; if it's offered during sign-up, choose it.
+- **Otherwise:** Meta moves the number to the API, and it can no longer be used in the WhatsApp app.
+  Many businesses use a second number for this instead. If you do, tell the developer so the sender
+  number can be switched.
+
+Fill in the business profile: name *Nuel Smart*, website *https://nuelsmart.com*, email
+*info@nuelsmart.com*, category *Education*. Meta may ask you to verify the business.
+
+## 3. Create the message template
+
+**WhatsApp Manager → Message templates → Create template**
+- Name: **`nuelsmart_welcome`** (exactly)
+- Category: **Utility** · Language: **English**
+- Body (`{{1}}` name, `{{2}}` Student/Tutor ID, `{{3}}` login email are filled in automatically):
 
 ```
-🎉 Congratulations and welcome to Nuel Smart!
+🎉 Congratulations {{1}}! Welcome to Nuel Smart.
 
-Thank you for registering with us. Your account is ready. Log in anytime to explore mentor-led courses, join live sessions and get feedback on your projects.
+Your account has been created successfully.
+• Your ID: {{2}}
+• Login email: {{3}}
+• Student login: https://nuelsmart.com/login
+• Tutor login: https://nuelsmart.com/tutor/login
+
+Explore mentor-led courses, join live sessions and get feedback on your projects.
 
 🌐 Website: https://nuelsmart.com
-🔐 Student login: https://nuelsmart.com/login
-👩‍🏫 Tutor login: https://nuelsmart.com/tutor/login
-📞 Call us: +91 81218 46844 / +91 81218 46845
+📞 Call: +91 81218 46844 / +91 81218 46845
 ✉️ Email: info@nuelsmart.com
 
-We're happy to have you with us!
 Team Nuel Smart
 ```
 
-## 3. Test
+Wait for the status to show **Approved** (minutes to a day).
 
-Register a test account on https://nuelsmart.com/register, tap the green WhatsApp button and send the
-message. The greeting should arrive within a few seconds.
+## 4. Get the two API values
 
-## Good to know
+- **Phone number ID**: WhatsApp Manager → API Setup, next to +91 81218 46844.
+- **Permanent access token**: Business Settings → System users → add a system user → give it the
+  WhatsApp account with `whatsapp_business_messaging` permission → **Generate token**.
 
-- WhatsApp sends the greeting when someone messages you **for the first time**, or after **14 days** with no
-  messages between you. If you test with a number that already chatted with the business, it won't appear.
-- The greeting is the same for everyone. Their hello message tells your team who they are (name, ID,
-  email), so you can follow up personally.
-- People have to tap the button and press send; WhatsApp doesn't allow businesses to message someone
-  first without the paid API.
+## 5. Deploy
 
-## Optional later: fully automatic messages (paid)
+In PowerShell, from `C:\Users\HP\Documents\nuels-main`:
 
-`functions/src/index.ts` contains a Cloud Function that sends personalised messages automatically through
-Meta's WhatsApp Cloud API, without the person tapping anything. It needs the Firebase **Blaze** plan, a Meta
-WhatsApp Business API account with approved templates, and per-message fees from Meta. It isn't deployed
-and does nothing until then. Ask for it to be re-enabled if you upgrade.
+```powershell
+npx.cmd firebase-tools functions:secrets:set WHATSAPP_TOKEN
+npm.cmd run build
+npx.cmd firebase-tools deploy --only hosting,functions,firestore:rules
+```
+
+Paste the token when asked. On the first deploy, paste the **Phone number ID** when asked for
+`WHATSAPP_PHONE_NUMBER_ID`. (If your template language is "English (US)", also answer `en_US` for
+`WHATSAPP_TEMPLATE_LANGUAGE`; otherwise keep `en`.)
+
+## 6. Test
+
+Register a test account with your own mobile number and tick the WhatsApp box. Within a few seconds:
+- the message arrives on WhatsApp;
+- Firestore `users/{uid}.whatsappWelcome.status` shows `sent`;
+- if not, Firebase console → Functions → Logs shows Meta's exact error.
+
+Common errors: template not approved yet, wrong template name or language, expired token, or a phone
+number not yet fully connected in WhatsApp Manager.

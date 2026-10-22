@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useState } from "react";
-import EnrollModal from "./EnrollModal";
+import { useState } from "react";
+import EnrollButton from "./EnrollButton";
 import SectionHeading from "./SectionHeading";
 import { BookIcon, ClockIcon } from "./icons";
 import Reveal from "./motion/Reveal";
@@ -11,7 +11,7 @@ import { courseFilters, courses, type Course } from "@/data/site";
 
 const rupee = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
-function CourseCard({ course, onEnroll }: { course: Course; onEnroll: () => void }) {
+function CourseCard({ course }: { course: Course }) {
   return (
     <article id={course.slug} className="group flex h-full scroll-mt-28 flex-col overflow-hidden rounded-3xl border border-forest-100 bg-white p-3 transition hover:-translate-y-1 hover:shadow-xl hover:shadow-forest-900/10">
       <div className="relative aspect-video overflow-hidden rounded-2xl">
@@ -65,13 +65,12 @@ function CourseCard({ course, onEnroll }: { course: Course; onEnroll: () => void
             <span className="text-xl font-bold text-forest-900">{rupee.format(course.price)}</span>
             <span className="ml-2 text-sm text-slate-400 line-through">{rupee.format(course.oldPrice)}</span>
           </div>
-          <button
-            type="button"
-            onClick={onEnroll}
-            className="rounded-full bg-forest-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-forest-600"
+          <EnrollButton
+            course={course}
+            className="inline-flex items-center gap-1.5 rounded-full bg-forest-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-forest-600 disabled:opacity-70"
           >
             Enroll Now
-          </button>
+          </EnrollButton>
         </div>
       </div>
     </article>
@@ -80,8 +79,6 @@ function CourseCard({ course, onEnroll }: { course: Course; onEnroll: () => void
 
 export default function PopularCourses({ standalone = false }: { standalone?: boolean }) {
   const [active, setActive] = useState(courseFilters[0]);
-  const [enrolling, setEnrolling] = useState<Course | null>(null);
-  const closeEnroll = useCallback(() => setEnrolling(null), []);
   const visible = active === courseFilters[0] ? courses : courses.filter((c) => c.category === active);
 
   return (
@@ -115,7 +112,7 @@ export default function PopularCourses({ standalone = false }: { standalone?: bo
         <div className="mt-8 grid gap-5 sm:mt-10 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
           {visible.map((course, i) => (
             <Reveal key={`${active}-${course.title}`} delay={(i % 3) * 120} className="h-full">
-              <CourseCard course={course} onEnroll={() => setEnrolling(course)} />
+              <CourseCard course={course} />
             </Reveal>
           ))}
         </div>
@@ -131,7 +128,6 @@ export default function PopularCourses({ standalone = false }: { standalone?: bo
           </div>
         )}
       </div>
-      {enrolling && <EnrollModal course={enrolling} onClose={closeEnroll} />}
     </section>
   );
 }

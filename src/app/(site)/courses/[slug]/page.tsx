@@ -136,7 +136,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
                 </div>
                 <EnrollButton
                   course={course}
-                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-forest-700 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-forest-700/20 transition hover:bg-forest-600"
+                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-forest-700 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-forest-700/20 transition hover:bg-forest-600 disabled:opacity-70"
                 >
                   Enroll Now <ArrowRightIcon className="h-4 w-4" />
                 </EnrollButton>

@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import Logo from "../Logo";
-import { LogoutIcon, type IconProps } from "../icons";
-import { greetingName, homeFor, roleLabel, signOut, useAuth, type AppUser, type Role } from "@/lib/auth";
-import { initials } from "./ui";
+import { CartIcon, LogoutIcon, type IconProps } from "../icons";
+import ProfileMenu from "./ProfileMenu";
+import { homeFor, signOut, useAuth, type AppUser, type Role } from "@/lib/auth";
 
 export type Section = { id: string; label: string; icon: ComponentType<IconProps> };
 
@@ -106,31 +107,21 @@ export default function DashboardShell({
               <Logo />
             </div>
             <div className="ml-auto flex items-center gap-2 sm:gap-3">
-              <div className="flex items-center gap-3 rounded-full bg-forest-50 py-1 pl-1 pr-1 sm:pr-4">
-                <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-forest-700 text-sm font-bold text-spark-400">
-                  {user.photo ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- data URL avatar
-                    <img src={user.photo} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    initials(user.name) || roleLabel[role][0]
+              {role === "student" && (
+                <Link
+                  href="/cart"
+                  aria-label={`Cart, ${user.cart.length} ${user.cart.length === 1 ? "course" : "courses"}`}
+                  className="relative flex h-11 w-11 items-center justify-center rounded-full bg-forest-50 text-forest-700 transition hover:bg-forest-100"
+                >
+                  <CartIcon className="h-5 w-5" />
+                  {user.cart.length > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-spark-500 px-1 text-[11px] font-bold text-forest-900">
+                      {user.cart.length}
+                    </span>
                   )}
-                </span>
-                <div className="hidden leading-tight sm:block">
-                  <p className="text-sm font-semibold text-forest-950">{greetingName(user)}</p>
-                  <p className="text-xs text-slate-500">
-                    {roleLabel[role]}
-                    {user.memberId && <span className="ml-1.5 font-mono font-semibold text-forest-700">· {user.memberId}</span>}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={logout}
-                aria-label="Log out"
-                className="flex h-10 w-10 items-center justify-center rounded-full text-forest-700 transition hover:bg-forest-50 lg:hidden"
-              >
-                <LogoutIcon className="h-5 w-5" />
-              </button>
+                </Link>
+              )}
+              <ProfileMenu user={user} onLogout={logout} />
             </div>
           </div>
           {/* mobile / tablet section nav */}

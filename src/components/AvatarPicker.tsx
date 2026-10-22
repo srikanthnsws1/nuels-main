@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 
 const VIEW = 240; // crop window size in CSS px
 const OUTPUT = 256; // saved image size in px
@@ -12,7 +12,23 @@ type Img = { el: HTMLImageElement; w: number; h: number };
  * Profile photo picker with a round crop window: drag to position, zoom with the slider,
  * buttons or mouse wheel. Produces a small JPEG data URL (≈15–40 KB) for the profile.
  */
-export default function AvatarPicker({ value, onChange }: { value: string; onChange: (dataUrl: string) => void }) {
+export default function AvatarPicker({
+  value,
+  onChange,
+  label = (
+    <>
+      Profile Picture <span className="font-normal text-slate-400">(optional)</span>
+    </>
+  ),
+  previewClassName = "h-16 w-16",
+}: {
+  value: string;
+  onChange: (dataUrl: string) => void;
+  /** Heading above the picker; pass null to hide it. */
+  label?: ReactNode;
+  /** Size of the current-photo preview. */
+  previewClassName?: string;
+}) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [img, setImg] = useState<Img | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -93,9 +109,7 @@ export default function AvatarPicker({ value, onChange }: { value: string; onCha
 
   return (
     <div>
-      <span className="mb-1.5 block text-sm font-medium text-forest-900">
-        Profile Picture <span className="font-normal text-slate-400">(optional)</span>
-      </span>
+      {label && <span className="mb-1.5 block text-sm font-medium text-forest-900">{label}</span>}
 
       {img ? (
         <div className="rounded-2xl border border-forest-100 bg-forest-50/60 p-4">
@@ -163,7 +177,7 @@ export default function AvatarPicker({ value, onChange }: { value: string; onCha
         </div>
       ) : (
         <div className="flex items-center gap-4">
-          <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-forest-100 bg-forest-50 text-forest-300">
+          <span className={`flex ${previewClassName} shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-forest-100 bg-forest-50 text-forest-300`}>
             {value ? (
               // eslint-disable-next-line @next/next/no-img-element -- data URL preview
               <img src={value} alt="Your profile picture" className="h-full w-full object-cover" />

@@ -4,15 +4,18 @@ import {
   browserLocalPersistence,
   browserSessionPersistence,
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   sendEmailVerification,
   sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
+  updatePassword,
   type User,
 } from "firebase/auth";
-import { doc, getDoc, runTransaction, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import { deleteField, doc, getDoc, onSnapshot, runTransaction, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { useSyncExternalStore } from "react";
 import { auth, db } from "./firebase";
 
@@ -37,6 +40,10 @@ export type AppUser = {
   nickname?: string;
   /** Small JPEG data URL of the cropped profile picture. */
   photo?: string;
+  /** Slugs of courses waiting in the cart. */
+  cart: string[];
+  /** Slugs of paid-for courses. Only payment confirmation (Cloud Function or admin) adds to this. */
+  enrolledCourses: string[];
 };
 
 /** The name to greet someone by: their nickname, else their first name. */
@@ -111,6 +118,9 @@ function setState(next: State) {
   state = next;
   listeners.forEach((l) => l());
 }
+
+/** A Firestore array of course slugs, ignoring anything malformed. */
+const slugList = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
 
 const detailKeys = ["institution", "syllabus", "country", "state", "district", "mandal", "city", "nickname"] as const;
 
@@ -196,6 +206,8 @@ async function loadProfileOnce(user: User): Promise<AppUser> {
       memberId,
       nickname: details.nickname,
       photo,
+      cart: [],
+      enrolledCourses: [],
     };
   }
 
@@ -232,16 +244,48 @@ async function loadProfileOnce(user: User): Promise<AppUser> {
     memberId,
     nickname: data.nickname,
     photo: data.photo,
+    cart: slugList(data.cart),
+    enrolledCourses: slugList(data.enrolledCourses),
   };
+}
+
+let stopProfile: (() => void) | null = null;
+
+/** Keeps the signed-in user's photo, name, cart and enrollments in sync with Firestore. */
+function watchProfile(uid: string) {
+  stopProfile?.();
+  stopProfile = onSnapshot(
+    doc(db, "users", uid),
+    (snap) => {
+      const data = snap.data();
+      const current = state.user;
+      if (!data || current?.uid !== uid) return;
+      setState({
+        ready: true,
+        user: {
+          ...current,
+          name: data.name || current.name,
+          nickname: data.nickname,
+          photo: data.photo,
+          cart: slugList(data.cart),
+          enrolledCourses: slugList(data.enrolledCourses),
+        },
+      });
+    },
+    (err) => console.warn("Stopped listening for profile changes", err),
+  );
 }
 
 function start() {
   if (started) return;
   started = true;
   onAuthStateChanged(auth, async (user) => {
+    stopProfile?.();
+    stopProfile = null;
     if (!user) return setState({ user: null, ready: true });
     try {
       setState({ user: await loadProfile(user), ready: true });
+      watchProfile(user.uid);
     } catch (err) {
       // Without a profile we can't tell the role, so treat the session as signed out.
       console.error("Could not load user profile", err);
@@ -299,6 +343,19 @@ export function signOut() {
 /** Emails a password-reset link. Firebase doesn't reveal whether the account exists. */
 export function resetPassword(email: string) {
   return sendPasswordResetEmail(auth, email);
+}
+
+/** Re-checks the current password, then sets the new one. */
+export async function changePassword(current: string, next: string) {
+  const user = auth.currentUser;
+  if (!user?.email) throw new Error("Not signed in");
+  await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, current));
+  await updatePassword(user, next);
+}
+
+/** Saves a cropped profile picture (data URL), or removes it when `photo` is empty. */
+export function updateProfilePhoto(uid: string, photo: string) {
+  return updateDoc(doc(db, "users", uid), { photo: photo || deleteField() });
 }
 
 /** Turns a Firebase Auth error into a message a learner can act on. */

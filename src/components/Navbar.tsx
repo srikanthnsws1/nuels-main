@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Logo from "./Logo";
-import { CloseIcon, MenuIcon } from "./icons";
+import { CartIcon, CloseIcon, MenuIcon } from "./icons";
 import { navLinks } from "@/data/site";
 import { homeFor, signOut, useAuth } from "@/lib/auth";
 
@@ -61,6 +61,20 @@ export default function Navbar() {
         </ul>
 
         <div className="flex items-center gap-2 justify-self-end sm:gap-3">
+          {ready && user && (
+            <Link
+              href="/cart"
+              aria-label={`Cart, ${user.cart.length} ${user.cart.length === 1 ? "course" : "courses"}`}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full bg-forest-50 text-forest-700 transition hover:bg-forest-100"
+            >
+              <CartIcon className="h-5 w-5" />
+              {user.cart.length > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-spark-500 px-1 text-[11px] font-bold text-forest-900">
+                  {user.cart.length}
+                </span>
+              )}
+            </Link>
+          )}
           {ready && user ? (
             <div className="hidden items-center gap-2 lg:flex">
               <Link

@@ -46,7 +46,13 @@ service cloud.firestore {
       return (!('photo' in data) || (data.photo is string && data.photo.size() < 200000 && data.photo.matches('^data:image/(jpeg|png|webp);base64,.*')))
         && (!('nickname' in data) || (data.nickname is string && data.nickname.size() <= 30))
         && (!('whatsappOptIn' in data) || data.whatsappOptIn is bool)
-        && (!('whatsappWelcome' in data) || (resource != null && resource.data.get('whatsappWelcome', null) == data.whatsappWelcome));
+        && (!('whatsappWelcome' in data) || (resource != null && resource.data.get('whatsappWelcome', null) == data.whatsappWelcome))
+        && (!('cart' in data) || (data.cart is list && data.cart.size() <= 20));
+    }
+
+    // Course slugs on an order: a non-empty, cart-sized list.
+    function validCourseList(courses) {
+      return courses is list && courses.size() > 0 && courses.size() <= 20;
     }
 
     match /users/{uid} {
@@ -67,6 +73,7 @@ service cloud.firestore {
           signedIn()
           && request.auth.uid == uid
           && request.resource.data.email == request.auth.token.email
+          && !('enrolledCourses' in request.resource.data)
           && validProfileFields(request.resource.data)
           && validMemberId(request.resource.data)
           && (
@@ -76,7 +83,8 @@ service cloud.firestore {
           )
         );
 
-      // Users may edit their own profile but never their role, email, application or member ID.
+      // Users may edit their own profile (including their cart) but never their role, email,
+      // application, member ID or enrolled courses: only a confirmed payment adds courses.
       // The one exception: an older account without a member ID may claim one, once.
       allow update: if isAdmin()
         || (
@@ -84,7 +92,7 @@ service cloud.firestore {
           && request.auth.uid == uid
           && validProfileFields(request.resource.data)
           && (
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'email', 'requestedRole', 'memberId', 'whatsappWelcome'])
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'email', 'requestedRole', 'memberId', 'whatsappWelcome', 'enrolledCourses'])
             || (
               request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberId'])
               && !('memberId' in resource.data)
@@ -108,6 +116,33 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.memberId == id;
 
       allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    // Course orders. Learners create pending orders and may cancel their own pending ones.
+    // Only an admin (offline payments) or the verifyRazorpayPayment Cloud Function (which
+    // bypasses these rules) can mark an order paid.
+    match /orders/{orderId} {
+      allow get, list: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'name', 'email', 'memberId', 'courses', 'amount', 'method', 'status', 'createdAt'])
+        && request.resource.data.status == 'pending'
+        && request.resource.data.method in ['razorpay', 'manual']
+        && validCourseList(request.resource.data.courses)
+        && request.resource.data.amount is number
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && resource.data.uid == request.auth.uid
+          && resource.data.status == 'pending'
+          && request.resource.data.status == 'cancelled'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancelledAt'])
+        );
+
       allow delete: if isAdmin();
     }
   }

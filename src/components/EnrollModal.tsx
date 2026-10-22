@@ -8,18 +8,10 @@ import { createPortal } from "react-dom";
 import { ArrowRightIcon, CheckIcon, CloseIcon, EyeIcon, EyeOffIcon } from "./icons";
 import type { Course } from "@/data/site";
 import { authErrorMessage, register } from "@/lib/auth";
+import { addToCart } from "@/lib/orders";
+import { passwordRules, strengthLabels, strengthStyles } from "@/lib/password";
 
 const rupee = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
-
-const passwordRules = [
-  { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
-  { label: "One uppercase letter", test: (p: string) => /[A-Z]/.test(p) },
-  { label: "One number", test: (p: string) => /\d/.test(p) },
-  { label: "One special character", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
-];
-
-const strengthStyles = ["bg-forest-100", "bg-red-400", "bg-amber-400", "bg-spark-500", "bg-forest-600"];
-const strengthLabels = ["", "Weak", "Fair", "Good", "Strong"];
 
 type Fields = { name: string; email: string; phone: string; password: string; confirm: string; terms: boolean };
 const empty: Fields = { name: "", email: "", phone: "", password: "", confirm: "", terms: false };
@@ -107,12 +99,14 @@ export default function EnrollModal({ course, onClose }: { course: Course; onClo
     setSubmitting(true);
     setSubmitError("");
     try {
-      await register({
+      const user = await register({
         name: fields.name.trim(),
         email: fields.email.trim(),
         phone: fields.phone.replace(/\s/g, ""),
         password: fields.password,
       });
+      // The account exists either way; if this fails they can still add the course from the cart.
+      await addToCart(user.uid, course.slug).catch((err) => console.error("Could not add to cart", err));
       // Drop the passwords from memory once the account exists.
       setFields((f) => ({ ...f, password: "", confirm: "" }));
       setDone(true);
@@ -170,15 +164,15 @@ export default function EnrollModal({ course, onClose }: { course: Course; onClo
               You&apos;re registered, {fields.name.trim().split(" ")[0]}!
             </h2>
             <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-600">
-              Your account has been created. We&apos;ve sent the next steps for <strong>{course.title}</strong> to{" "}
-              <span className="font-medium text-forest-700">{fields.email}</span>.
+              Your account is ready and <strong>{course.title}</strong> is in your cart. Complete the payment to unlock it.
+              We&apos;ve also sent a verification link to <span className="font-medium text-forest-700">{fields.email}</span>.
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Link
-                href="/dashboard"
-                className="rounded-full bg-forest-700 px-7 py-3 text-sm font-semibold text-white transition hover:bg-forest-600"
+                href="/cart"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-forest-700 px-7 py-3 text-sm font-semibold text-white transition hover:bg-forest-600"
               >
-                Go to My Dashboard
+                Go to cart &amp; pay <ArrowRightIcon className="h-4 w-4" />
               </Link>
               <button
                 type="button"

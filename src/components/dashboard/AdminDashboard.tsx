@@ -1,17 +1,19 @@
 "use client";
 
-import { addDoc, collection, deleteDoc, doc, getDocs, serverTimestamp, updateDoc, type Timestamp } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, serverTimestamp, updateDoc, type Timestamp } from "firebase/firestore";
 import { useEffect, useState, type FormEvent } from "react";
-import { BookIcon, CloseIcon, GraduationIcon, GridIcon, SearchIcon, ShieldIcon, UsersIcon } from "../icons";
+import { BookIcon, CartIcon, CloseIcon, GraduationIcon, GridIcon, SearchIcon, ShieldIcon, UsersIcon } from "../icons";
 import DashboardShell, { type Section } from "./DashboardShell";
 import { Card, CardTitle, EmptyState, StatTiles, WelcomeBanner, rupee } from "./ui";
 import { courses } from "@/data/site";
 import { greetingName, roleLabel, roles, type AppUser, type Role } from "@/lib/auth";
 import { db } from "@/lib/firebase";
+import { cancelOrder, coursesFor, markOrderPaid, totalFor, type Order } from "@/lib/orders";
 
 const sections: Section[] = [
   { id: "overview", label: "Overview", icon: GridIcon },
   { id: "users", label: "Users", icon: UsersIcon },
+  { id: "orders", label: "Orders", icon: CartIcon },
   { id: "courses", label: "Courses", icon: BookIcon },
 ];
 
@@ -327,6 +329,153 @@ function UsersCard({
   );
 }
 
+const orderStatusStyle: Record<Order["status"], string> = {
+  pending: "bg-amber-100 text-amber-800",
+  paid: "bg-spark-500/25 text-forest-800",
+  cancelled: "bg-slate-100 text-slate-500",
+};
+
+function OrdersCard({ me }: { me: AppUser }) {
+  const [orders, setOrders] = useState<Order[] | null>(null);
+  const [filter, setFilter] = useState<"pending" | "all">("pending");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(
+    () =>
+      onSnapshot(
+        collection(db, "orders"),
+        (snap) => {
+          const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Order);
+          rows.sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
+          setOrders(rows);
+        },
+        () => setError("Couldn't load orders. Make sure the Firestore rules are deployed."),
+      ),
+    [],
+  );
+
+  const visible = (orders ?? []).filter((o) => filter === "all" || o.status === "pending");
+
+  const act = async (order: Order, action: "paid" | "cancel") => {
+    const question =
+      action === "paid"
+        ? `Confirm you received ${rupee.format(totalFor(order.courses))} from ${order.name} for order ${order.id}? Their courses will unlock immediately.`
+        : `Cancel order ${order.id} from ${order.name}?`;
+    if (!window.confirm(question)) return;
+    setBusy(order.id);
+    setError("");
+    try {
+      if (action === "paid") await markOrderPaid(order, me.uid);
+      else await cancelOrder(order.id);
+    } catch {
+      setError("Couldn't update that order. Check your connection and Firestore rules.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <Card id="orders">
+      <CardTitle
+        title="Orders"
+        action={
+          <div className="flex gap-2">
+            {(["pending", "all"] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFilter(f)}
+                aria-pressed={filter === f}
+                className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+                  filter === f ? "bg-forest-700 text-white" : "border border-forest-100 text-slate-600 hover:bg-forest-50"
+                }`}
+              >
+                {f === "pending" ? "Pending" : "All"}
+              </button>
+            ))}
+          </div>
+        }
+      />
+      <p className="mt-2 text-sm text-slate-500">
+        Online (Razorpay) payments unlock courses automatically. Mark offline payments as paid once the money has reached the account.
+      </p>
+
+      {error && <p className="mt-4 text-sm font-medium text-red-600">{error}</p>}
+
+      {orders === null && !error ? (
+        <p className="mt-6 text-sm text-slate-500">Loading orders…</p>
+      ) : visible.length === 0 ? (
+        <EmptyState icon={CartIcon} title={filter === "pending" ? "No orders waiting for payment" : "No orders yet"} />
+      ) : (
+        <div className="mt-5 overflow-x-auto">
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead className="text-xs uppercase tracking-wider text-slate-400">
+              <tr>
+                <th className="pb-3 font-semibold">Student</th>
+                <th className="pb-3 font-semibold">Courses</th>
+                <th className="pb-3 font-semibold">Placed</th>
+                <th className="pb-3 font-semibold">Amount</th>
+                <th className="pb-3 font-semibold">Status</th>
+                <th className="pb-3 text-right font-semibold">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-forest-100">
+              {visible.map((o) => (
+                <tr key={o.id} className="align-top">
+                  <td className="py-3 pr-4">
+                    <span className="font-semibold text-forest-950">{o.name}</span>
+                    <span className="block text-xs text-slate-500">
+                      {o.memberId && <span className="font-mono font-semibold text-forest-700">{o.memberId} · </span>}
+                      {o.email}
+                    </span>
+                    <span className="block font-mono text-[11px] text-slate-400">{o.id}</span>
+                  </td>
+                  <td className="py-3 pr-4 text-slate-600">
+                    {coursesFor(o.courses)
+                      .map((c) => c.title)
+                      .join(", ")}
+                  </td>
+                  <td className="py-3 pr-4 text-slate-500">{o.createdAt ? dateFormat.format(o.createdAt.toDate()) : "—"}</td>
+                  <td className="py-3 pr-4 font-semibold text-forest-700">
+                    {rupee.format(totalFor(o.courses))}
+                    <span className="block text-xs font-normal text-slate-500">{o.method === "razorpay" ? "Online" : "Offline"}</span>
+                  </td>
+                  <td className="py-3 pr-4">
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${orderStatusStyle[o.status]}`}>{o.status}</span>
+                  </td>
+                  <td className="py-3 text-right">
+                    {o.status === "pending" && (
+                      <div className="flex justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => act(o, "paid")}
+                          disabled={busy === o.id}
+                          className="rounded-full bg-forest-700 px-3 py-1 text-xs font-semibold text-white transition hover:bg-forest-600 disabled:opacity-50"
+                        >
+                          Mark paid
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => act(o, "cancel")}
+                          disabled={busy === o.id}
+                          className="rounded-full px-2.5 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function AdminContent({ me }: { me: AppUser }) {
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [error, setError] = useState("");
@@ -381,6 +530,8 @@ function AdminContent({ me }: { me: AppUser }) {
         onAddUser={handleAddUser}
         onDeleteUser={handleDeleteUser}
       />
+
+      <OrdersCard me={me} />
 
       <Card id="courses">
         <CardTitle title="Course catalog" />
