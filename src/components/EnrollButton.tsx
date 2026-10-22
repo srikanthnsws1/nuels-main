@@ -23,8 +23,8 @@ export default function EnrollButton({ course, className, children }: { course: 
 
   if (user?.enrolledCourses.includes(course.slug)) {
     return (
-      <Link href="/dashboard#my-courses" className={className}>
-        <CheckIcon className="h-4 w-4" /> Enrolled
+      <Link href={`/learn/${course.slug}`} className={className}>
+        <CheckIcon className="h-4 w-4" /> Enrolled · Open course
       </Link>
     );
   }

@@ -162,6 +162,59 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    function enrolledIn(slug) {
+      return slug in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('enrolledCourses', []);
+    }
+
+    // A learner's record for one course, id "{uid}_{slug}". Learners write their own lesson
+    // progress, assignment answers, interview requests and document checklist; attendance,
+    // interview results and grades come only from admins.
+    match /progress/{id} {
+      function ownRecord() {
+        return signedIn() && id.matches(request.auth.uid + '_[a-z0-9-]+');
+      }
+      function learnerKeys() {
+        return ['uid', 'slug', 'completed', 'lastLesson', 'assignments', 'interviewRequest', 'docs', 'updatedAt'];
+      }
+
+      allow get: if isAdmin() || ownRecord();
+      allow list: if isAdmin();
+
+      allow create: if isAdmin()
+        || (
+          ownRecord()
+          && request.resource.data.uid == request.auth.uid
+          && id == request.auth.uid + '_' + request.resource.data.slug
+          && enrolledIn(request.resource.data.slug)
+          && request.resource.data.keys().hasOnly(learnerKeys())
+          && (!('completed' in request.resource.data) || request.resource.data.completed.size() <= 300)
+        );
+
+      allow update: if isAdmin()
+        || (
+          ownRecord()
+          && enrolledIn(resource.data.slug)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(learnerKeys())
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.slug == resource.data.slug
+          && (!('completed' in request.resource.data) || request.resource.data.completed.size() <= 300)
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    // Lesson videos. Free previews are readable by any signed-in user; paid videos only by
+    // learners enrolled in the course.
+    match /courseContent/{slug} {
+      allow get: if signedIn();
+      allow write: if isAdmin();
+
+      match /paid/{doc} {
+        allow get: if isAdmin() || (signedIn() && enrolledIn(slug));
+        allow write: if isAdmin();
+      }
+    }
+
     // UPI and bank details shown at checkout.
     match /settings/payment {
       allow get: if signedIn();

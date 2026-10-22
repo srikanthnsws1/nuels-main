@@ -3,6 +3,7 @@
 import { addDoc, collection, deleteDoc, doc, getDocs, serverTimestamp, updateDoc, type Timestamp } from "firebase/firestore";
 import { useEffect, useState, type FormEvent } from "react";
 import { BookIcon, CartIcon, CloseIcon, GraduationIcon, GridIcon, SearchIcon, ShieldIcon, UsersIcon } from "../icons";
+import { CourseContentCard, LearnersCard } from "./AdminLearning";
 import { OrdersCard, PaymentDetailsCard } from "./AdminPayments";
 import DashboardShell, { type Section } from "./DashboardShell";
 import { Card, CardTitle, EmptyState, StatTiles, WelcomeBanner, rupee } from "./ui";
@@ -15,6 +16,8 @@ const sections: Section[] = [
   { id: "orders", label: "Payments", icon: CartIcon },
   { id: "users", label: "Users", icon: UsersIcon },
   { id: "payment-details", label: "Payment Details", icon: ShieldIcon },
+  { id: "learners", label: "Learners", icon: GraduationIcon },
+  { id: "course-content", label: "Course Videos", icon: BookIcon },
   { id: "courses", label: "Courses", icon: BookIcon },
 ];
 
@@ -388,6 +391,10 @@ function AdminContent({ me }: { me: AppUser }) {
       />
 
       <PaymentDetailsCard />
+
+      <LearnersCard users={users} />
+
+      <CourseContentCard />
 
       <Card id="courses">
         <CardTitle title="Course catalog" />

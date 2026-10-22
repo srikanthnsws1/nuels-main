@@ -117,7 +117,7 @@ function StudentContent({ user }: { user: AppUser }) {
             {enrolled.map((c) => (
               <Link
                 key={c.slug}
-                href={`/courses/${c.slug}`}
+                href={`/learn/${c.slug}`}
                 className="group overflow-hidden rounded-2xl border border-forest-100 p-2 transition hover:-translate-y-1 hover:shadow-xl hover:shadow-forest-900/10"
               >
                 <div className="relative aspect-video overflow-hidden rounded-xl">
