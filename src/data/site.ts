@@ -300,5 +300,7 @@ export const contactInfo = {
     { display: "+91 81218 46845", href: "tel:+918121846845" },
   ],
   email: "info@nuelsmart.com",
+  /** WhatsApp Business number (digits with country code) used for the post-registration chat. */
+  whatsapp: "918121846844",
   address: "Hyderabad, Telangana, India",
 };

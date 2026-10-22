@@ -8,6 +8,7 @@ import Reveal from "./motion/Reveal";
 import AvatarPicker from "./AvatarPicker";
 import { authErrorMessage, greetingName, homeFor, register, type AppUser, type Role } from "@/lib/auth";
 import { countries, districtsByState, indianStates, syllabusOptions } from "@/data/locations";
+import { contactInfo } from "@/data/site";
 
 const passwordRules = [
   { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
@@ -43,7 +44,6 @@ export default function RegisterForm({ defaultRole }: { defaultRole?: Role }) {
   const [mandal, setMandal] = useState("");
   const [city, setCity] = useState("");
   const [terms, setTerms] = useState(false);
-  const [whatsapp, setWhatsapp] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -100,7 +100,7 @@ export default function RegisterForm({ defaultRole }: { defaultRole?: Role }) {
         phone: phone.replace(/\s/g, ""),
         password,
         role,
-        profile: { institution, syllabus, country, state, district, mandal, city, nickname, photo, whatsappOptIn: whatsapp },
+        profile: { institution, syllabus, country, state, district, mandal, city, nickname, photo },
       });
       setCreated(user);
       setLoading(false);
@@ -115,6 +115,16 @@ export default function RegisterForm({ defaultRole }: { defaultRole?: Role }) {
 
   if (created) {
     const tutor = created.requestedRole === "mentor";
+    // Opens a chat with our WhatsApp Business number; the app's greeting message replies with the welcome note.
+    const hello = [
+      `Hi Nuel Smart! I just registered as a ${tutor ? "tutor / instructor" : "student"}.`,
+      `Name: ${created.name}`,
+      created.memberId ? `${tutor ? "Tutor" : "Student"} ID: ${created.memberId}` : "",
+      `Email: ${created.email}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    const whatsappLink = `https://wa.me/${contactInfo.whatsapp}?text=${encodeURIComponent(hello)}`;
     return (
       <Reveal immediate>
         <div className="flex items-center gap-4">
@@ -150,10 +160,22 @@ export default function RegisterForm({ defaultRole }: { defaultRole?: Role }) {
           )}
           Please verify your email using the link we sent to <strong className="text-forest-800">{created.email}</strong>.
         </p>
+        <a
+          href={whatsappLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-7 py-3.5 text-sm font-bold text-[#0b3d22] shadow-lg shadow-[#25D366]/30 transition hover:bg-[#1ebe5b]"
+        >
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden>
+            <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3Z" />
+          </svg>
+          Get your welcome message on WhatsApp
+        </a>
+        <p className="mt-2 text-center text-xs text-slate-500">Opens WhatsApp with a short hello ready to send to Nuel Smart.</p>
         <button
           type="button"
           onClick={() => router.push(homeFor[created.role])}
-          className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-forest-700 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-forest-600"
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-forest-700 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-forest-600"
         >
           Go to my dashboard <ArrowRightIcon className="h-4 w-4" />
         </button>
@@ -520,19 +542,6 @@ export default function RegisterForm({ defaultRole }: { defaultRole?: Role }) {
           </ul>
         </div>
 
-        <label className="flex items-start gap-3 rounded-2xl border border-forest-100 bg-forest-50/60 p-3 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            checked={whatsapp}
-            onChange={(e) => setWhatsapp(e.target.checked)}
-            className="mt-0.5 h-4 w-4 shrink-0 rounded accent-forest-700"
-          />
-          <span>
-            <strong className="font-semibold text-forest-900">Send me a welcome message on WhatsApp</strong> with my{" "}
-            {role === "mentor" ? "Tutor" : "Student"} ID and login details, and important account updates, at the mobile
-            number above. <span className="text-slate-500">(Optional. Reply STOP anytime to unsubscribe.)</span>
-          </span>
-        </label>
 
         <div>
           <label className="flex items-start gap-3 text-sm text-slate-600">
