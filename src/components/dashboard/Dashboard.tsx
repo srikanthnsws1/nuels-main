@@ -2,12 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRightIcon, BookIcon, CalendarIcon, CartIcon, CheckIcon, ClipboardIcon, ClockIcon, GraduationIcon, GridIcon, SparkIcon } from "../icons";
+import { ArrowRightIcon, BookIcon, CalendarIcon, CartIcon, CheckIcon, ClipboardIcon, ClockIcon, GraduationIcon, GridIcon, LockIcon, SparkIcon } from "../icons";
 import DashboardShell, { type Section } from "./DashboardShell";
 import { Card, CardTitle, EmptyState, WelcomeBanner, rupee } from "./ui";
 import { courses } from "@/data/site";
 import { greetingName, type AppUser } from "@/lib/auth";
-import { awaitingConfirmation, coursesFor, useMyOrders } from "@/lib/orders";
+import { awaitingConfirmation, coursesFor, needsScreenshot, useMyOrders } from "@/lib/orders";
 
 const sections: Section[] = [
   { id: "overview", label: "Overview", icon: GridIcon },
@@ -33,9 +33,18 @@ const sidebarCard = (
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
+function Locked() {
+  return (
+    <EmptyState icon={LockIcon} title="Unlocks after enrollment">
+      Enroll in a course and get your payment approved to access this.
+    </EmptyState>
+  );
+}
+
 function StudentContent({ user }: { user: AppUser }) {
   const orders = useMyOrders(user.uid);
   const enrolled = coursesFor(user.enrolledCourses);
+  const unlocked = enrolled.length > 0;
   const awaiting = (orders ?? []).filter(awaitingConfirmation);
   const explore = courses.filter((c) => !user.enrolledCourses.includes(c.slug)).slice(0, 3);
 
@@ -73,26 +82,29 @@ function StudentContent({ user }: { user: AppUser }) {
         </Link>
       )}
 
-      {awaiting.length > 0 && (
-        <Link
-          href="/cart#orders"
-          className="flex flex-wrap items-center gap-4 rounded-3xl border border-amber-200 bg-amber-50 p-4 transition hover:bg-amber-100/70 sm:p-5"
-        >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-forest-950">
-            <ClockIcon className="h-5 w-5" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-semibold text-forest-950">Payment awaiting confirmation</span>
-            <span className="block text-sm text-slate-600">
-              {coursesFor(awaiting.flatMap((o) => o.courses))
-                .map((c) => c.title)
-                .join(", ")}{" "}
-              will unlock as soon as our team confirms your payment.
+      {awaiting.map((o) => {
+        const titles = coursesFor(o.courses)
+          .map((c) => c.title)
+          .join(", ");
+        const [tone, title, text, action] =
+          o.status === "rejected"
+            ? (["border-red-200 bg-red-50 hover:bg-red-100/70", "Payment screenshot not approved", `${o.rejectReason || "We couldn't verify your payment."} Upload a new screenshot for ${titles}.`, "Upload again →"] as const)
+            : needsScreenshot(o)
+              ? (["border-amber-200 bg-amber-50 hover:bg-amber-100/70", "Complete your payment", `Pay for ${titles} and upload the payment screenshot to unlock your dashboard.`, "Pay now →"] as const)
+              : (["border-amber-200 bg-amber-50 hover:bg-amber-100/70", "Payment under review", `We've received your screenshot for ${titles}. Your full dashboard unlocks once it's approved.`, "View order →"] as const);
+        return (
+          <Link key={o.id} href="/cart#orders" className={`flex flex-wrap items-center gap-4 rounded-3xl border p-4 transition sm:p-5 ${tone}`}>
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-forest-950">
+              <ClockIcon className="h-5 w-5" />
             </span>
-          </span>
-          <span className="text-sm font-semibold text-forest-700">View order →</span>
-        </Link>
-      )}
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold text-forest-950">{title}</span>
+              <span className="block text-sm text-slate-600">{text}</span>
+            </span>
+            <span className="text-sm font-semibold text-forest-700">{action}</span>
+          </Link>
+        );
+      })}
 
       <Card id="my-courses">
         <CardTitle title="My courses" />
@@ -138,20 +150,25 @@ function StudentContent({ user }: { user: AppUser }) {
         )}
       </Card>
 
+      {/* Live sessions, assignments and certificates open up once a payment is approved. */}
       <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
         <Card id="schedule">
           <CardTitle title="Upcoming live sessions" />
-          <EmptyState icon={CalendarIcon} title="No sessions scheduled" />
+          {unlocked ? <EmptyState icon={CalendarIcon} title="No sessions scheduled" /> : <Locked />}
         </Card>
         <Card id="assignments">
           <CardTitle title="Assignments" />
-          <EmptyState icon={ClipboardIcon} title="No assignments yet" />
+          {unlocked ? <EmptyState icon={ClipboardIcon} title="No assignments yet" /> : <Locked />}
         </Card>
         <Card id="certificates" className="lg:col-span-2 xl:col-span-1">
           <CardTitle title="Certificates" />
-          <EmptyState icon={GraduationIcon} title="No certificates yet">
-            Finish a course to earn its certificate.
-          </EmptyState>
+          {unlocked ? (
+            <EmptyState icon={GraduationIcon} title="No certificates yet">
+              Finish a course to earn its certificate.
+            </EmptyState>
+          ) : (
+            <Locked />
+          )}
         </Card>
       </div>
 

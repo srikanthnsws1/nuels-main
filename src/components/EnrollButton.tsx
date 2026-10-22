@@ -6,7 +6,7 @@ import EnrollModal from "./EnrollModal";
 import { CartIcon, CheckIcon } from "./icons";
 import type { Course } from "@/data/site";
 import { useAuth } from "@/lib/auth";
-import { addToCart, awaitingConfirmation, useMyOrders } from "@/lib/orders";
+import { addToCart, awaitingConfirmation, needsScreenshot, useMyOrders } from "@/lib/orders";
 
 /**
  * "Enroll Now" for a course. Visitors register first (the course then lands in their cart);
@@ -28,10 +28,11 @@ export default function EnrollButton({ course, className, children }: { course: 
       </Link>
     );
   }
-  if (user && orders?.some((o) => awaitingConfirmation(o) && o.courses.includes(course.slug))) {
+  const openOrder = user ? orders?.find((o) => awaitingConfirmation(o) && o.courses.includes(course.slug)) : undefined;
+  if (openOrder) {
     return (
-      <Link href="/cart" className={className}>
-        Payment pending
+      <Link href="/cart#orders" className={className}>
+        {needsScreenshot(openOrder) ? "Complete payment" : "Payment under review"}
       </Link>
     );
   }

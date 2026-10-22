@@ -4,6 +4,7 @@ import {
   arrayRemove,
   arrayUnion,
   collection,
+  deleteField,
   doc,
   onSnapshot,
   query,
@@ -15,7 +16,7 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { courses, type Course } from "@/data/site";
 import type { AppUser } from "./auth";
 import { db, functions } from "./firebase";
@@ -27,7 +28,7 @@ import { db, functions } from "./firebase";
  * payments, or by an admin marking the order paid. firestore.rules stop learners writing
  * enrolledCourses themselves.
  */
-export type OrderStatus = "pending" | "paid" | "cancelled";
+export type OrderStatus = "pending" | "paid" | "rejected" | "cancelled";
 export type PaymentMethod = "razorpay" | "manual";
 
 export type Order = {
@@ -41,8 +42,28 @@ export type Order = {
   method: PaymentMethod;
   status: OrderStatus;
   paymentId?: string;
+  /** Payment screenshot uploaded by the learner (compressed image data URL). */
+  screenshot?: string;
+  screenshotAt?: Timestamp;
+  /** UPI transaction / bank reference number the learner typed in. */
+  paymentRef?: string;
+  /** Why an admin rejected the screenshot; the learner can upload a new one. */
+  rejectReason?: string;
   createdAt?: Timestamp;
   paidAt?: Timestamp;
+};
+
+/** UPI and bank details shown at checkout; admins edit them in `settings/payment`. */
+export type PaymentDetails = {
+  upiId?: string;
+  payeeName?: string;
+  qrImage?: string;
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
+  ifsc?: string;
+  branch?: string;
+  note?: string;
 };
 
 /** Online payments show only once the Razorpay key is configured at build time. */
@@ -54,8 +75,10 @@ export const coursesFor = (slugs: string[]) => slugs.map(courseBySlug).filter((c
 /** Always priced from the catalog, never from what's stored on an order. */
 export const totalFor = (slugs: string[]) => coursesFor(slugs).reduce((sum, c) => sum + c.price, 0);
 
-/** A manual order still waiting for an admin to confirm the payment. */
-export const awaitingConfirmation = (o: Order) => o.status === "pending" && o.method === "manual";
+/** A manual order that isn't settled yet: waiting for a screenshot, under review, or rejected. */
+export const awaitingConfirmation = (o: Order) => o.method === "manual" && (o.status === "pending" || o.status === "rejected");
+/** The learner still has to upload (or re-upload) a payment screenshot. */
+export const needsScreenshot = (o: Order) => awaitingConfirmation(o) && (o.status === "rejected" || !o.screenshot);
 
 export function addToCart(uid: string, slug: string) {
   return updateDoc(doc(db, "users", uid), { cart: arrayUnion(slug) });
@@ -93,10 +116,51 @@ export async function placeManualOrder(user: AppUser, slugs: string[]) {
   return ref.id;
 }
 
+/** Attaches the learner's payment screenshot; a rejected order goes back to review. */
+export function submitPaymentProof(orderId: string, screenshot: string, paymentRef: string) {
+  return updateDoc(doc(db, "orders", orderId), {
+    screenshot,
+    screenshotAt: serverTimestamp(),
+    paymentRef: paymentRef.trim() || deleteField(),
+    status: "pending",
+    rejectReason: deleteField(),
+  });
+}
+
+/** Admin: the screenshot doesn't show a valid payment; the learner can upload another. */
+export function rejectOrder(orderId: string, reason: string) {
+  return updateDoc(doc(db, "orders", orderId), { status: "rejected", rejectReason: reason.trim() || "Payment couldn't be verified." });
+}
+
+const paymentDetailsRef = () => doc(db, "settings", "payment");
+
+/** Admin: saves the UPI and bank details learners pay to. */
+export function savePaymentDetails(details: PaymentDetails) {
+  const clean = Object.fromEntries(Object.entries(details).map(([k, v]) => [k, (v ?? "").trim() || deleteField()]));
+  return setDoc(paymentDetailsRef(), clean, { merge: true });
+}
+
+/** The UPI and bank details, live; null while loading, {} if none are set. */
+export function usePaymentDetails(enabled = true): PaymentDetails | null {
+  const [details, setDetails] = useState<PaymentDetails | null>(null);
+  useEffect(() => {
+    if (!enabled) return;
+    return onSnapshot(
+      paymentDetailsRef(),
+      (snap) => setDetails((snap.data() as PaymentDetails | undefined) ?? {}),
+      (err) => {
+        console.warn("Couldn't load payment details", err);
+        setDetails({});
+      },
+    );
+  }, [enabled]);
+  return details;
+}
+
 /** Admin: confirms an offline payment and unlocks the order's courses. */
 export async function markOrderPaid(order: Order, adminUid: string) {
   const batch = writeBatch(db);
-  batch.update(doc(db, "orders", order.id), { status: "paid", paidAt: serverTimestamp(), confirmedBy: adminUid });
+  batch.update(doc(db, "orders", order.id), { status: "paid", paidAt: serverTimestamp(), confirmedBy: adminUid, rejectReason: deleteField() });
   batch.update(doc(db, "users", order.uid), {
     enrolledCourses: arrayUnion(...order.courses),
     cart: arrayRemove(...order.courses),

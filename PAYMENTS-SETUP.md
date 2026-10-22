@@ -1,47 +1,43 @@
 # Course payments: setup
 
-Students click **Enroll Now**. The course goes into their cart (`/cart`), they check out, and the
-course unlocks on their dashboard once the payment is confirmed. There are two ways to pay:
+## How it works
 
-| Method | How the course unlocks | Needs |
-|---|---|---|
-| **Pay offline** (UPI / bank transfer) | The student places the order and messages us on WhatsApp with the order ID. An admin checks the money arrived, then clicks **Admin panel → Orders → Mark paid**. | Nothing extra. Works today once the new Firestore rules are deployed. |
-| **Pay online** (Razorpay) | Automatically: the `verifyRazorpayPayment` Cloud Function checks Razorpay's signature and unlocks the courses. | Razorpay account, Firebase Blaze plan, the steps below. |
+1. A student clicks **Enroll Now**, and the course goes into their cart (`/cart`).
+2. At checkout they click **Proceed to payment**. They then see your **UPI ID, QR code and bank details**,
+   plus a "Pay with a UPI app" button on phones.
+3. After paying, they **upload a screenshot of the payment** (and optionally the UPI transaction ID / UTR).
+4. In **Admin panel → Payments**, you see every screenshot. Check it against your bank or UPI app, then:
+   - **Accept**: the course unlocks, and the student gets the full dashboard (My courses, live sessions,
+     assignments, certificates).
+   - **Reject**: you type a reason. The student sees it and can upload a new screenshot.
 
-Students can never unlock a course themselves. `firestore.rules` stop them writing `enrolledCourses`.
+Until a payment is accepted, a student's live sessions, assignments and certificates show as locked.
+Students can never unlock a course themselves, because `firestore.rules` stop them writing `enrolledCourses`.
 
-## 1. Deploy the Firestore rules (needed for both methods)
+## 1. Deploy the Firestore rules
 
 ```
 npx firebase-tools deploy --only firestore:rules
 ```
 
-## 2. Turn on Razorpay (optional)
+## 2. Enter your payment details
 
-1. Create a Razorpay account and finish KYC at https://dashboard.razorpay.com. Under
-   **Settings → Payment capture**, keep **automatic capture** on.
-2. **Account & Settings → API Keys → Generate key**. Start with **Test mode** keys (`rzp_test_…`).
-3. Store the secret for the Cloud Functions:
-   ```
-   npx firebase-tools functions:secrets:set RAZORPAY_KEY_SECRET
-   ```
-4. Deploy the functions. On the first deploy you'll be asked for `RAZORPAY_KEY_ID`; enter the key ID.
-   ```
-   npx firebase-tools deploy --only functions
-   ```
-5. Add the same key ID to the website build, in `.env.local` at the project root:
-   ```
-   NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxx
-   ```
-   Then rebuild and redeploy hosting (`npm run build`, then `npx firebase-tools deploy --only hosting`).
-   The **Pay online** option only appears when this is set.
-6. Test with Razorpay's test cards or UPI (`success@razorpay`). When you're happy, switch steps 3–5 to the
-   live keys (`rzp_live_…`).
+Log in as admin, open **Admin panel → Payment Details**, fill in your UPI ID, bank account and (optionally)
+upload your UPI QR code, then click **Save**. Students see whatever is saved there, so you can change
+these at any time without redeploying.
 
-Notes:
-- Course prices are charged from the `PRICES` list in `functions/src/payments.ts`. **When you change a
-  price in `src/data/site.ts`, change it there too**, then redeploy the functions.
-- If a student pays online but closes the browser before the confirmation finishes, the order stays
-  **pending**. Check the payment in the Razorpay dashboard, then use **Mark paid** in the admin panel.
-- Once `RAZORPAY_KEY_SECRET` is defined, every functions deploy (including the WhatsApp one) expects
-  it to be set.
+Screenshots and the QR code are stored as compressed images inside Firestore, so no Cloud Storage or
+Blaze plan is needed.
+
+## Optional: online payments with Razorpay
+
+The site also contains a Razorpay integration, which stays switched off unless you configure it. It needs a
+Razorpay account (with KYC done) and the Firebase **Blaze** plan.
+
+1. In the Razorpay dashboard, generate API keys (start with **Test mode**). Keep **automatic capture** on.
+2. `npx firebase-tools functions:secrets:set RAZORPAY_KEY_SECRET`
+3. `npx firebase-tools deploy --only functions`. Enter the key ID when it asks for `RAZORPAY_KEY_ID`.
+4. Add `NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_…` to `.env.local`, then rebuild and redeploy hosting.
+   A "Pay online" option then appears next to UPI / bank transfer.
+
+Razorpay charges the prices in `functions/src/payments.ts`. Keep them in sync with `src/data/site.ts`.
