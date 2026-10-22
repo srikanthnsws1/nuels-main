@@ -6,6 +6,7 @@ import EnrollModal from "./EnrollModal";
 import { CartIcon, CheckIcon } from "./icons";
 import type { Course } from "@/data/site";
 import { useAuth } from "@/lib/auth";
+import { learnHref, useCourse } from "@/lib/catalog";
 import { addToCart, awaitingConfirmation, needsScreenshot, useMyOrders } from "@/lib/orders";
 
 /**
@@ -20,10 +21,11 @@ export default function EnrollButton({ course, className, children }: { course: 
   const [adding, setAdding] = useState(false);
   const [failed, setFailed] = useState(false);
   const close = useCallback(() => setOpen(false), []);
+  const live = useCourse(course.slug);
 
   if (user?.enrolledCourses.includes(course.slug)) {
     return (
-      <Link href={`/learn/${course.slug}`} className={className}>
+      <Link href={learnHref(course.slug)} className={className}>
         <CheckIcon className="h-4 w-4" /> Enrolled · Open course
       </Link>
     );
@@ -34,6 +36,13 @@ export default function EnrollButton({ course, className, children }: { course: 
       <Link href="/cart#orders" className={className}>
         {needsScreenshot(openOrder) ? "Complete payment" : "Payment under review"}
       </Link>
+    );
+  }
+  if (live?.hidden) {
+    return (
+      <button type="button" disabled className={className}>
+        Enrollment closed
+      </button>
     );
   }
   if (user?.cart.includes(course.slug)) {
@@ -64,7 +73,7 @@ export default function EnrollButton({ course, className, children }: { course: 
       <button type="button" onClick={enroll} disabled={adding} className={className}>
         {adding ? "Adding to cart…" : failed ? "Couldn't add. Try again" : children}
       </button>
-      {open && <EnrollModal course={course} onClose={close} />}
+      {open && <EnrollModal course={live ?? course} onClose={close} />}
     </>
   );
 }

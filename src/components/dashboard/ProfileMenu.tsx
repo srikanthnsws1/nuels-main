@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useLenis } from "lenis/react";
-import { useCallback, useEffect, useId, useRef, useState, type ComponentType, type FormEvent, type ReactNode } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useEffect, useId, useRef, useState, type ComponentType, type FormEvent } from "react";
 import AvatarPicker from "../AvatarPicker";
 import {
   BookIcon,
@@ -11,7 +9,6 @@ import {
   CartIcon,
   CheckIcon,
   ChevronDownIcon,
-  CloseIcon,
   EyeIcon,
   EyeOffIcon,
   GridIcon,
@@ -20,8 +17,9 @@ import {
   LogoutIcon,
   type IconProps,
 } from "../icons";
+import Dialog from "./Dialog";
 import { Avatar } from "./ui";
-import { authErrorMessage, changePassword, greetingName, homeFor, roleLabel, updateProfilePhoto, type AppUser } from "@/lib/auth";
+import { authErrorMessage, changePassword, displayRole, greetingName, homeFor, updateProfilePhoto, type AppUser } from "@/lib/auth";
 import { passwordRules, strengthLabels, strengthStyles } from "@/lib/password";
 
 type MenuLink = { label: string; href: string; icon: ComponentType<IconProps>; badge?: number };
@@ -85,7 +83,7 @@ export default function ProfileMenu({ user, onLogout }: { user: AppUser; onLogou
         <span className="hidden text-left leading-tight sm:block">
           <span className="block text-base font-semibold text-forest-950">{greetingName(user)}</span>
           <span className="block text-xs text-slate-500">
-            {roleLabel[user.role]}
+            {displayRole(user)}
             {user.memberId && <span className="ml-1.5 font-mono font-semibold text-forest-700">· {user.memberId}</span>}
           </span>
         </span>
@@ -112,7 +110,7 @@ export default function ProfileMenu({ user, onLogout }: { user: AppUser; onLogou
             <p className="mt-3 font-semibold text-forest-950">{user.name}</p>
             <p className="max-w-full truncate text-xs text-slate-500">{user.email}</p>
             <p className="mt-2 rounded-full bg-white px-3 py-1 text-xs font-medium text-forest-700">
-              {roleLabel[user.role]}
+              {displayRole(user)}
               {user.memberId && <span className="ml-1.5 font-mono font-semibold">· {user.memberId}</span>}
             </p>
           </div>
@@ -147,52 +145,6 @@ export default function ProfileMenu({ user, onLogout }: { user: AppUser; onLogou
       {dialog === "photo" && <PhotoDialog user={user} onClose={closeDialog} />}
       {dialog === "password" && <PasswordDialog onClose={closeDialog} />}
     </div>
-  );
-}
-
-function Dialog({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
-  const id = useId();
-  const lenis = useLenis();
-
-  useEffect(() => {
-    lenis?.stop();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => {
-      lenis?.start();
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [lenis, onClose]);
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-forest-950/60 backdrop-blur-sm sm:items-center sm:p-6"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={id}
-        data-lenis-prevent
-        className="max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl shadow-forest-950/30 sm:max-w-md sm:rounded-3xl sm:p-7"
-      >
-        <div className="flex items-center justify-between gap-4">
-          <h2 id={id} className="text-xl font-bold tracking-tight text-forest-950">
-            {title}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-forest-50 hover:text-forest-700"
-          >
-            <CloseIcon className="h-5 w-5" />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>,
-    document.body,
   );
 }
 

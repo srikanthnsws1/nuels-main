@@ -5,8 +5,8 @@ import Link from "next/link";
 import { ArrowRightIcon, BookIcon, CalendarIcon, CartIcon, CheckIcon, ClipboardIcon, ClockIcon, GraduationIcon, GridIcon, LockIcon, SparkIcon } from "../icons";
 import DashboardShell, { type Section } from "./DashboardShell";
 import { Card, CardTitle, EmptyState, WelcomeBanner, rupee } from "./ui";
-import { courses } from "@/data/site";
 import { greetingName, type AppUser } from "@/lib/auth";
+import { courseHref, learnHref, useCatalog } from "@/lib/catalog";
 import { awaitingConfirmation, coursesFor, needsScreenshot, useMyOrders } from "@/lib/orders";
 
 const sections: Section[] = [
@@ -42,11 +42,12 @@ function Locked() {
 }
 
 function StudentContent({ user }: { user: AppUser }) {
+  const catalog = useCatalog();
   const orders = useMyOrders(user.uid);
   const enrolled = coursesFor(user.enrolledCourses);
   const unlocked = enrolled.length > 0;
   const awaiting = (orders ?? []).filter(awaitingConfirmation);
-  const explore = courses.filter((c) => !user.enrolledCourses.includes(c.slug)).slice(0, 3);
+  const explore = catalog.filter((c) => !user.enrolledCourses.includes(c.slug)).slice(0, 3);
 
   return (
     <>
@@ -117,7 +118,7 @@ function StudentContent({ user }: { user: AppUser }) {
             {enrolled.map((c) => (
               <Link
                 key={c.slug}
-                href={`/learn/${c.slug}`}
+                href={learnHref(c.slug)}
                 className="group overflow-hidden rounded-2xl border border-forest-100 p-2 transition hover:-translate-y-1 hover:shadow-xl hover:shadow-forest-900/10"
               >
                 <div className="relative aspect-video overflow-hidden rounded-xl">
@@ -186,7 +187,7 @@ function StudentContent({ user }: { user: AppUser }) {
             {explore.map((c) => (
               <Link
                 key={c.slug}
-                href={`/courses/${c.slug}`}
+                href={courseHref(c.slug)}
                 className="group overflow-hidden rounded-2xl border border-forest-100 p-2 transition hover:-translate-y-1 hover:shadow-xl hover:shadow-forest-900/10"
               >
                 <div className="relative aspect-video overflow-hidden rounded-xl">

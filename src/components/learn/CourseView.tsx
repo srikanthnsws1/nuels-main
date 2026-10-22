@@ -21,8 +21,8 @@ import {
   UsersIcon,
 } from "../icons";
 import { assignmentsFor, documentsFor, embedUrl, modulesFor, type Lesson } from "@/data/learning";
-import type { Course } from "@/data/site";
 import type { AppUser } from "@/lib/auth";
+import { courseHref, syllabusFor, useCatalogLoaded, useCourse, type CatalogCourse } from "@/lib/catalog";
 import {
   cancelMockInterviewRequest,
   openLesson,
@@ -274,7 +274,7 @@ function InterviewRequestForm({ user, slug }: { user: AppUser; slug: string }) {
   );
 }
 
-function printCertificate(name: string, course: Course, memberId?: string) {
+function printCertificate(name: string, course: CatalogCourse, memberId?: string) {
   const win = window.open("", "_blank", "width=1100,height=800");
   if (!win) return;
   const date = dateFormat.format(new Date());
@@ -298,13 +298,14 @@ function printCertificate(name: string, course: Course, memberId?: string) {
   win.document.close();
 }
 
-function CourseContent({ user, course }: { user: AppUser; course: Course }) {
+function CourseContent({ user, course }: { user: AppUser; course: CatalogCourse }) {
   const slug = course.slug;
   const progress = useCourseProgress(user.uid, slug);
   const videos = useCourseVideos(slug, true);
-  const modules = modulesFor(slug);
+  const syllabus = syllabusFor(course);
+  const modules = modulesFor(syllabus);
   const lessons = modules.flatMap((m) => m.lessons);
-  const assignments = assignmentsFor(slug);
+  const assignments = assignmentsFor(syllabus);
   const documents = documentsFor(slug);
   const [current, setCurrent] = useState<string | null>(null);
 
@@ -639,11 +640,25 @@ function CourseContent({ user, course }: { user: AppUser; course: Course }) {
 }
 
 /** The learning space for one enrolled course: lessons, videos, assignments and career prep. */
-export default function CourseView({ course }: { course: Course }) {
+export default function CourseView({ slug }: { slug: string }) {
+  const course = useCourse(slug);
+  const loaded = useCatalogLoaded();
   return (
     <DashboardShell role="student" sections={sections} sidebarCard={sidebarCard}>
       {(user) =>
-        user.enrolledCourses.includes(course.slug) ? (
+        !course && !loaded ? (
+          <div className="flex justify-center py-20">
+            <span className="h-10 w-10 animate-spin rounded-full border-4 border-forest-100 border-t-forest-700" aria-label="Loading" />
+          </div>
+        ) : !course ? (
+          <Card>
+            <EmptyState icon={BookIcon} title="Course not found">
+              <Link href="/dashboard#my-courses" className="font-semibold text-forest-700">
+                Back to my courses
+              </Link>
+            </EmptyState>
+          </Card>
+        ) : user.enrolledCourses.includes(course.slug) ? (
           <CourseContent user={user} course={course} />
         ) : (
           <Card>
@@ -658,7 +673,7 @@ export default function CourseView({ course }: { course: Course }) {
                 <p className="mt-1 text-sm text-slate-600">Enroll and get your payment approved to open the lessons, assignments and certificate.</p>
               </div>
               <Link
-                href={`/courses/${course.slug}`}
+                href={courseHref(course.slug)}
                 className="inline-flex items-center gap-2 rounded-full bg-forest-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-forest-600"
               >
                 View course <ArrowRightIcon className="h-4 w-4" />

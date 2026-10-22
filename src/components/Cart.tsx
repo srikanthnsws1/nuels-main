@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useId, useRef, useState } from "react";
 import { ArrowRightIcon, CameraIcon, CartIcon, CheckIcon, ClockIcon, LockIcon } from "./icons";
 import { useAuth, type AppUser } from "@/lib/auth";
+import { useCatalog } from "@/lib/catalog";
 import { compressImage } from "@/lib/image";
 import {
   awaitingConfirmation,
@@ -343,6 +344,7 @@ function PastOrder({ order }: { order: Order }) {
 }
 
 function Checkout({ user }: { user: AppUser }) {
+  const catalog = useCatalog(true);
   const orders = useMyOrders(user.uid);
   const [method, setMethod] = useState<PaymentMethod>("manual");
   const [busy, setBusy] = useState(false);
@@ -353,8 +355,8 @@ function Checkout({ user }: { user: AppUser }) {
   const past = (orders ?? []).filter((o) => !awaitingConfirmation(o) && !(o.method === "razorpay" && o.status !== "paid"));
   const details = usePaymentDetails(open.length > 0);
 
-  // Never charge for a course the learner already owns.
-  const slugs = user.cart.filter((s) => !user.enrolledCourses.includes(s));
+  // Never charge for a course the learner already owns, or one that's been withdrawn.
+  const slugs = user.cart.filter((s) => !user.enrolledCourses.includes(s) && catalog.some((c) => c.slug === s && !c.hidden));
   const items = coursesFor(slugs);
   const total = totalFor(slugs);
   const listPrice = items.reduce((sum, c) => sum + c.oldPrice, 0);

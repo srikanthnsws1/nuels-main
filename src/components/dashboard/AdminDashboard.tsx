@@ -2,12 +2,13 @@
 
 import { addDoc, collection, deleteDoc, doc, getDocs, serverTimestamp, updateDoc, type Timestamp } from "firebase/firestore";
 import { useEffect, useState, type FormEvent } from "react";
-import { BookIcon, CartIcon, CloseIcon, GraduationIcon, GridIcon, SearchIcon, ShieldIcon, UsersIcon } from "../icons";
+import { BookIcon, BriefcaseIcon, CartIcon, CloseIcon, GraduationIcon, GridIcon, PlayIcon, SearchIcon, ShieldIcon, UsersIcon } from "../icons";
+import { CoursesCard } from "./AdminCourses";
 import { CourseContentCard, LearnersCard } from "./AdminLearning";
 import { OrdersCard, PaymentDetailsCard } from "./AdminPayments";
+import { EmployeesCard } from "./AdminStaff";
 import DashboardShell, { type Section } from "./DashboardShell";
-import { Card, CardTitle, EmptyState, StatTiles, WelcomeBanner, rupee } from "./ui";
-import { courses } from "@/data/site";
+import { Card, CardTitle, EmptyState, StatTiles, WelcomeBanner } from "./ui";
 import { greetingName, roleLabel, roles, type AppUser, type Role } from "@/lib/auth";
 import { db } from "@/lib/firebase";
 
@@ -15,10 +16,11 @@ const sections: Section[] = [
   { id: "overview", label: "Overview", icon: GridIcon },
   { id: "orders", label: "Payments", icon: CartIcon },
   { id: "users", label: "Users", icon: UsersIcon },
+  { id: "employees", label: "Employees", icon: BriefcaseIcon },
   { id: "payment-details", label: "Payment Details", icon: ShieldIcon },
   { id: "learners", label: "Learners", icon: GraduationIcon },
-  { id: "course-content", label: "Course Videos", icon: BookIcon },
   { id: "courses", label: "Courses", icon: BookIcon },
+  { id: "course-content", label: "Course Videos", icon: PlayIcon },
 ];
 
 type UserRow = { uid: string; name: string; email: string; phone?: string; role: Role; requestedRole?: string; memberId?: string; institution?: string; city?: string; district?: string; state?: string; createdAt?: Timestamp };
@@ -366,7 +368,7 @@ function AdminContent({ me }: { me: AppUser }) {
     { label: "Total users", value: users?.length ?? "—", icon: UsersIcon },
     { label: "Students", value: count("student"), icon: GraduationIcon },
     { label: "Mentors", value: count("mentor"), icon: BookIcon },
-    { label: "Admins", value: count("admin"), icon: ShieldIcon },
+    { label: "Employees", value: count("employee"), icon: BriefcaseIcon },
   ];
 
   return (
@@ -390,39 +392,15 @@ function AdminContent({ me }: { me: AppUser }) {
         onDeleteUser={handleDeleteUser}
       />
 
+      <EmployeesCard canEdit />
+
       <PaymentDetailsCard />
 
       <LearnersCard users={users} />
 
-      <CourseContentCard />
+      <CoursesCard extraMentors={(users ?? []).filter((u) => u.role === "mentor").map((u) => u.name)} />
 
-      <Card id="courses">
-        <CardTitle title="Course catalog" />
-        <div className="mt-5 overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="text-xs uppercase tracking-wider text-slate-400">
-              <tr>
-                <th className="pb-3 font-semibold">Course</th>
-                <th className="pb-3 font-semibold">Mentor</th>
-                <th className="pb-3 font-semibold">Level</th>
-                <th className="pb-3 font-semibold">Lessons</th>
-                <th className="pb-3 text-right font-semibold">Price</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-forest-100">
-              {courses.map((c) => (
-                <tr key={c.slug}>
-                  <td className="py-3 pr-4 font-semibold text-forest-950">{c.title}</td>
-                  <td className="py-3 pr-4 text-slate-600">{c.mentor}</td>
-                  <td className="py-3 pr-4 text-slate-600">{c.level}</td>
-                  <td className="py-3 pr-4 text-slate-600">{c.lessons}</td>
-                  <td className="py-3 text-right font-semibold text-forest-700">{rupee.format(c.price)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <CourseContentCard />
     </>
   );
 }

@@ -7,7 +7,8 @@ import EnrollButton from "./EnrollButton";
 import SectionHeading from "./SectionHeading";
 import { BookIcon, ClockIcon } from "./icons";
 import Reveal from "./motion/Reveal";
-import { courseFilters, courses, type Course } from "@/data/site";
+import { courseFilters } from "@/data/site";
+import { courseHref, useCatalog, type CatalogCourse as Course } from "@/lib/catalog";
 
 const rupee = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
@@ -32,7 +33,7 @@ function CourseCard({ course }: { course: Course }) {
 
       <div className="flex flex-1 flex-col px-2 pb-2 pt-4">
         <h3 className="text-lg font-semibold leading-snug text-forest-950">
-          <Link href={`/courses/${course.slug}`} className="transition hover:text-forest-600">
+          <Link href={courseHref(course.slug)} className="transition hover:text-forest-600">
             {course.title}
           </Link>
         </h3>
@@ -41,7 +42,7 @@ function CourseCard({ course }: { course: Course }) {
         </p>
         <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-600">{course.description}</p>
         <Link
-          href={`/courses/${course.slug}`}
+          href={courseHref(course.slug)}
           className="mt-1 self-start py-1.5 text-sm font-semibold text-forest-700 hover:text-forest-500"
           aria-label={`View ${course.title} course details`}
         >
@@ -79,6 +80,7 @@ function CourseCard({ course }: { course: Course }) {
 
 export default function PopularCourses({ standalone = false }: { standalone?: boolean }) {
   const [active, setActive] = useState(courseFilters[0]);
+  const courses = useCatalog();
   const visible = active === courseFilters[0] ? courses : courses.filter((c) => c.category === active);
 
   return (

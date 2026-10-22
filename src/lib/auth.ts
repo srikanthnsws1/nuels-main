@@ -25,7 +25,7 @@ import { auth, db } from "./firebase";
  * `requestedRole: "mentor"` until an admin approves them. Only an admin can change a
  * role, and firestore.rules enforces all of this on the server.
  */
-export const roles = ["admin", "mentor", "student"] as const;
+export const roles = ["admin", "mentor", "student", "employee"] as const;
 export type Role = (typeof roles)[number];
 
 export type AppUser = {
@@ -40,11 +40,21 @@ export type AppUser = {
   nickname?: string;
   /** Small JPEG data URL of the cropped profile picture. */
   photo?: string;
+  /** Employees only: job title, company employee number and what they may access. */
+  designation?: string;
+  employeeNumber?: string;
+  permissions: string[];
+  phone?: string;
   /** Slugs of courses waiting in the cart. */
   cart: string[];
   /** Slugs of paid-for courses. Only payment confirmation (Cloud Function or admin) adds to this. */
   enrolledCourses: string[];
 };
+
+/** The role line under a name: an employee's designation, otherwise the role. */
+export function displayRole(user: Pick<AppUser, "role" | "designation">) {
+  return (user.role === "employee" && user.designation) || roleLabel[user.role];
+}
 
 /** The name to greet someone by: their nickname, else their first name. */
 export function greetingName(user: Pick<AppUser, "name" | "nickname">) {
@@ -73,6 +83,7 @@ export function isAdminEmail(email: string): boolean {
 export const homeFor: Record<Role, string> = {
   admin: "/admin",
   mentor: "/mentor",
+  employee: "/staff",
   student: "/dashboard",
 };
 
@@ -80,12 +91,14 @@ export const homeFor: Record<Role, string> = {
 export const loginRouteFor: Record<Role, string> = {
   admin: "/admin/login",
   mentor: "/tutor/login",
+  employee: "/login",
   student: "/login",
 };
 
 export const roleLabel: Record<Role, string> = {
   admin: "Administrator",
   mentor: "Tutor / Mentor",
+  employee: "Staff member",
   student: "Student / Learner",
 };
 
@@ -129,7 +142,7 @@ const detailKeys = ["institution", "syllabus", "country", "state", "district", "
  * profile in the same transaction. firestore.rules reject IDs that are taken, malformed or
  * don't match the account type. Retries on collisions.
  */
-async function withMemberId(uid: string, prefix: "S" | "T", newProfile?: Record<string, unknown>): Promise<string> {
+export async function withMemberId(uid: string, prefix: "S" | "T" | "E", newProfile?: Record<string, unknown>): Promise<string> {
   const userRef = doc(db, "users", uid);
   for (let attempt = 0; attempt < 20; attempt++) {
     const id = prefix + String(Math.floor(Math.random() * 10000)).padStart(4, "0");
@@ -206,12 +219,18 @@ async function loadProfileOnce(user: User): Promise<AppUser> {
       memberId,
       nickname: details.nickname,
       photo,
+      permissions: [],
       cart: [],
       enrolledCourses: [],
     };
   }
 
   const data = snap.data();
+  // Staff accounts an admin has deactivated can't sign in.
+  if (data.status === "inactive") {
+    await firebaseSignOut(auth);
+    throw Object.assign(new Error("Account deactivated"), { code: "auth/user-disabled" });
+  }
   let role: Role = roles.includes(data.role) ? data.role : "student";
 
   // Auto-elevate verified bootstrap admin addresses.
@@ -228,7 +247,7 @@ async function loadProfileOnce(user: User): Promise<AppUser> {
   let memberId: string | undefined = data.memberId;
   if (!memberId) {
     try {
-      memberId = await withMemberId(user.uid, role === "mentor" || data.requestedRole === "mentor" ? "T" : "S");
+      memberId = await withMemberId(user.uid, role === "employee" ? "E" : role === "mentor" || data.requestedRole === "mentor" ? "T" : "S");
     } catch (err) {
       console.warn("Could not assign a member ID", err);
     }
@@ -244,8 +263,19 @@ async function loadProfileOnce(user: User): Promise<AppUser> {
     memberId,
     nickname: data.nickname,
     photo: data.photo,
+    ...staffFields(data),
     cart: slugList(data.cart),
     enrolledCourses: slugList(data.enrolledCourses),
+  };
+}
+
+function staffFields(data: Record<string, unknown>) {
+  const text = (v: unknown) => (typeof v === "string" && v ? v : undefined);
+  return {
+    designation: text(data.designation),
+    employeeNumber: text(data.employeeNumber),
+    phone: text(data.phone),
+    permissions: slugList(data.permissions),
   };
 }
 
@@ -260,6 +290,10 @@ function watchProfile(uid: string) {
       const data = snap.data();
       const current = state.user;
       if (!data || current?.uid !== uid) return;
+      if (data.status === "inactive") {
+        firebaseSignOut(auth).catch(() => {});
+        return;
+      }
       setState({
         ready: true,
         user: {
@@ -267,6 +301,7 @@ function watchProfile(uid: string) {
           name: data.name || current.name,
           nickname: data.nickname,
           photo: data.photo,
+          ...staffFields(data),
           cart: slugList(data.cart),
           enrolledCourses: slugList(data.enrolledCourses),
         },
@@ -374,7 +409,7 @@ export function authErrorMessage(err: unknown) {
     case "auth/missing-email":
       return "Please enter a valid email address.";
     case "auth/user-disabled":
-      return "This account has been disabled. Contact info@nuelsmart.com for help.";
+      return "This account has been deactivated. Contact your administrator or info@nuelsmart.com.";
     case "auth/too-many-requests":
       return "Too many attempts. Please wait a moment and try again.";
     case "auth/network-request-failed":

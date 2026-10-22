@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { CartIcon, CheckIcon, CloseIcon } from "../icons";
 import { Card, CardTitle, EmptyState, rupee } from "./ui";
 import type { AppUser } from "@/lib/auth";
+import { useCatalog } from "@/lib/catalog";
 import { db } from "@/lib/firebase";
 import { compressImage } from "@/lib/image";
 import {
@@ -74,7 +75,8 @@ function Screenshot({ order, onClose }: { order: Order; onClose: () => void }) {
 }
 
 /** Every order with its payment screenshot; approving one unlocks the student's courses. */
-export function OrdersCard({ me }: { me: AppUser }) {
+export function OrdersCard({ me, canApprove = true }: { me: AppUser; canApprove?: boolean }) {
+  useCatalog(true); // re-render with live course names and prices
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [filter, setFilter] = useState<Filter>("review");
   const [busy, setBusy] = useState<string | null>(null);
@@ -129,7 +131,11 @@ export function OrdersCard({ me }: { me: AppUser }) {
   return (
     <Card id="orders">
       <CardTitle title="Payments & orders" />
-      <p className="mt-1 text-sm text-slate-500">Check each screenshot against your bank or UPI app, then accept it to give the student full access.</p>
+      <p className="mt-1 text-sm text-slate-500">
+        {canApprove
+          ? "Check each screenshot against your bank or UPI app, then accept it to give the student full access."
+          : "Payments and their screenshots. Approving them needs the “Accept or reject payments” permission."}
+      </p>
 
       <div className="no-scrollbar mt-5 flex gap-2 overflow-x-auto">
         {filters.map((f) => (
@@ -196,7 +202,7 @@ export function OrdersCard({ me }: { me: AppUser }) {
                 </p>
                 {o.status === "rejected" && o.rejectReason && <p className="mt-1 text-xs text-red-600">Rejected: {o.rejectReason}</p>}
 
-                {o.status === "pending" && (
+                {o.status === "pending" && canApprove && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {o.screenshot && (
                       <>

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { BookIcon, CalendarIcon, ClipboardIcon, ClockIcon, GridIcon, PlayIcon, UsersIcon } from "../icons";
 import DashboardShell, { type Section } from "./DashboardShell";
 import { Card, CardTitle, EmptyState, StatTiles, WelcomeBanner } from "./ui";
-import { courses } from "@/data/site";
+import { courseHref, useCatalog } from "@/lib/catalog";
 
 const sections: Section[] = [
   { id: "overview", label: "Overview", icon: GridIcon },
@@ -18,6 +18,7 @@ const sections: Section[] = [
 ];
 
 export default function MentorDashboard() {
+  const courses = useCatalog();
   return (
     <DashboardShell role="mentor" sections={sections}>
       {(user) => {
@@ -58,7 +59,7 @@ export default function MentorDashboard() {
                         </p>
                       </div>
                       <Link
-                        href={`/courses/${c.slug}`}
+                        href={courseHref(c.slug)}
                         className="shrink-0 rounded-full border border-forest-200 px-5 py-2.5 text-center text-sm font-semibold text-forest-700 transition hover:bg-forest-50"
                       >
                         View page

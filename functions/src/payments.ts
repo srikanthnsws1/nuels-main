@@ -15,7 +15,10 @@ import { HttpsError, onCall } from "firebase-functions/v2/https";
 const razorpayKeyId = defineString("RAZORPAY_KEY_ID");
 const razorpayKeySecret = defineSecret("RAZORPAY_KEY_SECRET");
 
-/** Course prices in rupees. Keep in sync with `courses` in src/data/site.ts. */
+/**
+ * Built-in course prices in rupees, used when a course has no price in the live catalog
+ * (`catalog/{slug}`, edited from the admin panel). Keep in sync with src/data/site.ts.
+ */
 const PRICES: Record<string, number> = {
   "ui-ux-design-masterclass": 2499,
   "full-stack-web-development-bootcamp": 3999,
@@ -43,14 +46,24 @@ export const createRazorpayOrder = onCall(options, async (req) => {
   const { ref, order } = await ownOrder(req.auth?.uid, req.data?.orderId);
   if (order.status !== "pending") throw new HttpsError("failed-precondition", "This order is no longer open.");
 
-  const courses = Array.isArray(order.courses) ? order.courses : [];
-  if (!courses.length || courses.some((slug) => !(slug in PRICES))) throw new HttpsError("invalid-argument", "Unknown course in order.");
+  const courses: string[] = Array.isArray(order.courses) ? order.courses : [];
+  if (!courses.length || courses.some((slug) => typeof slug !== "string" || !/^[a-z0-9-]{1,60}$/.test(slug))) {
+    throw new HttpsError("invalid-argument", "Unknown course in order.");
+  }
+  const catalog = await getFirestore().getAll(...courses.map((slug) => getFirestore().doc(`catalog/${slug}`)));
+  const prices = courses.map((slug, i) => {
+    const live = catalog[i].data();
+    if (live?.hidden) throw new HttpsError("failed-precondition", "One of these courses is no longer available.");
+    const price = typeof live?.price === "number" ? live.price : PRICES[slug];
+    if (!(price > 0)) throw new HttpsError("invalid-argument", "Unknown course in order.");
+    return price;
+  });
 
   const profile = (await getFirestore().doc(`users/${order.uid}`).get()).data();
   const owned: string[] = Array.isArray(profile?.enrolledCourses) ? profile.enrolledCourses : [];
   if (courses.some((slug) => owned.includes(slug))) throw new HttpsError("already-exists", "You're already enrolled in one of these courses.");
 
-  const amount = courses.reduce((sum, slug) => sum + PRICES[slug], 0) * 100; // paise
+  const amount = prices.reduce((sum, p) => sum + p, 0) * 100; // paise
   const res = await fetch("https://api.razorpay.com/v1/orders", {
     method: "POST",
     headers: {

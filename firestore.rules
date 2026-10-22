@@ -28,15 +28,26 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
 
-    // Member IDs: "T" + 4 digits for tutors (or tutor applicants), "S" + 4 digits for everyone
-    // else, and reserved for this user in memberIds/{id} within the same write.
+    // Company employees: an active "employee" account whose admin-granted permissions include p.
+    function hasPerm(p) {
+      return signedIn() && staffPerm(get(/databases/$(database)/documents/users/$(request.auth.uid)).data, p);
+    }
+    function staffPerm(me, p) {
+      return me.get('role', '') == 'employee' && me.get('status', 'active') == 'active' && p in me.get('permissions', []);
+    }
+
+    // Member IDs: "T" + 4 digits for tutors (or tutor applicants), "E" for employees, "S" for
+    // everyone else, and reserved for this user in memberIds/{id} within the same write.
     function isTutorProfile(data) {
       return data.get('role', '') == 'mentor' || data.get('requestedRole', '') == 'mentor';
+    }
+    function memberIdPattern(data) {
+      return data.get('role', '') == 'employee' ? '^E[0-9]{4}$' : isTutorProfile(data) ? '^T[0-9]{4}$' : '^S[0-9]{4}$';
     }
     function validMemberId(data) {
       return !('memberId' in data) || (
         data.memberId is string
-        && data.memberId.matches(isTutorProfile(data) ? '^T[0-9]{4}$' : '^S[0-9]{4}$')
+        && data.memberId.matches(memberIdPattern(data))
         && getAfter(/databases/$(database)/documents/memberIds/$(data.memberId)).data.uid == request.auth.uid
       );
     }
@@ -57,13 +68,14 @@ service cloud.firestore {
 
     match /users/{uid} {
       // Your own profile, any profile for admins, and mentor profiles for signed-in users.
-      allow get: if signedIn() && (
+      // Staff see students or fellow employees when their permissions allow it.
+      allow get, list: if signedIn() && (
         request.auth.uid == uid
         || isAdmin()
         || resource.data.role == 'mentor'
+        || (resource.data.role == 'student' && (hasPerm('students.view') || hasPerm('learners.manage')))
+        || (resource.data.role == 'employee' && hasPerm('staff.view'))
       );
-
-      allow list: if isAdmin();
 
       // Self sign-up always creates a student. Instructor applicants are stored with
       // requestedRole 'mentor' and stay students until an admin approves them.
@@ -84,15 +96,20 @@ service cloud.firestore {
         );
 
       // Users may edit their own profile (including their cart) but never their role, email,
-      // application, member ID or enrolled courses: only a confirmed payment adds courses.
+      // application, member ID, enrolled courses or staff details: only a confirmed payment
+      // adds courses, and only admins change staff access.
       // The one exception: an older account without a member ID may claim one, once.
       allow update: if isAdmin()
+        || (
+          hasPerm('payments.approve')
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['enrolledCourses', 'cart'])
+        )
         || (
           signedIn()
           && request.auth.uid == uid
           && validProfileFields(request.resource.data)
           && (
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'email', 'requestedRole', 'memberId', 'whatsappWelcome', 'enrolledCourses'])
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'email', 'requestedRole', 'memberId', 'whatsappWelcome', 'enrolledCourses', 'designation', 'employeeNumber', 'permissions', 'status', 'joinDate'])
             || (
               request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberId'])
               && !('memberId' in resource.data)
@@ -109,11 +126,12 @@ service cloud.firestore {
       allow get: if signedIn();
       allow list: if isAdmin();
 
-      // Reserve an ID only together with writing it onto your own profile.
+      // Reserve an ID only together with writing it onto your own profile (or, for admins,
+      // onto the profile of the employee they're creating).
       allow create: if signedIn()
-        && id.matches('^[ST][0-9]{4}$')
-        && request.resource.data.uid == request.auth.uid
-        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.memberId == id;
+        && id.matches('^[STE][0-9]{4}$')
+        && (request.resource.data.uid == request.auth.uid || isAdmin())
+        && getAfter(/databases/$(database)/documents/users/$(request.resource.data.uid)).data.memberId == id;
 
       allow update: if false;
       allow delete: if isAdmin();
@@ -123,7 +141,10 @@ service cloud.firestore {
     // Only an admin (offline payments) or the verifyRazorpayPayment Cloud Function (which
     // bypasses these rules) can mark an order paid.
     match /orders/{orderId} {
-      allow get, list: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow get, list: if isAdmin()
+        || (signedIn() && resource.data.uid == request.auth.uid)
+        || hasPerm('payments.view')
+        || hasPerm('payments.approve');
 
       allow create: if signedIn()
         && request.resource.data.uid == request.auth.uid
@@ -135,8 +156,14 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time;
 
       // Learners may cancel a pending order, or attach a payment screenshot to an offline
-      // order (which puts a rejected one back into review). Only admins approve or reject.
+      // order (which puts a rejected one back into review). Only admins and staff with the
+      // "payments.approve" permission approve or reject.
       allow update: if isAdmin()
+        || (
+          hasPerm('payments.approve')
+          && request.resource.data.status in ['paid', 'rejected', 'cancelled']
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'paidAt', 'confirmedBy', 'rejectReason', 'cancelledAt'])
+        )
         || (
           signedIn()
           && resource.data.uid == request.auth.uid
@@ -177,8 +204,8 @@ service cloud.firestore {
         return ['uid', 'slug', 'completed', 'lastLesson', 'assignments', 'interviewRequest', 'docs', 'updatedAt'];
       }
 
-      allow get: if isAdmin() || ownRecord();
-      allow list: if isAdmin();
+      allow get: if isAdmin() || ownRecord() || hasPerm('learners.manage');
+      allow list: if isAdmin() || hasPerm('learners.manage');
 
       allow create: if isAdmin()
         || (
@@ -191,6 +218,10 @@ service cloud.firestore {
         );
 
       allow update: if isAdmin()
+        || (
+          hasPerm('learners.manage')
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['attendance', 'interviews', 'interviewRequest', 'grades'])
+        )
         || (
           ownRecord()
           && enrolledIn(resource.data.slug)
@@ -207,12 +238,21 @@ service cloud.firestore {
     // learners enrolled in the course.
     match /courseContent/{slug} {
       allow get: if signedIn();
-      allow write: if isAdmin();
+      allow write: if isAdmin() || hasPerm('videos.manage');
 
       match /paid/{doc} {
-        allow get: if isAdmin() || (signedIn() && enrolledIn(slug));
-        allow write: if isAdmin();
+        allow get: if isAdmin() || hasPerm('videos.manage') || (signedIn() && enrolledIn(slug));
+        allow write: if isAdmin() || hasPerm('videos.manage');
       }
+    }
+
+    // The live course catalog: changes to built-in courses and admin-added courses. Public,
+    // because course listings and prices show to visitors.
+    match /catalog/{slug} {
+      allow get, list: if true;
+      allow write: if (isAdmin() || hasPerm('courses.manage'))
+        && slug.matches('^[a-z0-9-]{1,60}$')
+        && (!('price' in request.resource.data) || (request.resource.data.price is number && request.resource.data.price > 0));
     }
 
     // UPI and bank details shown at checkout.

@@ -17,7 +17,7 @@ import {
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { courses, type Course } from "@/data/site";
+import { getCatalog, type CatalogCourse } from "./catalog";
 import type { AppUser } from "./auth";
 import { db, functions } from "./firebase";
 
@@ -70,8 +70,8 @@ export type PaymentDetails = {
 export const razorpayKeyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? "";
 export const onlinePaymentsEnabled = razorpayKeyId.length > 0;
 
-export const courseBySlug = (slug: string) => courses.find((c) => c.slug === slug);
-export const coursesFor = (slugs: string[]) => slugs.map(courseBySlug).filter((c): c is Course => !!c);
+export const courseBySlug = (slug: string) => getCatalog().find((c) => c.slug === slug);
+export const coursesFor = (slugs: string[]) => slugs.map(courseBySlug).filter((c): c is CatalogCourse => !!c);
 /** Always priced from the catalog, never from what's stored on an order. */
 export const totalFor = (slugs: string[]) => coursesFor(slugs).reduce((sum, c) => sum + c.price, 0);
 

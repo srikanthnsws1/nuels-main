@@ -1,21 +1,21 @@
-import { courseDetails } from "./courseDetails";
+// The learning structure of a course, derived from its syllabus (see syllabusFor in
+// src/lib/catalog.ts): every topic is a lesson, and every module ends with an assignment.
 
-// The learning structure of each course, derived from its syllabus in courseDetails:
-// every topic is a lesson, and every module ends with an assignment.
+type Syllabus = { title: string; topics: string[] }[];
 
 export type Lesson = { id: string; title: string; module: number };
 export type Module = { title: string; lessons: Lesson[] };
 export type Assignment = { id: string; module: number; title: string; brief: string };
 
-export function modulesFor(slug: string): Module[] {
-  return (courseDetails[slug]?.modules ?? []).map((m, i) => ({
+export function modulesFor(syllabus: Syllabus): Module[] {
+  return syllabus.map((m, i) => ({
     title: m.title,
     lessons: m.topics.map((t, j) => ({ id: `m${i + 1}-l${j + 1}`, title: t, module: i })),
   }));
 }
 
-export function assignmentsFor(slug: string): Assignment[] {
-  return (courseDetails[slug]?.modules ?? []).map((m, i) => ({
+export function assignmentsFor(syllabus: Syllabus): Assignment[] {
+  return syllabus.map((m, i) => ({
     id: `a${i + 1}`,
     module: i,
     title: `${m.title}: practice task`,

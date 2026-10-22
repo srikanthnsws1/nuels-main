@@ -5,7 +5,7 @@ import { useEffect, useId, useState, type FormEvent } from "react";
 import { BookIcon, CheckIcon, UsersIcon } from "../icons";
 import { Card, CardTitle, EmptyState } from "./ui";
 import { assignmentsFor, modulesFor } from "@/data/learning";
-import { courses } from "@/data/site";
+import { syllabusFor, useCatalog } from "@/lib/catalog";
 import { db } from "@/lib/firebase";
 import { recordForLearner, saveLessonVideo, useCourseVideos, type CourseProgress } from "@/lib/learning";
 
@@ -59,9 +59,10 @@ function LessonVideoRow({ slug, id, title, url: savedUrl, free: savedFree }: { s
 
 /** Attach a video to each lesson and choose which ones are free previews. */
 export function CourseContentCard() {
-  const [slug, setSlug] = useState(courses[0].slug);
+  const catalog = useCatalog(true);
+  const [slug, setSlug] = useState(catalog[0].slug);
   const videos = useCourseVideos(slug, true);
-  const modules = modulesFor(slug);
+  const modules = modulesFor(syllabusFor(catalog.find((c) => c.slug === slug)));
 
   return (
     <Card id="course-content">
@@ -75,7 +76,7 @@ export function CourseContentCard() {
         aria-label="Course"
         className="mt-4 rounded-full border border-forest-100 bg-white px-4 py-2 text-sm font-semibold text-forest-900 outline-none focus:border-forest-300"
       >
-        {courses.map((c) => (
+        {catalog.map((c) => (
           <option key={c.slug} value={c.slug}>
             {c.title}
           </option>
@@ -116,8 +117,9 @@ type Learner = { uid: string; name: string; email: string; memberId?: string };
 
 function LearnerDetail({ record }: { record: Record_ }) {
   const id = useId();
-  const assignments = assignmentsFor(record.slug);
-  const lessons = modulesFor(record.slug).flatMap((m) => m.lessons);
+  const syllabus = syllabusFor(useCatalog(true).find((c) => c.slug === record.slug));
+  const assignments = assignmentsFor(syllabus);
+  const lessons = modulesFor(syllabus).flatMap((m) => m.lessons);
   const today = new Date().toISOString().slice(0, 10);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -297,7 +299,8 @@ export function LearnersCard({ users }: { users: Learner[] | null }) {
   );
 
   const learner = (uid: string) => users?.find((u) => u.uid === uid);
-  const course = (slug: string) => courses.find((c) => c.slug === slug);
+  const catalog = useCatalog(true);
+  const course = (slug: string) => catalog.find((c) => c.slug === slug);
 
   return (
     <Card id="learners">
@@ -314,7 +317,7 @@ export function LearnersCard({ users }: { users: Learner[] | null }) {
         <ul className="mt-5 space-y-3">
           {records.map((r) => {
             const u = learner(r.uid);
-            const total = modulesFor(r.slug).flatMap((m) => m.lessons).length;
+            const total = modulesFor(syllabusFor(course(r.slug))).flatMap((m) => m.lessons).length;
             const pendingGrades = Object.keys(r.assignments).filter((a) => !r.grades[a]).length;
             return (
               <li key={r.id} className="rounded-2xl border border-forest-100 p-4">
