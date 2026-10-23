@@ -12,7 +12,7 @@ import {
   signOut as firebaseSignOut,
   type User,
 } from "firebase/auth";
-import { doc, getDoc, runTransaction, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import { deleteField, doc, getDoc, runTransaction, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { useSyncExternalStore } from "react";
 import { auth, db } from "./firebase";
 
@@ -294,6 +294,14 @@ export async function register(details: {
 
 export function signOut() {
   return firebaseSignOut(auth);
+}
+
+/** Sets (or with "" removes) the signed-in user's profile photo, a small JPEG data URL. */
+export async function updateProfilePhoto(photo: string) {
+  const current = state.user;
+  if (!current) throw new Error("Not signed in");
+  await updateDoc(doc(db, "users", current.uid), { photo: photo || deleteField() });
+  if (state.user?.uid === current.uid) setState({ user: { ...state.user, photo: photo || undefined }, ready: true });
 }
 
 /** Emails a password-reset link. Firebase doesn't reveal whether the account exists. */

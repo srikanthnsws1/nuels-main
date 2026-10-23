@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Logo from "./Logo";
-import { contactInfo } from "@/data/site";
+import { categories, contactInfo } from "@/data/site";
 import { MailIcon, PhoneIcon, PinIcon, SocialIcon } from "./icons";
 
 const quickLinks = [
@@ -11,14 +11,6 @@ const quickLinks = [
   { label: "FAQ", href: "/faq" },
   { label: "Contact", href: "/contact" },
   { label: "Compare Course Formats", href: "/compare/mentor-led-vs-self-paced-courses" },
-];
-const popularCourses = [
-  { label: "UI/UX Design", slug: "ui-ux-design-masterclass" },
-  { label: "Full Stack Web Development", slug: "full-stack-web-development-bootcamp" },
-  { label: "Python Data Analysis", slug: "python-for-data-analysis" },
-  { label: "Digital Marketing", slug: "social-media-content-marketing" },
-  { label: "Business Strategy", slug: "business-strategy-for-founders" },
-  { label: "Spoken English", slug: "spoken-english-communication" },
 ];
 const socials = ["facebook", "instagram", "linkedin", "youtube"] as const;
 
@@ -86,12 +78,12 @@ export default function Footer() {
           </div>
 
           <div className="lg:col-span-2">
-            <h3 className="font-semibold text-white">Popular Courses</h3>
+            <h3 className="font-semibold text-white">Course Categories</h3>
             <ul className="mt-4 space-y-2.5 text-sm">
-              {popularCourses.map((l) => (
-                <li key={l.slug}>
-                  <Link href={`/courses/${l.slug}`} className="hover:text-spark-400">
-                    {l.label}
+              {categories.map((c) => (
+                <li key={c.title}>
+                  <Link href="/courses" className="hover:text-spark-400">
+                    {c.title}
                   </Link>
                 </li>
               ))}

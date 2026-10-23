@@ -4,7 +4,6 @@ import Cta from "@/components/Cta";
 import PageHero from "@/components/PageHero";
 import { ArrowRightIcon, CheckIcon, CloseIcon } from "@/components/icons";
 import Reveal from "@/components/motion/Reveal";
-import { courses } from "@/data/site";
 import { absoluteUrl, breadcrumbSchema, JsonLd, pageMetadata, site } from "@/lib/seo";
 
 const path = "/compare/mentor-led-vs-self-paced-courses";
@@ -327,16 +326,11 @@ export default function ComparePage() {
               </ul>
             </div>
           </div>
-          <p className="mt-6 text-sm text-slate-600">Explore our mentor-led courses:</p>
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {courses.map((c) => (
-              <li key={c.slug}>
-                <Link href={`/courses/${c.slug}`} className="inline-block rounded-full border border-forest-100 bg-white px-4 py-2 text-sm font-medium text-forest-800 transition hover:border-forest-300 hover:text-forest-600">
-                  {c.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <p className="mt-6 text-sm text-slate-600">
+            <Link href="/courses" className="font-semibold text-forest-700 hover:text-forest-500">
+              Explore our mentor-led courses →
+            </Link>
+          </p>
         </section>
 
         {/* faq */}

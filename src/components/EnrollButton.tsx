@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import EnrollModal from "./EnrollModal";
-import type { Course } from "@/data/site";
+import type { Course } from "@/lib/courses";
 
 export default function EnrollButton({ course, className, children }: { course: Course; className: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);

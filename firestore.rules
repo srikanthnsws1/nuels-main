@@ -28,6 +28,26 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
 
+    function userRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '');
+    }
+
+    // Approved mentors only. Instructor applicants keep the student role until an admin approves them.
+    function isMentor() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && userRole() == 'mentor';
+    }
+
+    // Students, excluding instructor applicants who are waiting for admin approval.
+    function isStudent() {
+      return signedIn()
+        && !isBootstrapAdmin()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && userRole() == 'student'
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('requestedRole', '') != 'mentor';
+    }
+
     // Member IDs: "T" + 4 digits for tutors (or tutor applicants), "S" + 4 digits for everyone
     // else, and reserved for this user in memberIds/{id} within the same write.
     function isTutorProfile(data) {
@@ -50,12 +70,9 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      // Your own profile, any profile for admins, and mentor profiles for signed-in users.
-      allow get: if signedIn() && (
-        request.auth.uid == uid
-        || isAdmin()
-        || resource.data.role == 'mentor'
-      );
+      // Your own profile, or any profile for admins. Public mentor details live in
+      // mentorProfiles so phone numbers and emails are never exposed to other users.
+      allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
 
       allow list: if isAdmin();
 
@@ -109,6 +126,212 @@ service cloud.firestore {
 
       allow update: if false;
       allow delete: if isAdmin();
+    }
+
+    function isNumber(v) {
+      return v is int || v is float;
+    }
+
+    // Keep in sync with courseCategories / courseLevels in src/lib/courses.ts.
+    function validCourse(data) {
+      return data.keys().hasOnly(['title', 'description', 'category', 'level', 'lessons', 'hours', 'price', 'oldPrice',
+                                  'imageUrl', 'outcomes', 'curriculum', 'mentorId', 'mentorName', 'mentorDesignation',
+                                  'mentorPhoto', 'createdAt', 'updatedAt'])
+        && data.title is string && data.title.size() >= 3 && data.title.size() <= 120
+        && data.description is string && data.description.size() >= 20 && data.description.size() <= 3000
+        && data.category in ['Design', 'Development', 'Marketing', 'Business', 'Language', 'Photography']
+        && data.level in ['Beginner', 'Intermediate', 'Advanced']
+        && data.lessons is int && data.lessons >= 0 && data.lessons <= 1000
+        && isNumber(data.hours) && data.hours >= 0 && data.hours <= 2000
+        && isNumber(data.price) && data.price >= 0
+        && (!('oldPrice' in data) || (isNumber(data.oldPrice) && data.oldPrice >= data.price))
+        && (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 1000 && data.imageUrl.matches('^https://.+')))
+        && data.outcomes is list && data.outcomes.size() <= 20
+        && data.curriculum is list && data.curriculum.size() <= 40
+        && data.mentorName is string && data.mentorName.size() >= 2 && data.mentorName.size() <= 100
+        && data.mentorDesignation is string && data.mentorDesignation.size() >= 2 && data.mentorDesignation.size() <= 80
+        && (!('mentorPhoto' in data) || (data.mentorPhoto is string && data.mentorPhoto.size() < 200000
+                                         && data.mentorPhoto.matches('^data:image/(jpeg|png|webp);base64,.*')))
+        && data.updatedAt == request.time;
+    }
+
+    // Courses: anyone can browse; only approved mentors post them, and only the owner edits.
+    match /courses/{courseId} {
+      allow read: if true;
+
+      allow create: if isMentor()
+        && request.resource.data.mentorId == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && validCourse(request.resource.data);
+
+      allow update: if isMentor()
+        && resource.data.mentorId == request.auth.uid
+        && request.resource.data.mentorId == resource.data.mentorId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && validCourse(request.resource.data);
+
+      allow delete: if isMentor() && resource.data.mentorId == request.auth.uid;
+
+      function ownsCourse() {
+        return signedIn() && get(/databases/$(database)/documents/courses/$(courseId)).data.mentorId == request.auth.uid;
+      }
+
+      // Enrolled and the admin has verified the payment (free courses are approved on enrollment).
+      function isApprovedStudent() {
+        return signedIn()
+          && get(/databases/$(database)/documents/enrollments/$(courseId + '_' + request.auth.uid)).data.get('status', '') == 'approved';
+      }
+
+      function validSession(data) {
+        return data.keys().hasOnly(['courseId', 'courseTitle', 'mentorId', 'mentorName', 'topic', 'date', 'time', 'meetLink', 'createdAt'])
+          && data.courseId == courseId
+          && data.mentorId == request.auth.uid
+          && data.courseTitle is string && data.mentorName is string
+          && data.topic is string && data.topic.size() >= 2 && data.topic.size() <= 160
+          && data.date is string && data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && data.time is string && data.time.matches('^[0-9]{2}:[0-9]{2}$')
+          && data.meetLink is string && data.meetLink.size() <= 300
+          && data.meetLink.matches('^https://meet[.]google[.]com/[A-Za-z0-9/_-]+([?].*)?$');
+      }
+
+      // Daily Google Meet sessions: posted by the course's mentor, visible to its students once
+      // their payment is approved.
+      match /sessions/{sessionId} {
+        allow read: if isAdmin() || ownsCourse() || isApprovedStudent();
+        allow create, update: if isMentor() && ownsCourse() && validSession(request.resource.data);
+        allow delete: if ownsCourse();
+      }
+
+      // Recorded classes (YouTube videos by topic): same audience as the live sessions.
+      match /recordings/{recordingId} {
+        allow read: if isAdmin() || ownsCourse() || isApprovedStudent();
+        allow create, update: if isMentor()
+          && ownsCourse()
+          && request.resource.data.keys().hasOnly(['topic', 'title', 'videoId', 'mentorId', 'createdAt'])
+          && request.resource.data.mentorId == request.auth.uid
+          && request.resource.data.topic is string && request.resource.data.topic.size() >= 2 && request.resource.data.topic.size() <= 120
+          && request.resource.data.title is string && request.resource.data.title.size() >= 2 && request.resource.data.title.size() <= 160
+          && request.resource.data.videoId is string && request.resource.data.videoId.matches('^[A-Za-z0-9_-]{11}$')
+          && request.resource.data.createdAt == request.time;
+        allow delete: if ownsCourse();
+      }
+    }
+
+    // Admin overview of every course's sessions (collection group query). Recordings are
+    // read per course through the rule above.
+    match /{path=**}/sessions/{sessionId} {
+      allow read: if isAdmin();
+    }
+
+    // A payment screenshot uploaded in this same write.
+    function proofUploadedNow(enrollmentId) {
+      return getAfter(/databases/$(database)/documents/paymentProofs/$(enrollmentId)).data.uploadedAt == request.time;
+    }
+
+    // Enrollments: a student enrolls themselves; the course's mentor and admins can see it.
+    // Paid courses start "pending" with a payment screenshot; only an admin approves or rejects.
+    match /enrollments/{enrollmentId} {
+      allow read: if signedIn() && (
+        resource.data.studentId == request.auth.uid
+        || resource.data.mentorId == request.auth.uid
+        || isAdmin()
+      );
+
+      allow create: if isStudent()
+        && request.resource.data.keys().hasOnly(['courseId', 'courseTitle', 'studentId', 'studentName', 'studentEmail',
+                                                 'studentMemberId', 'mentorId', 'status', 'amount', 'paymentRef', 'createdAt'])
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.studentEmail == request.auth.token.email
+        && enrollmentId == request.resource.data.courseId + '_' + request.auth.uid
+        && request.resource.data.mentorId == get(/databases/$(database)/documents/courses/$(request.resource.data.courseId)).data.mentorId
+        && request.resource.data.amount == get(/databases/$(database)/documents/courses/$(request.resource.data.courseId)).data.price
+        && request.resource.data.paymentRef is string && request.resource.data.paymentRef.size() <= 100
+        && request.resource.data.createdAt == request.time
+        && (
+          (request.resource.data.status == 'pending' && proofUploadedNow(enrollmentId))
+          || (request.resource.data.status == 'approved' && request.resource.data.amount == 0)
+        );
+
+      // Admins verify payments. A student whose payment was rejected may resubmit a new screenshot.
+      allow update: if (
+          isAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewedBy', 'reviewedAt'])
+          && request.resource.data.status in ['approved', 'rejected']
+          && request.resource.data.reviewedBy == request.auth.uid
+          && request.resource.data.reviewedAt == request.time
+        ) || (
+          signedIn()
+          && resource.data.studentId == request.auth.uid
+          && resource.data.status == 'rejected'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'paymentRef', 'resubmittedAt'])
+          && request.resource.data.status == 'pending'
+          && request.resource.data.paymentRef is string && request.resource.data.paymentRef.size() <= 100
+          && request.resource.data.resubmittedAt == request.time
+          && proofUploadedNow(enrollmentId)
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    // Payment screenshots: written by the student together with a pending enrollment,
+    // readable only by that student and admins (never by mentors or other students).
+    match /paymentProofs/{enrollmentId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.studentId == request.auth.uid);
+
+      allow create, update: if signedIn()
+        && (resource == null || resource.data.studentId == request.auth.uid)
+        && request.resource.data.keys().hasOnly(['studentId', 'image', 'uploadedAt'])
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.image is string
+        && request.resource.data.image.size() < 900000
+        && request.resource.data.image.matches('^data:image/(jpeg|png|webp);base64,.*')
+        && request.resource.data.uploadedAt == request.time
+        && getAfter(/databases/$(database)/documents/enrollments/$(enrollmentId)).data.studentId == request.auth.uid
+        && getAfter(/databases/$(database)/documents/enrollments/$(enrollmentId)).data.status == 'pending';
+
+      allow delete: if isAdmin();
+    }
+
+    // Mentor bank / UPI details for paying out earnings: private to the mentor and admins.
+    // Empty strings are allowed; patterns match payoutPatterns in src/lib/mentors.ts.
+    match /mentorPayouts/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+
+      allow create, update: if isMentor()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['accountHolder', 'bankName', 'accountNumber', 'ifsc', 'upiId', 'upiNumber', 'updatedAt'])
+        && request.resource.data.accountHolder is string && request.resource.data.accountHolder.size() <= 100
+        && request.resource.data.bankName is string && request.resource.data.bankName.size() <= 100
+        && request.resource.data.accountNumber is string
+        && (request.resource.data.accountNumber == '' || request.resource.data.accountNumber.matches('^[0-9]{6,20}$'))
+        && request.resource.data.ifsc is string
+        && (request.resource.data.ifsc == '' || request.resource.data.ifsc.matches('^[A-Z]{4}0[A-Z0-9]{6}$'))
+        && request.resource.data.upiId is string
+        && (request.resource.data.upiId == '' || request.resource.data.upiId.matches('^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$'))
+        && request.resource.data.upiNumber is string
+        && (request.resource.data.upiNumber == '' || request.resource.data.upiNumber.matches('^[6-9][0-9]{9}$'))
+        && request.resource.data.updatedAt == request.time;
+
+      allow delete: if isAdmin();
+    }
+
+    // Public mentor cards shown on the website. Only approved mentors publish their own.
+    match /mentorProfiles/{uid} {
+      allow read: if true;
+
+      allow create, update: if isMentor()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'headline', 'experience', 'company', 'bio', 'photo', 'linkedin', 'updatedAt'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 100
+        && request.resource.data.headline is string && request.resource.data.headline.size() >= 2 && request.resource.data.headline.size() <= 120
+        && request.resource.data.experience is string && request.resource.data.experience.size() <= 40
+        && request.resource.data.company is string && request.resource.data.company.size() <= 120
+        && request.resource.data.bio is string && request.resource.data.bio.size() <= 1500
+        && (!('linkedin' in request.resource.data) || request.resource.data.linkedin.matches('^https://([a-z]+[.])?linkedin[.]com/.*'))
+        && validProfileFields(request.resource.data)
+        && request.resource.data.updatedAt == request.time;
+
+      allow delete: if isAdmin() || (signedIn() && request.auth.uid == uid);
     }
   }
 }

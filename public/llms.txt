@@ -19,21 +19,7 @@ Key facts:
 - [Contact](https://nuelsmart.com/contact): Phone, email and a message form for course guidance.
 - [Mentor-led vs self-paced vs bootcamp courses](https://nuelsmart.com/compare/mentor-led-vs-self-paced-courses): How to choose an online course format in India.
 
-## Courses
-
-- [UI/UX Design Masterclass](https://nuelsmart.com/courses/ui-ux-design-masterclass): Beginner · 42 lessons · 18 hours · mentor Priya Nair · ₹2,499. User research, wireframing, Figma prototyping, design systems and a portfolio case study.
-- [Full-Stack Web Development Bootcamp](https://nuelsmart.com/courses/full-stack-web-development-bootcamp): Intermediate · 86 lessons · 52 hours · mentor Arjun Mehta · ₹3,999. HTML, CSS, JavaScript, React, Node.js, databases and deployment.
-- [Python for Data Analysis](https://nuelsmart.com/courses/python-for-data-analysis): Beginner · 38 lessons · 22 hours · mentor Arjun Mehta · ₹2,999. Python, pandas, NumPy and data visualisation on real datasets.
-- [Social Media & Content Marketing](https://nuelsmart.com/courses/social-media-content-marketing): Beginner · 30 lessons · 14 hours · mentor Kavita Sharma · ₹1,999. Content calendars, Instagram, LinkedIn and YouTube growth, paid campaigns and analytics.
-- [Business Strategy for Founders](https://nuelsmart.com/courses/business-strategy-for-founders): Advanced · 26 lessons · 16 hours · mentor Rajesh Iyer · ₹3,499. Idea validation, pricing, go-to-market and financial models.
-- [Spoken English & Communication](https://nuelsmart.com/courses/spoken-english-communication): Beginner · 34 lessons · 20 hours · mentor Kavita Sharma · ₹1,499. Confident English for interviews, meetings and presentations.
-
-## Mentors
-
-- Arjun Mehta: Full-Stack & Data Mentor, 14+ years, ex-senior engineer at product startups.
-- Priya Nair: UI/UX Design Mentor, 10+ years, design lead for SaaS products.
-- Kavita Sharma: Marketing & Communication Mentor, 16+ years, ex-marketing director.
-- Rajesh Iyer: Business Strategy Mentor, 22+ years, management consultant.
+Courses are posted by mentors and change often; see the Courses page for the current catalogue and the Mentors page for mentor profiles.
 
 ## Optional
 

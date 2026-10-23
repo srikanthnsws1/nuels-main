@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { contactInfo, courses, faqs, mentors, type Course } from "@/data/site";
+import { contactInfo, faqs } from "@/data/site";
 
 /** Production address. Override with NEXT_PUBLIC_SITE_URL if the site is served elsewhere. */
 export const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://nuelsmart.com").replace(/\/$/, "");
@@ -135,39 +135,6 @@ export function breadcrumbSchema(items: { name: string; path: string }[]) {
   };
 }
 
-export function courseSchema(course: Course) {
-  return {
-    "@type": "Course",
-    name: course.title,
-    description: course.description,
-    url: absoluteUrl(`/courses/${course.slug}`),
-    image: absoluteUrl(course.image),
-    provider: { "@type": "Organization", name: site.name, sameAs: siteUrl },
-    educationalLevel: course.level,
-    inLanguage: "en",
-    offers: {
-      "@type": "Offer",
-      category: "Paid",
-      price: course.price,
-      priceCurrency: "INR",
-      availability: "https://schema.org/InStock",
-    },
-    hasCourseInstance: {
-      "@type": "CourseInstance",
-      courseMode: "Online",
-      courseWorkload: `PT${course.hours}H`,
-      instructor: { "@type": "Person", name: course.mentor },
-    },
-  };
-}
-
-export const courseListSchema = {
-  "@context": "https://schema.org",
-  "@type": "ItemList",
-  name: "Nuels mentor-led online courses",
-  itemListElement: courses.map((c, i) => ({ "@type": "ListItem", position: i + 1, item: courseSchema(c) })),
-};
-
 export const faqSchema = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -175,24 +142,6 @@ export const faqSchema = {
     "@type": "Question",
     name: f.question,
     acceptedAnswer: { "@type": "Answer", text: f.answer },
-  })),
-};
-
-export const mentorListSchema = {
-  "@context": "https://schema.org",
-  "@type": "ItemList",
-  name: "Nuels mentors",
-  itemListElement: mentors.map((m, i) => ({
-    "@type": "ListItem",
-    position: i + 1,
-    item: {
-      "@type": "Person",
-      name: m.name,
-      jobTitle: m.role,
-      description: `${m.role} with ${m.experience} of industry experience. ${m.company}.`,
-      image: absoluteUrl(m.image),
-      worksFor: { "@id": orgId },
-    },
   })),
 };
 

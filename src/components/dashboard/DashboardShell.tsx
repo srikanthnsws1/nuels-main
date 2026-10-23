@@ -2,16 +2,27 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import Logo from "../Logo";
+import MentorVerificationModal from "../MentorVerificationModal";
 import { LogoutIcon, type IconProps } from "../icons";
-import { greetingName, homeFor, roleLabel, signOut, useAuth, type AppUser, type Role } from "@/lib/auth";
+import { greetingName, homeFor, loginRouteFor, roleLabel, signOut, useAuth, type AppUser, type Role } from "@/lib/auth";
 import { initials } from "./ui";
 
-export type Section = { id: string; label: string; icon: ComponentType<IconProps> };
+const dashboardLabel: Record<Role, string> = {
+  admin: "Admin Dashboard",
+  mentor: "Mentor Dashboard",
+  student: "Student Dashboard",
+};
+
+export type Section ={ id: string; label: string; icon: ComponentType<IconProps> };
 
 /**
  * Sidebar + top bar layout shared by every dashboard, and the role guard for it:
- * signed-out visitors go to /login and users with another role go to their own dashboard.
+ * signed-out visitors go to this dashboard's login page and users with any other role
+ * (admins included) are sent to their own dashboard. Each dashboard is for exactly one
+ * role; firestore.rules enforces the same split on the data itself.
  */
 export default function DashboardShell({
   role,
@@ -30,9 +41,26 @@ export default function DashboardShell({
 
   useEffect(() => {
     if (!ready) return;
-    if (!user) router.replace("/login");
+    if (!user) router.replace(loginRouteFor[role]);
+    else if (user.requestedRole === "mentor") return; // the verification popup is shown instead
     else if (user.role !== role) router.replace(homeFor[user.role]);
   }, [ready, user, role, router]);
+
+  // Instructor applicants wait for an admin to approve them before using any dashboard.
+  if (user?.requestedRole === "mentor") {
+    return (
+      <div className="min-h-dvh bg-forest-50/60">
+        <MentorVerificationModal
+          email={user.email}
+          actionLabel="Log out"
+          onClose={async () => {
+            await signOut();
+            router.push("/");
+          }}
+        />
+      </div>
+    );
+  }
 
   if (!user || user.role !== role) {
     return (
@@ -78,14 +106,18 @@ export default function DashboardShell({
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col overflow-hidden bg-forest-800 p-6 lg:flex">
         <div className="pointer-events-none absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-[radial-gradient(closest-side,var(--color-spark-500),transparent)] opacity-10" />
         <div className="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-[radial-gradient(closest-side,var(--color-forest-600),transparent)] opacity-40" />
-        <div className="relative">
-          <Logo light />
-        </div>
-        <nav className="relative mt-10 flex flex-col gap-1" aria-label="Dashboard">
+        <Link href="/" aria-label="nuelsmart home" className="relative flex items-center gap-3 rounded-3xl bg-white p-3 shadow-lg shadow-forest-950/20">
+          <Image src="/images/logo-mark-sm.webp" alt="" width={48} height={48} className="h-12 w-12 shrink-0" priority />
+          <span className="leading-tight">
+            <span className="block text-xl font-bold tracking-tight text-forest-700">nuelsmart</span>
+            <span className="block text-xs font-semibold uppercase tracking-wider text-forest-500">{dashboardLabel[role]}</span>
+          </span>
+        </Link>
+        <nav className="no-scrollbar relative mt-8 flex min-h-0 flex-col gap-1 overflow-y-auto" aria-label="Dashboard">
           {sections.map((s) => navLink(s))}
         </nav>
 
-        <div className="relative mt-auto space-y-4">
+        <div className="relative mt-auto space-y-4 pt-4">
           {sidebarCard}
           <button
             type="button"
@@ -102,8 +134,9 @@ export default function DashboardShell({
         {/* top bar */}
         <header className="sticky top-0 z-30 border-b border-forest-100 bg-white/95 md:bg-white/85 md:backdrop-blur-md">
           <div className="flex h-16 items-center gap-3 px-4 sm:h-20 sm:px-6 xl:px-10">
-            <div className="lg:hidden">
+            <div className="flex items-center gap-3">
               <Logo />
+              <span className="hidden rounded-full bg-forest-50 px-3 py-1 text-xs font-semibold text-forest-700 md:inline">{dashboardLabel[role]}</span>
             </div>
             <div className="ml-auto flex items-center gap-2 sm:gap-3">
               <div className="flex items-center gap-3 rounded-full bg-forest-50 py-1 pl-1 pr-1 sm:pr-4">

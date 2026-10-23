@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ArrowRightIcon, EyeIcon, EyeOffIcon, MailIcon, ShieldIcon } from "./icons";
 import Reveal from "./motion/Reveal";
-import { authErrorMessage, signIn, signOut } from "@/lib/auth";
+import { authErrorMessage, roleLabel, signIn, signOut } from "@/lib/auth";
 
 const field =
   "w-full rounded-2xl border bg-white px-4 py-3.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:shadow-lg focus:shadow-forest-900/10";
@@ -36,7 +36,9 @@ export default function AdminLoginForm() {
         // Sign out immediately if not an admin to prevent unauthorized access to this route
         await signOut();
         setAuthError(
-          `Access restricted. The account (${user.email}) is registered as a ${user.role}, not an administrator. Please log in through the student or tutor portal.`
+          `Access restricted. The account (${user.email}) is registered as ${roleLabel[user.role]}, not an administrator. Please log in through the ${
+            user.role === "mentor" ? "Tutor" : "Student"
+          } portal.`
         );
         setLoading(false);
         return;

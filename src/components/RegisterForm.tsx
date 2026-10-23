@@ -6,7 +6,8 @@ import { useState, type FormEvent } from "react";
 import { ArrowRightIcon, BookIcon, CheckIcon, EyeIcon, EyeOffIcon, GraduationIcon } from "./icons";
 import Reveal from "./motion/Reveal";
 import AvatarPicker from "./AvatarPicker";
-import { authErrorMessage, greetingName, homeFor, register, type AppUser, type Role } from "@/lib/auth";
+import MentorVerificationModal from "./MentorVerificationModal";
+import { authErrorMessage, greetingName, homeFor, register, signOut, type AppUser, type Role } from "@/lib/auth";
 import { countries, districtsByState, indianStates, syllabusOptions } from "@/data/locations";
 
 const passwordRules = [
@@ -51,6 +52,7 @@ export default function RegisterForm({ defaultRole }: { defaultRole?: Role }) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [created, setCreated] = useState<AppUser | null>(null);
+  const [showVerification, setShowVerification] = useState(false);
 
   const nameError = submitted && name.trim().length < 2 ? "Please enter your full name." : "";
   const emailError = submitted && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? "Please enter a valid email address." : "";
@@ -102,6 +104,11 @@ export default function RegisterForm({ defaultRole }: { defaultRole?: Role }) {
         role,
         profile: { institution, syllabus, country, state, district, mandal, city, nickname, photo, whatsappOptIn: whatsapp },
       });
+      // Instructor applicants can't use a dashboard until an admin approves them, so end the session.
+      if (user.requestedRole === "mentor") {
+        await signOut();
+        setShowVerification(true);
+      }
       setCreated(user);
       setLoading(false);
     } catch (err) {
@@ -145,18 +152,20 @@ export default function RegisterForm({ defaultRole }: { defaultRole?: Role }) {
         <p className="mt-6 text-sm leading-relaxed text-slate-600">
           {tutor && (
             <>
-              Our team will review your application and switch on your mentor dashboard once approved.{" "}
+              Your mentor account is under verification. Our admin team will review your application and switch on your mentor
+              dashboard once it&apos;s approved.{" "}
             </>
           )}
           Please verify your email using the link we sent to <strong className="text-forest-800">{created.email}</strong>.
         </p>
         <button
           type="button"
-          onClick={() => router.push(homeFor[created.role])}
+          onClick={() => router.push(tutor ? "/" : homeFor[created.role])}
           className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-forest-700 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-forest-600"
         >
-          Go to my dashboard <ArrowRightIcon className="h-4 w-4" />
+          {tutor ? "Back to home" : "Go to my dashboard"} <ArrowRightIcon className="h-4 w-4" />
         </button>
+        {showVerification && <MentorVerificationModal email={created.email} onClose={() => setShowVerification(false)} />}
       </Reveal>
     );
   }

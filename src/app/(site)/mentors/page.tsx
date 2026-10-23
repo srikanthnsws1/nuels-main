@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import PageHero from "@/components/PageHero";
-import { breadcrumbSchema, JsonLd, mentorListSchema, pageMetadata } from "@/lib/seo";
+import { breadcrumbSchema, JsonLd, pageMetadata } from "@/lib/seo";
 import Mentors from "@/components/Mentors";
 import WhyNuels from "@/components/WhyNuels";
 import Cta from "@/components/Cta";
@@ -16,7 +16,7 @@ export const metadata: Metadata = pageMetadata({
 export default function MentorsPage() {
   return (
     <>
-      <JsonLd data={[mentorListSchema, breadcrumbSchema([{ name: "Mentors", path: "/mentors" }])]} />
+      <JsonLd data={breadcrumbSchema([{ name: "Mentors", path: "/mentors" }])} />
       <PageHero
         eyebrow="Mentors"
         title="Learn Directly from"

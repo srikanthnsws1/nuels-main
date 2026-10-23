@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRightIcon, EyeIcon, EyeOffIcon, MailIcon } from "./icons";
+import MentorVerificationModal from "./MentorVerificationModal";
 import Reveal from "./motion/Reveal";
-import { authErrorMessage, homeFor, resetPassword, signIn, useAuth } from "@/lib/auth";
+import { authErrorMessage, homeFor, loginRouteFor, resetPassword, roleLabel, signIn, signOut, useAuth } from "@/lib/auth";
 
 const field =
   "w-full rounded-2xl border bg-white px-4 py-3.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:shadow-lg focus:shadow-forest-900/5";
@@ -22,10 +23,13 @@ export default function LoginForm() {
   const [resetMsg, setResetMsg] = useState("");
   const { user, ready } = useAuth();
 
-  // Already signed in: go straight to the right dashboard.
+  // Set when an instructor applicant (not yet approved) tries to log in.
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+
+  // Already signed in: go straight to the right dashboard (not while showing a rejection).
   useEffect(() => {
-    if (ready && user && !loading) router.replace(homeFor[user.role]);
-  }, [ready, user, loading, router]);
+    if (ready && user && !loading && !authError && !pendingEmail) router.replace(homeFor[user.role]);
+  }, [ready, user, loading, authError, pendingEmail, router]);
 
   const forgot = async () => {
     setAuthError("");
@@ -53,7 +57,25 @@ export default function LoginForm() {
     setLoading(true);
     try {
       const user = await signIn(email.trim(), password, remember);
-      router.push(homeFor[user.role]);
+      // Instructor applicants can't use any dashboard until an admin approves them.
+      if (user.requestedRole === "mentor") {
+        setPendingEmail(user.email);
+        await signOut();
+        setLoading(false);
+        return;
+      }
+      // This portal is for students only; tutors and admins have their own login pages.
+      if (user.role !== "student") {
+        setAuthError(
+          `This account (${user.email}) is registered as ${roleLabel[user.role]}. Please log in through the ${
+            user.role === "admin" ? "Admin" : "Tutor"
+          } portal at ${loginRouteFor[user.role]}.`,
+        );
+        await signOut();
+        setLoading(false);
+        return;
+      }
+      router.push(homeFor.student);
     } catch (err) {
       setAuthError(authErrorMessage(err));
       setLoading(false);
@@ -65,6 +87,7 @@ export default function LoginForm() {
 
   return (
     <Reveal immediate>
+      {pendingEmail && <MentorVerificationModal email={pendingEmail} onClose={() => setPendingEmail(null)} />}
       <h2 className="text-3xl font-bold tracking-tight text-forest-950 sm:text-4xl">Log in to Nuels</h2>
       <p className="mt-2 text-sm text-slate-600 sm:text-base">Welcome back! Enter your details to continue learning.</p>
 

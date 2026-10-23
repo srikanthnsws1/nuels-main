@@ -7,7 +7,7 @@ import Mentors from "@/components/Mentors";
 import Stories from "@/components/Stories";
 import Faq from "@/components/Faq";
 import Cta from "@/components/Cta";
-import { courseListSchema, faqSchema, JsonLd, pageMetadata } from "@/lib/seo";
+import { faqSchema, JsonLd, pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   path: "/",
@@ -19,7 +19,7 @@ export const metadata: Metadata = pageMetadata({
 export default function Home() {
   return (
     <>
-      <JsonLd data={[courseListSchema, faqSchema]} />
+      <JsonLd data={faqSchema} />
       <Hero />
       <Categories />
       <WhyNuels />

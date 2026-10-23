@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRightIcon, SparkIcon } from "./icons";
 import Reveal from "./motion/Reveal";
-import { mentors } from "@/data/site";
+import { stories } from "@/data/site";
 
 const rings = [100, 82, 64, 46];
 
@@ -28,11 +28,11 @@ export default function Cta() {
 
           <div className="relative mx-auto max-w-2xl">
             <div className="mx-auto flex w-fit -space-x-3">
-              {mentors.map((m) => (
+              {stories.map((s) => (
                 <Image
-                  key={m.name}
-                  src={m.image}
-                  alt={m.name}
+                  key={s.name}
+                  src={s.image}
+                  alt=""
                   width={48}
                   height={48}
                   className="h-12 w-12 rounded-full border-2 border-forest-700 object-cover"

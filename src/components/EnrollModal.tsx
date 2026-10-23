@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useLenis } from "lenis/react";
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ArrowRightIcon, CheckIcon, CloseIcon, EyeIcon, EyeOffIcon } from "./icons";
-import type { Course } from "@/data/site";
-import { authErrorMessage, register } from "@/lib/auth";
-
-const rupee = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
+import { ArrowRightIcon, CheckIcon, CloseIcon, EyeIcon, EyeOffIcon, LockIcon } from "./icons";
+import { authErrorMessage, greetingName, homeFor, register, roleLabel, useAuth } from "@/lib/auth";
+import ImageCropper from "./ImageCropper";
+import { courseImage, enroll, findEnrollment, rupee, type Course, type Enrollment, type EnrollmentStatus } from "@/lib/courses";
+import { contactInfo } from "@/data/site";
 
 const passwordRules = [
   { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
@@ -65,18 +65,42 @@ function Field({
   );
 }
 
-/** Registration form shown when a learner clicks "Enroll Now" on a course. */
+/**
+ * Shown when someone clicks "Enroll Now". Signed-in students confirm and are enrolled,
+ * visitors register a student account and are enrolled straight after, and mentors or
+ * admins are told that only student accounts can enroll.
+ */
 export default function EnrollModal({ course, onClose }: { course: Course; onClose: () => void }) {
   const id = useId();
   const lenis = useLenis();
+  const { user, ready } = useAuth();
   const firstInput = useRef<HTMLInputElement>(null);
   const [fields, setFields] = useState<Fields>(empty);
   const [touched, setTouched] = useState<Partial<Record<keyof Fields, boolean>>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState<EnrollmentStatus | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  // The signed-in student's existing enrollment in this course (undefined while checking).
+  const [existing, setExisting] = useState<Enrollment | null | undefined>(undefined);
+  const [proof, setProof] = useState("");
+  const [paymentRef, setPaymentRef] = useState("");
+  const [proofError, setProofError] = useState("");
+  const free = !course.price;
+  const studentId = user?.role === "student" && !user.requestedRole ? user.uid : null;
+
+  useEffect(() => {
+    if (!studentId) return setExisting(null);
+    let live = true;
+    setExisting(undefined);
+    findEnrollment(studentId, course.id)
+      .then((e) => live && setExisting(e))
+      .catch(() => live && setExisting(null));
+    return () => {
+      live = false;
+    };
+  }, [studentId, course.id]);
 
   const errors = validate(fields);
   const visibleError = (k: keyof Fields) => (touched[k] ? errors[k] : undefined);
@@ -106,8 +130,9 @@ export default function EnrollModal({ course, onClose }: { course: Course; onClo
     }
     setSubmitting(true);
     setSubmitError("");
+    let created;
     try {
-      await register({
+      created = await register({
         name: fields.name.trim(),
         email: fields.email.trim(),
         phone: fields.phone.replace(/\s/g, ""),
@@ -115,13 +140,56 @@ export default function EnrollModal({ course, onClose }: { course: Course; onClo
       });
       // Drop the passwords from memory once the account exists.
       setFields((f) => ({ ...f, password: "", confirm: "" }));
-      setDone(true);
     } catch (err) {
       setSubmitError(authErrorMessage(err));
+      setSubmitting(false);
+      return;
+    }
+    // Paid courses continue to the payment step, which shows now that the student is signed in.
+    if (!free) return setSubmitting(false);
+    try {
+      setDone(await enroll(created, course));
+    } catch {
+      setSubmitError("Your account was created, but we couldn't enroll you. Please try again from the course page.");
     } finally {
       setSubmitting(false);
     }
   };
+
+  // The chosen screenshot is cropped (freestyle) before it's kept as the proof.
+  const [proofSrc, setProofSrc] = useState<string | null>(null);
+  useEffect(() => {
+    if (!proofSrc) return;
+    return () => URL.revokeObjectURL(proofSrc);
+  }, [proofSrc]);
+
+  const pickProof = (file: File | undefined) => {
+    setProofError("");
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return setProofError("Please choose an image file (JPG or PNG).");
+    if (file.size > 15 * 1024 * 1024) return setProofError("That image is larger than 15 MB. Please choose a smaller one.");
+    setProofSrc(URL.createObjectURL(file));
+  };
+
+  const enrollSignedIn = async () => {
+    if (!user) return;
+    if (!free && !proof) return setProofError("Please upload a screenshot of your payment.");
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      setDone(await enroll(user, course, free ? undefined : { image: proof, paymentRef: paymentRef.trim().slice(0, 100) }));
+      setProof("");
+    } catch {
+      setSubmitError("We couldn't submit your enrollment right now. Check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // What to show a signed-in student who is already enrolled (unless they're resubmitting a rejected payment).
+  const status = done ?? (existing && existing.status !== "rejected" ? existing.status : null);
+
+  const firstName = user ? greetingName(user) : fields.name.trim().split(" ")[0];
 
   const inputClass = (k: keyof Fields) =>
     `${inputBase} ${visibleError(k) ? "border-red-300 focus:border-red-400" : "border-forest-100 focus:border-forest-300"}`;
@@ -141,14 +209,15 @@ export default function EnrollModal({ course, onClose }: { course: Course; onClo
         {/* course summary */}
         <div className="relative flex items-center gap-4 bg-forest-700 p-5 pr-14 sm:p-6 sm:pr-16">
           <div className="relative hidden h-16 w-24 shrink-0 overflow-hidden rounded-xl sm:block">
-            <Image src={course.image} alt="" fill sizes="96px" className="object-cover" />
+            <Image src={courseImage(course)} alt="" fill sizes="96px" className="object-cover" />
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wider text-spark-400">Enrolling in</p>
             <p className="mt-0.5 truncate font-semibold text-white">{course.title}</p>
             <p className="text-sm text-forest-100">
-              by {course.mentor} · <span className="font-semibold text-white">{rupee.format(course.price)}</span>{" "}
-              <span className="text-forest-300 line-through">{rupee.format(course.oldPrice)}</span>
+              by {course.mentorName} ·{" "}
+              <span className="font-semibold text-white">{course.price ? rupee.format(course.price) : "Free"}</span>{" "}
+              {course.oldPrice ? <span className="text-forest-300 line-through">{rupee.format(course.oldPrice)}</span> : null}
             </p>
           </div>
           <button
@@ -161,17 +230,42 @@ export default function EnrollModal({ course, onClose }: { course: Course; onClo
           </button>
         </div>
 
-        {done ? (
+        {status ? (
           <div className="px-5 py-10 text-center sm:px-10 sm:py-14">
-            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-spark-500 text-forest-900">
-              <CheckIcon className="h-8 w-8" />
+            <span
+              className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${
+                status === "approved" ? "bg-spark-500 text-forest-900" : "bg-forest-100 text-forest-700"
+              }`}
+            >
+              {status === "approved" ? <CheckIcon className="h-8 w-8" /> : <LockIcon className="h-7 w-7" />}
             </span>
             <h2 id={`${id}-title`} className="mt-5 text-2xl font-bold tracking-tight text-forest-950">
-              You&apos;re registered, {fields.name.trim().split(" ")[0]}!
+              {status === "approved"
+                ? `You're enrolled, ${firstName}!`
+                : done
+                  ? `Payment submitted, ${firstName}!`
+                  : "Your payment is under review"}
             </h2>
             <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-600">
-              Your account has been created. We&apos;ve sent the next steps for <strong>{course.title}</strong> to{" "}
-              <span className="font-medium text-forest-700">{fields.email}</span>.
+              {status === "approved" ? (
+                <>
+                  <strong>{course.title}</strong> is in your dashboard. Your mentor&apos;s Google Meet links for live sessions will
+                  appear there each day.
+                </>
+              ) : (
+                <>
+                  <strong>{course.title}</strong> is in your dashboard but stays locked until our administration team verifies
+                  your payment. For help, contact the administration department at{" "}
+                  <a href={contactInfo.phones[0].href} className="font-medium text-forest-700">
+                    {contactInfo.phones[0].display}
+                  </a>{" "}
+                  or{" "}
+                  <a href={`mailto:${contactInfo.email}`} className="font-medium text-forest-700">
+                    {contactInfo.email}
+                  </a>
+                  .
+                </>
+              )}
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Link
@@ -186,6 +280,153 @@ export default function EnrollModal({ course, onClose }: { course: Course; onClo
                 className="rounded-full border border-forest-200 px-7 py-3 text-sm font-semibold text-forest-700 transition hover:bg-forest-50"
               >
                 Continue Browsing
+              </button>
+            </div>
+          </div>
+        ) : !ready || (studentId && existing === undefined) ? (
+          <div className="flex justify-center px-5 py-14">
+            <span className="h-8 w-8 animate-spin rounded-full border-4 border-forest-100 border-t-forest-700" aria-label="Loading" />
+          </div>
+        ) : user && !studentId ? (
+          <div className="px-5 py-10 text-center sm:px-10 sm:py-12">
+            <h2 id={`${id}-title`} className="text-xl font-bold tracking-tight text-forest-950">
+              Only student accounts can enroll
+            </h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-600">
+              You&apos;re signed in as <strong>{roleLabel[user.role]}</strong> ({user.email}). Log in with a student account to
+              enroll in courses.
+            </p>
+            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+              <Link
+                href={homeFor[user.role]}
+                className="rounded-full bg-forest-700 px-7 py-3 text-sm font-semibold text-white transition hover:bg-forest-600"
+              >
+                Go to my dashboard
+              </Link>
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full border border-forest-200 px-7 py-3 text-sm font-semibold text-forest-700 transition hover:bg-forest-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        ) : user && !free ? (
+          <div className="p-5 sm:p-8">
+            <h2 id={`${id}-title`} className="text-xl font-bold tracking-tight text-forest-950 sm:text-2xl">
+              {existing?.status === "rejected" ? "Upload your payment again" : "Complete your payment"}
+            </h2>
+            <p className="mt-1 text-sm leading-relaxed text-slate-600">
+              {existing?.status === "rejected" && "We couldn't verify your earlier payment. "}
+              Pay <strong className="text-forest-900">{rupee.format(course.price)}</strong> for {course.title} using the payment
+              details from the Nuels administration department ({contactInfo.phones[0].display} · {contactInfo.email}), then upload
+              a screenshot of the successful payment. Your course unlocks once an admin verifies it.
+            </p>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label htmlFor={`${id}-proof`} className="mb-1.5 block text-sm font-medium text-forest-900">
+                  Payment screenshot
+                </label>
+                {proofSrc ? (
+                  <ImageCropper
+                    src={proofSrc}
+                    maxSide={1600}
+                    maxChars={850_000}
+                    onCancel={() => setProofSrc(null)}
+                    onSave={(data) => {
+                      setProof(data);
+                      setProofSrc(null);
+                    }}
+                  />
+                ) : (
+                  <input
+                    id={`${id}-proof`}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      pickProof(e.target.files?.[0]);
+                      e.target.value = "";
+                    }}
+                    className="block w-full text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-forest-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-forest-700 hover:file:bg-forest-100"
+                  />
+                )}
+                {proofError && <p className="mt-1.5 text-xs font-medium text-red-600">{proofError}</p>}
+                {proof && !proofSrc && (
+                  // eslint-disable-next-line @next/next/no-img-element -- local data URL preview
+                  <img src={proof} alt="Payment screenshot preview" className="mt-3 max-h-56 rounded-xl border border-forest-100 object-contain" />
+                )}
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor={`${id}-ref`} className="mb-1.5 block text-sm font-medium text-forest-900">
+                  UPI / transaction ID (optional)
+                </label>
+                <input
+                  id={`${id}-ref`}
+                  value={paymentRef}
+                  onChange={(e) => setPaymentRef(e.target.value)}
+                  maxLength={100}
+                  placeholder="e.g. 4123 5678 9012"
+                  className={`${inputBase} border-forest-100 focus:border-forest-300`}
+                />
+              </div>
+            </div>
+
+            {submitError && (
+              <p role="alert" className="mt-6 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                {submitError}
+              </p>
+            )}
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full border border-forest-200 px-7 py-3 text-sm font-semibold text-forest-700 transition hover:bg-forest-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={enrollSignedIn}
+                disabled={submitting || !proof}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-forest-700 px-7 py-3 text-sm font-semibold text-white transition hover:bg-forest-600 disabled:opacity-60"
+              >
+                {submitting ? "Submitting…" : "Submit for verification"}
+                {!submitting && <ArrowRightIcon className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+        ) : user ? (
+          <div className="px-5 py-10 text-center sm:px-10 sm:py-12">
+            <h2 id={`${id}-title`} className="text-xl font-bold tracking-tight text-forest-950">
+              Enroll as {greetingName(user)}?
+            </h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-600">
+              This course is free. You&apos;re signed in as <span className="font-medium text-forest-700">{user.email}</span>; the
+              course and its daily live-session links will appear in your dashboard.
+            </p>
+            {submitError && (
+              <p role="alert" className="mx-auto mt-6 max-w-sm rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                {submitError}
+              </p>
+            )}
+            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={enrollSignedIn}
+                disabled={submitting}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-forest-700 px-7 py-3 text-sm font-semibold text-white transition hover:bg-forest-600 disabled:opacity-70"
+              >
+                {submitting ? "Enrolling…" : "Confirm enrollment"}
+                {!submitting && <ArrowRightIcon className="h-4 w-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full border border-forest-200 px-7 py-3 text-sm font-semibold text-forest-700 transition hover:bg-forest-50"
+              >
+                Cancel
               </button>
             </div>
           </div>
@@ -366,7 +607,7 @@ export default function EnrollModal({ course, onClose }: { course: Course; onClo
                 disabled={submitting}
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-forest-700 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-forest-700/20 transition hover:bg-forest-600 disabled:opacity-70"
               >
-                {submitting ? "Creating account…" : "Register & Enroll"}
+                {submitting ? "Creating account…" : free ? "Register & Enroll" : "Register & continue to payment"}
                 {!submitting && <ArrowRightIcon className="h-4 w-4" />}
               </button>
             </div>

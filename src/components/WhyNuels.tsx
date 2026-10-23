@@ -2,9 +2,9 @@ import Image from "next/image";
 import SectionHeading from "./SectionHeading";
 import { CalendarIcon, GlobeIcon, GraduationIcon } from "./icons";
 import Reveal from "./motion/Reveal";
-import { mentors, stories } from "@/data/site";
+import { stories } from "@/data/site";
 
-const orbitPeople = [...mentors.map((m) => m.image), ...stories.map((s) => s.image)].slice(0, 6);
+const orbitPeople = [...stories.map((s) => s.image), "/images/trust-mentor.webp", "/images/trust-student.webp"].slice(0, 6);
 
 export default function WhyNuels() {
   return (

@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ArrowRightIcon, BookIcon, EyeIcon, EyeOffIcon, MailIcon } from "./icons";
+import MentorVerificationModal from "./MentorVerificationModal";
 import Reveal from "./motion/Reveal";
-import { authErrorMessage, signIn, signOut } from "@/lib/auth";
+import { authErrorMessage, homeFor, signIn, signOut } from "@/lib/auth";
 
 const field =
   "w-full rounded-2xl border bg-white px-4 py-3.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:shadow-lg focus:shadow-forest-900/10";
@@ -19,6 +20,8 @@ export default function TutorLoginForm() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+  // Set when an instructor applicant (not yet approved) tries to log in.
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   const emailError = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? "Please enter a valid email address." : "";
   const passwordError = !password ? "Please enter your password." : "";
@@ -32,20 +35,19 @@ export default function TutorLoginForm() {
 
     try {
       const user = await signIn(email.trim(), password, remember);
-      if (user.role === "student") {
+      // This portal is for approved mentors only. Applicants stay students until an admin approves them.
+      if (user.role !== "mentor") {
         await signOut();
-        setAuthError(
-          `This account (${user.email}) is registered as a Student. Please log in through the Student portal, or register an instructor account.`
-        );
         setLoading(false);
+        if (user.requestedRole === "mentor") return setPendingEmail(user.email);
+        setAuthError(
+          user.role === "admin"
+            ? `This account (${user.email}) is an administrator account. Please log in through the Admin portal at /admin/login.`
+            : `This account (${user.email}) is registered as a Student. Please log in through the Student portal, or register an instructor account.`,
+        );
         return;
       }
-      // Admins and Mentors can access mentor dashboard
-      if (user.role === "admin") {
-        router.push("/admin");
-      } else {
-        router.push("/mentor");
-      }
+      router.push(homeFor.mentor);
     } catch (err) {
       setAuthError(authErrorMessage(err));
       setLoading(false);
@@ -57,6 +59,7 @@ export default function TutorLoginForm() {
 
   return (
     <Reveal immediate>
+      {pendingEmail && <MentorVerificationModal email={pendingEmail} onClose={() => setPendingEmail(null)} />}
       <div className="mb-6 flex items-center gap-3">
         <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-forest-700 text-spark-400 shadow-md shadow-forest-900/15">
           <BookIcon className="h-6 w-6" />
