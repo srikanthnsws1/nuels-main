@@ -53,3 +53,8 @@ next-env.d.ts
 # firebase functions
 /functions/node_modules/
 /functions/lib/
+
+# Firebase emulator logs
+firestore-debug.log
+ui-debug.log
+firebase-debug.log

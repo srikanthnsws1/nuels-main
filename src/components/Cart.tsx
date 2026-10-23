@@ -358,6 +358,9 @@ function Checkout({ user }: { user: AppUser }) {
   // Never charge for a course the learner already owns, or one that's been withdrawn.
   const slugs = user.cart.filter((s) => !user.enrolledCourses.includes(s) && catalog.some((c) => c.slug === s && !c.hidden));
   const items = coursesFor(slugs);
+  // Courses still in the cart that can't be bought (withdrawn, or already owned): show them so
+  // they can be removed instead of silently inflating the cart count.
+  const unavailable = user.cart.filter((s) => !slugs.includes(s));
   const total = totalFor(slugs);
   const listPrice = items.reduce((sum, c) => sum + c.oldPrice, 0);
 
@@ -413,12 +416,31 @@ function Checkout({ user }: { user: AppUser }) {
         </section>
       )}
 
-      {(items.length > 0 || open.length === 0) && (
+      {(items.length > 0 || unavailable.length > 0 || open.length === 0) && (
         <div className="grid items-start gap-6 lg:grid-cols-[1fr_380px]">
           <section className="rounded-3xl border border-forest-100 bg-white p-5 sm:p-6">
             <h2 className="text-lg font-bold tracking-tight text-forest-950">
               Your cart{items.length > 0 && <span className="ml-2 text-sm font-medium text-slate-500">({items.length})</span>}
             </h2>
+            {unavailable.length > 0 && (
+              <ul className="mt-4 space-y-2">
+                {unavailable.map((s) => (
+                  <li key={s} className="flex items-center justify-between gap-3 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <span>
+                      <strong>{catalog.find((c) => c.slug === s)?.title ?? "A course"}</strong>{" "}
+                      {user.enrolledCourses.includes(s) ? "is already in your courses." : "is no longer available."}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeFromCart(user.uid, s).catch((err) => console.error("Could not remove", err))}
+                      className="shrink-0 text-xs font-semibold text-red-600 hover:text-red-700"
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
             {items.length === 0 ? (
               <div className="mt-5 flex flex-col items-center rounded-2xl border border-dashed border-forest-200 px-4 py-10 text-center">
                 <span className="flex h-12 w-12 items-center justify-center rounded-full bg-forest-50 text-forest-700">

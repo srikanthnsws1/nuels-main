@@ -4,6 +4,10 @@ import { absoluteUrl } from "@/lib/seo";
 
 export const dynamic = "force-static";
 
+// When the public content last changed. Update it when you change page text, so Google can
+// trust lastmod (a build-time date changes on every deploy and gets ignored).
+const CONTENT_UPDATED = new Date("2026-10-23");
+
 const routes: { path: string; priority: number; changeFrequency: "weekly" | "monthly" }[] = [
   { path: "/", priority: 1, changeFrequency: "weekly" },
   { path: "/courses", priority: 0.9, changeFrequency: "weekly" },
@@ -16,7 +20,7 @@ const routes: { path: string; priority: number; changeFrequency: "weekly" | "mon
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = new Date();
+  const lastModified = CONTENT_UPDATED;
   return routes.map(({ path, priority, changeFrequency }) => ({
     url: absoluteUrl(path),
     lastModified,

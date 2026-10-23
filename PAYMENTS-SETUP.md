@@ -40,4 +40,5 @@ Razorpay account (with KYC done) and the Firebase **Blaze** plan.
 4. Add `NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_…` to `.env.local`, then rebuild and redeploy hosting.
    A "Pay online" option then appears next to UPI / bank transfer.
 
-Razorpay charges the prices in `functions/src/payments.ts`. Keep them in sync with `src/data/site.ts`.
+Razorpay charges the prices set in **Admin panel → Courses**. The list in `functions/src/payments.ts` is only
+a fallback for built-in courses that were never edited there.

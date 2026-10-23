@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nuel Smart (nuelsmart.com)
 
-## Getting Started
+Mentor-led course platform: public course pages, student registration, cart and UPI/bank
+payments with screenshot approval, a course view for enrolled students, and dashboards for
+admins, tutors and company staff.
 
-First, run the development server:
+- **Site:** Next.js 15, exported as static files (`output: "export"`) and served by Firebase Hosting.
+- **Data and logins:** Firebase Auth and Firestore. All access control lives in `firestore.rules`.
+- **Optional:** Cloud Functions in `functions/` (WhatsApp welcome message, Razorpay online payments).
+
+## Accounts and where they land
+
+| Role | Login page | Dashboard |
+|---|---|---|
+| Student | `/login` | `/dashboard`, and `/learn?course=…` for each enrolled course |
+| Tutor / mentor | `/tutor/login` | `/mentor` |
+| Employee (HR, Cashier, …) | `/login` | `/staff`, with sections set by the permissions an admin grants |
+| Admin | `/admin/login` | `/admin` |
+
+Admins create employee and other logins from the admin panel. Bootstrap admin emails are listed
+in both `src/lib/auth.ts` and `firestore.rules`, so keep the two lists the same.
+
+## Working on it
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev          # http://localhost:3000, against the live Firebase project
+npm run check        # lint + type-check + production build
+npm run test:rules   # app flows + security rules against local emulators (needs Java 17+)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`npm run test:rules` drives the real `src/lib` code (register, cart, orders, approvals, course
+progress, course management, employees) against the Auth and Firestore emulators using
+`firestore.rules`. It also checks what each kind of user must **not** be able to do. Run it after
+any change to the rules or to `src/lib`. CI (`.github/workflows/ci.yml`) runs everything on each
+push to `main` and on pull requests.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Releasing
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. `npm run check` and `npm run test:rules` both pass.
+2. Deploy rules first. The site expects them, and older rules block newer features:
+   `npx firebase-tools deploy --only firestore:rules`
+3. `npx firebase-tools deploy --only hosting` (this uploads the `out/` folder from step 1's build).
+4. Only if `functions/` changed: `npx firebase-tools deploy --only functions` (Blaze plan, see below).
 
-## Learn More
+When you change public page text, update `CONTENT_UPDATED` in `src/app/sitemap.ts` so Google
+re-crawls the pages.
 
-To learn more about Next.js, take a look at the following resources:
+## Setup guides
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [PAYMENTS-SETUP.md](PAYMENTS-SETUP.md): UPI/bank payment details, screenshot approval, optional Razorpay.
+- [WHATSAPP-SETUP.md](WHATSAPP-SETUP.md): optional automatic WhatsApp welcome message.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Where things live
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Path | What |
+|---|---|
+| `src/data/site.ts`, `courseDetails.ts` | Built-in courses, mentors and page copy |
+| `src/lib/catalog.ts` | Live course catalog: built-in courses plus admin edits from Firestore `catalog/` |
+| `src/lib/orders.ts` | Cart, orders, payment proof and approval |
+| `src/lib/learning.ts` | Course progress, assignments, attendance, videos |
+| `src/lib/staff.ts` | Employee designations, permissions, account creation |
+| `src/components/dashboard/` | Admin, staff, tutor and student dashboards |
+| `firestore.rules` | Who can read and write what |
+| `tests/` | Emulator test suites |

@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { absoluteUrl, siteUrl } from "@/lib/seo";
+import { absoluteUrl } from "@/lib/seo";
 
 export const dynamic = "force-static";
 
@@ -11,10 +11,22 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: ["/", "/llms.txt"],
         // *.txt are Next.js page-data files (e.g. /login.txt), not pages people should land on.
-        disallow: ["/dashboard", "/mentor", "/admin", "/login", "/register", "/signup", "/tutor", "/*.txt$"],
+        disallow: [
+          "/dashboard",
+          "/mentor",
+          "/admin",
+          "/staff",
+          "/learn",
+          "/cart",
+          "/courses/view",
+          "/login",
+          "/register",
+          "/signup",
+          "/tutor",
+          "/*.txt$",
+        ],
       },
     ],
     sitemap: absoluteUrl("/sitemap.xml"),
-    host: siteUrl,
   };
 }

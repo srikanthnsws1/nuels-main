@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test:rules": "npx -y firebase-tools@13.35.1 emulators:exec --only auth,firestore --project nuelsmart-fb72e \"npm run test:emulated\"",
+    "test:emulated": "tsx tests/enroll-flow.test.mts && tsx tests/staff-courses.test.mts",
+    "check": "npm run lint && npm run typecheck && npm run build"
   },
   "dependencies": {
     "firebase": "^12.19.0",
@@ -24,6 +28,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
     "tailwindcss": "^4",
+    "tsx": "^4.19.2",
     "typescript": "^5"
   }
 }

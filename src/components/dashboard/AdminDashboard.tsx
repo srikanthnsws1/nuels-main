@@ -1,16 +1,19 @@
 "use client";
 
-import { addDoc, collection, deleteDoc, doc, getDocs, serverTimestamp, updateDoc, type Timestamp } from "firebase/firestore";
+import { collection, doc, onSnapshot, updateDoc, type Timestamp } from "firebase/firestore";
 import { useEffect, useState, type FormEvent } from "react";
-import { BookIcon, BriefcaseIcon, CartIcon, CloseIcon, GraduationIcon, GridIcon, PlayIcon, SearchIcon, ShieldIcon, UsersIcon } from "../icons";
+import { BookIcon, BriefcaseIcon, CartIcon, GraduationIcon, GridIcon, PlayIcon, SearchIcon, ShieldIcon, UsersIcon } from "../icons";
 import { CoursesCard } from "./AdminCourses";
 import { CourseContentCard, LearnersCard } from "./AdminLearning";
 import { OrdersCard, PaymentDetailsCard } from "./AdminPayments";
 import { EmployeesCard } from "./AdminStaff";
 import DashboardShell, { type Section } from "./DashboardShell";
+import Dialog from "./Dialog";
 import { Card, CardTitle, EmptyState, StatTiles, WelcomeBanner } from "./ui";
-import { greetingName, roleLabel, roles, type AppUser, type Role } from "@/lib/auth";
+import { authErrorMessage, greetingName, roleLabel, roles, type AppUser, type Role } from "@/lib/auth";
 import { db } from "@/lib/firebase";
+import { passwordRules } from "@/lib/password";
+import { createAccount } from "@/lib/staff";
 
 const sections: Section[] = [
   { id: "overview", label: "Overview", icon: GridIcon },
@@ -23,139 +26,118 @@ const sections: Section[] = [
   { id: "course-content", label: "Course Videos", icon: PlayIcon },
 ];
 
-type UserRow = { uid: string; name: string; email: string; phone?: string; role: Role; requestedRole?: string; memberId?: string; institution?: string; city?: string; district?: string; state?: string; createdAt?: Timestamp };
+type UserRow = { uid: string; name: string; email: string; phone?: string; role: Role; status?: "active" | "inactive"; requestedRole?: string; memberId?: string; institution?: string; city?: string; district?: string; state?: string; createdAt?: Timestamp };
 
 const dateFormat = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
-function AddUserModal({
-  onClose,
-  onAdded,
-}: {
-  onClose: () => void;
-  onAdded: (user: UserRow) => void;
-}) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [role, setRole] = useState<Role>("student");
+const addInput =
+  "w-full rounded-2xl border border-forest-100 bg-white px-3.5 py-2.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-forest-300";
+
+/** Creates a student, tutor or admin login with a password the admin shares with them. */
+function AddUserModal({ onClose }: { onClose: () => void }) {
+  const [f, setF] = useState({ name: "", email: "", phone: "", role: "student" as Exclude<Role, "employee">, password: "", confirm: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [created, setCreated] = useState<{ memberId: string } | null>(null);
+  const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim()) {
-      setError("Name and email are required.");
-      return;
-    }
+    if (f.name.trim().length < 2) return setError("Enter the full name.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) return setError("Enter a valid email address.");
+    if (f.phone.trim() && !/^(\+91[\s-]?)?[6-9]\d{9}$/.test(f.phone.replace(/\s/g, ""))) return setError("Enter a valid 10-digit mobile number, or leave it blank.");
+    if (!passwordRules.every((r) => r.test(f.password))) return setError("The password needs 8+ characters with an uppercase letter, a number and a special character.");
+    if (f.password !== f.confirm) return setError("The passwords don't match.");
     setSaving(true);
     setError("");
     try {
-      const docRef = await addDoc(collection(db, "users"), {
-        name: name.trim(),
-        email: email.trim(),
-        ...(phone.trim() ? { phone: phone.trim() } : {}),
-        role,
-        createdAt: serverTimestamp(),
-      });
-      onAdded({
-        uid: docRef.id,
-        name: name.trim(),
-        email: email.trim(),
-        phone: phone.trim() || undefined,
-        role,
-      });
-      onClose();
-    } catch {
-      setError("Failed to create user. Verify Firestore permissions.");
+      const profile = { name: f.name.trim(), ...(f.phone.trim() ? { phone: f.phone.replace(/\s/g, "") } : {}), role: f.role };
+      setCreated(await createAccount(f.email, f.password, profile, f.role === "mentor" ? "T" : "S"));
+    } catch (err) {
+      console.error("Could not create user", err);
+      const code = (err as { code?: string }).code ?? "";
+      setError(code.startsWith("auth/") ? authErrorMessage(err) : "Couldn't create the user. Check your connection and Firestore rules.");
+    } finally {
       setSaving(false);
     }
   };
 
+  if (created) {
+    return (
+      <Dialog title="User created" onClose={onClose}>
+        <p className="mt-4 text-sm text-slate-600">
+          <strong>{f.name.trim()}</strong> can now log in at <strong>nuelsmart.com/login</strong> with <strong>{f.email.trim()}</strong> and the
+          password you set. Their ID is <span className="font-mono font-semibold text-forest-700">{created.memberId}</span>.
+        </p>
+        <button type="button" onClick={onClose} className="mt-6 w-full rounded-full bg-forest-700 py-3 text-sm font-semibold text-white hover:bg-forest-600">
+          Done
+        </button>
+      </Dialog>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-forest-950/60 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-forest-100 pb-4">
-          <h3 className="text-lg font-bold text-forest-950">Add New User</h3>
+    <Dialog title="Add a user" onClose={onClose}>
+      <p className="mt-1 text-sm text-slate-500">Creates a login. To add company staff, use Employees instead.</p>
+      <form onSubmit={submit} noValidate className="mt-5 space-y-4">
+        {(
+          [
+            ["name", "Full name", "text", "e.g. Rahul Sharma"],
+            ["email", "Login email", "email", "rahul@example.com"],
+            ["phone", "Mobile number (optional)", "tel", "98765 43210"],
+          ] as const
+        ).map(([k, label, type, placeholder]) => (
+          <div key={k}>
+            <label htmlFor={`add-${k}`} className="mb-1.5 block text-sm font-medium text-forest-900">
+              {label}
+            </label>
+            <input id={`add-${k}`} type={type} value={f[k]} placeholder={placeholder} onChange={(e) => set(k, e.target.value)} className={addInput} />
+          </div>
+        ))}
+        <div>
+          <label htmlFor="add-role" className="mb-1.5 block text-sm font-medium text-forest-900">
+            Account role
+          </label>
+          <select id="add-role" value={f.role} onChange={(e) => set("role", e.target.value as typeof f.role)} className={addInput}>
+            <option value="student">Student / Learner</option>
+            <option value="mentor">Tutor / Mentor</option>
+            <option value="admin">Administrator</option>
+          </select>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="add-password" className="mb-1.5 block text-sm font-medium text-forest-900">
+              Password
+            </label>
+            <input id="add-password" type="password" autoComplete="new-password" value={f.password} onChange={(e) => set("password", e.target.value)} className={addInput} />
+          </div>
+          <div>
+            <label htmlFor="add-confirm" className="mb-1.5 block text-sm font-medium text-forest-900">
+              Confirm password
+            </label>
+            <input id="add-confirm" type="password" autoComplete="new-password" value={f.confirm} onChange={(e) => set("confirm", e.target.value)} className={addInput} />
+          </div>
+        </div>
+        <p className="text-xs text-slate-500">8+ characters, with an uppercase letter, a number and a special character.</p>
+        {error && (
+          <p role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {error}
+          </p>
+        )}
+        <div className="flex gap-3 pt-1">
+          <button type="button" onClick={onClose} className="flex-1 rounded-full border border-forest-200 py-3 text-sm font-semibold text-slate-700 hover:bg-forest-50">
+            Cancel
+          </button>
           <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-forest-50 hover:text-slate-700"
+            type="submit"
+            disabled={saving}
+            className="flex-1 rounded-full bg-forest-700 py-3 text-sm font-semibold text-white shadow-md shadow-forest-700/20 hover:bg-forest-600 disabled:opacity-60"
           >
-            <CloseIcon className="h-4 w-4" />
+            {saving ? "Creating…" : "Create login"}
           </button>
         </div>
-
-        <form onSubmit={submit} className="mt-4 space-y-4">
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-forest-900">Full Name</label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Rahul Sharma"
-              className="w-full rounded-xl border border-forest-100 px-3.5 py-2.5 text-sm text-slate-800 outline-none focus:border-forest-400"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-forest-900">Email Address</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="rahul@example.com"
-              className="w-full rounded-xl border border-forest-100 px-3.5 py-2.5 text-sm text-slate-800 outline-none focus:border-forest-400"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-forest-900">Phone (Optional)</label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="9876543210"
-              className="w-full rounded-xl border border-forest-100 px-3.5 py-2.5 text-sm text-slate-800 outline-none focus:border-forest-400"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-forest-900">Account Role</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as Role)}
-              className="w-full rounded-xl border border-forest-100 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-800 outline-none focus:border-forest-400"
-            >
-              <option value="student">Student / Learner</option>
-              <option value="mentor">Tutor / Mentor</option>
-              <option value="admin">Administrator</option>
-            </select>
-          </div>
-
-          {error && <p className="text-xs font-medium text-red-600">{error}</p>}
-
-          <div className="flex gap-2.5 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-full border border-forest-200 py-2.5 text-sm font-semibold text-slate-700 hover:bg-forest-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 rounded-full bg-forest-700 py-2.5 text-sm font-semibold text-white shadow-md shadow-forest-700/20 hover:bg-forest-600 disabled:opacity-60"
-            >
-              {saving ? "Creating…" : "Create User"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </Dialog>
   );
 }
 
@@ -164,20 +146,18 @@ function UsersCard({
   users,
   error,
   onRoleChange,
-  onAddUser,
-  onDeleteUser,
+  onStatusChange,
 }: {
   me: AppUser;
   users: UserRow[] | null;
   error: string;
   onRoleChange: (uid: string, role: Role) => Promise<void>;
-  onAddUser: (user: UserRow) => void;
-  onDeleteUser: (uid: string) => Promise<void>;
+  onStatusChange: (uid: string, status: "active" | "inactive") => Promise<void>;
 }) {
   const [filter, setFilter] = useState<Role | "all">("all");
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const [toggling, setToggling] = useState<string | null>(null);
   const [saveError, setSaveError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -198,16 +178,21 @@ function UsersCard({
     }
   };
 
-  const remove = async (uid: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to remove user "${name}" from the database?`)) return;
-    setDeleting(uid);
+  const toggleStatus = async (u: UserRow) => {
+    const next = u.status === "inactive" ? "active" : "inactive";
+    const question =
+      next === "inactive"
+        ? `Deactivate ${u.name}? They'll be signed out and can't log in until you reactivate them. Their courses and records are kept.`
+        : `Reactivate ${u.name}? They'll be able to log in again.`;
+    if (!window.confirm(question)) return;
+    setToggling(u.uid);
     setSaveError("");
     try {
-      await onDeleteUser(uid);
+      await onStatusChange(u.uid, next);
     } catch {
-      setSaveError("Couldn't remove that user.");
+      setSaveError("Couldn't update that account.");
     } finally {
-      setDeleting(null);
+      setToggling(null);
     }
   };
 
@@ -280,6 +265,9 @@ function UsersCard({
                     <td className="py-3 pr-4 font-semibold text-forest-950">
                       {u.name}
                       {u.uid === me.uid && <span className="ml-2 text-xs font-medium text-slate-400">(you)</span>}
+                      {u.status === "inactive" && (
+                        <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">Inactive</span>
+                      )}
                       {(u.memberId || u.institution) && (
                         <span className="block text-xs font-normal text-slate-500">
                           {u.memberId && <span className="font-mono font-semibold text-forest-700">{u.memberId}</span>}
@@ -314,11 +302,13 @@ function UsersCard({
                       {u.uid !== me.uid && (
                         <button
                           type="button"
-                          onClick={() => remove(u.uid, u.name)}
-                          disabled={deleting === u.uid}
-                          className="rounded-full px-2.5 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+                          onClick={() => toggleStatus(u)}
+                          disabled={toggling === u.uid}
+                          className={`rounded-full px-2.5 py-1 text-xs font-medium transition disabled:opacity-50 ${
+                            u.status === "inactive" ? "text-forest-700 hover:bg-forest-50" : "text-red-600 hover:bg-red-50 hover:text-red-700"
+                          }`}
                         >
-                          {deleting === u.uid ? "Removing…" : "Delete"}
+                          {toggling === u.uid ? "Saving…" : u.status === "inactive" ? "Reactivate" : "Deactivate"}
                         </button>
                       )}
                     </td>
@@ -330,7 +320,7 @@ function UsersCard({
         )}
       </Card>
 
-      {showAddModal && <AddUserModal onClose={() => setShowAddModal(false)} onAdded={onAddUser} />}
+      {showAddModal && <AddUserModal onClose={() => setShowAddModal(false)} />}
     </>
   );
 }
@@ -339,29 +329,22 @@ function AdminContent({ me }: { me: AppUser }) {
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    getDocs(collection(db, "users"))
-      .then((snap) => {
-        const rows = snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as UserRow);
-        rows.sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
-        setUsers(rows);
-      })
-      .catch(() => setError("Couldn't load users. Make sure the Firestore rules are deployed."));
-  }, []);
+  useEffect(
+    () =>
+      onSnapshot(
+        collection(db, "users"),
+        (snap) => {
+          const rows = snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as UserRow);
+          rows.sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
+          setUsers(rows);
+        },
+        () => setError("Couldn't load users. Make sure the Firestore rules are deployed."),
+      ),
+    [],
+  );
 
-  const setRole = async (uid: string, role: Role) => {
-    await updateDoc(doc(db, "users", uid), { role });
-    setUsers((list) => list?.map((u) => (u.uid === uid ? { ...u, role } : u)) ?? list);
-  };
-
-  const handleAddUser = (newUser: UserRow) => {
-    setUsers((list) => (list ? [newUser, ...list] : [newUser]));
-  };
-
-  const handleDeleteUser = async (uid: string) => {
-    await deleteDoc(doc(db, "users", uid));
-    setUsers((list) => list?.filter((u) => u.uid !== uid) ?? null);
-  };
+  const setRole = (uid: string, role: Role) => updateDoc(doc(db, "users", uid), { role });
+  const setStatus = (uid: string, status: "active" | "inactive") => updateDoc(doc(db, "users", uid), { status });
 
   const count = (role: Role) => users?.filter((u) => u.role === role).length ?? "—";
   const stats = [
@@ -388,8 +371,7 @@ function AdminContent({ me }: { me: AppUser }) {
         users={users}
         error={error}
         onRoleChange={setRole}
-        onAddUser={handleAddUser}
-        onDeleteUser={handleDeleteUser}
+        onStatusChange={setStatus}
       />
 
       <EmployeesCard canEdit />

@@ -1,7 +1,7 @@
 "use client";
 
 import { getApps, initializeApp } from "firebase/app";
-import { connectAuthEmulator, createUserWithEmailAndPassword, getAuth, sendPasswordResetEmail, signOut } from "firebase/auth";
+import { connectAuthEmulator, createUserWithEmailAndPassword, deleteUser, getAuth, sendPasswordResetEmail, signOut } from "firebase/auth";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { withMemberId } from "./auth";
 import { auth, db, firebaseConfig } from "./firebase";
@@ -77,15 +77,28 @@ function creatorAuth() {
   return creator;
 }
 
-/** Admin: creates the employee's login and profile. Returns the new account's uid and member ID. */
-export async function createEmployee(fields: EmployeeFields & { email: string; password: string }) {
+/**
+ * Admin: creates a login plus its profile and member ID. If the profile can't be saved, the
+ * login is deleted again so the email address stays free for another try.
+ */
+export async function createAccount(email: string, password: string, profile: Record<string, unknown>, prefix: "S" | "T" | "E") {
   const creator = creatorAuth();
-  const { user } = await createUserWithEmailAndPassword(creator, fields.email.trim(), fields.password);
-  await signOut(creator);
+  const { user } = await createUserWithEmailAndPassword(creator, email.trim(), password);
+  try {
+    const memberId = await withMemberId(user.uid, prefix, { ...profile, email: user.email ?? email.trim(), createdAt: serverTimestamp() });
+    return { uid: user.uid, memberId };
+  } catch (err) {
+    await deleteUser(user).catch((e) => console.error("Could not roll back the new login", e));
+    throw err;
+  } finally {
+    await signOut(creator).catch(() => {});
+  }
+}
 
+/** Admin: creates the employee's login and profile. Returns the new account's uid and member ID. */
+export function createEmployee(fields: EmployeeFields & { email: string; password: string }) {
   const profile = {
     name: fields.name.trim(),
-    email: user.email ?? fields.email.trim(),
     phone: fields.phone.trim(),
     role: "employee",
     designation: fields.designation,
@@ -94,10 +107,8 @@ export async function createEmployee(fields: EmployeeFields & { email: string; p
     permissions: fields.permissions,
     ...(fields.photo ? { photo: fields.photo } : {}),
     status: "active",
-    createdAt: serverTimestamp(),
   };
-  const memberId = await withMemberId(user.uid, "E", profile);
-  return { uid: user.uid, memberId };
+  return createAccount(fields.email, fields.password, profile, "E");
 }
 
 /** Admin: updates an employee's details, access or status. */

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ArrowRightIcon, BookIcon, EyeIcon, EyeOffIcon, MailIcon } from "./icons";
 import Reveal from "./motion/Reveal";
-import { authErrorMessage, signIn, signOut } from "@/lib/auth";
+import { authErrorMessage, homeFor, signIn, signOut } from "@/lib/auth";
 
 const field =
   "w-full rounded-2xl border bg-white px-4 py-3.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:shadow-lg focus:shadow-forest-900/10";
@@ -40,12 +40,8 @@ export default function TutorLoginForm() {
         setLoading(false);
         return;
       }
-      // Admins and Mentors can access mentor dashboard
-      if (user.role === "admin") {
-        router.push("/admin");
-      } else {
-        router.push("/mentor");
-      }
+      // Tutors, admins and staff each go to their own dashboard.
+      router.push(homeFor[user.role]);
     } catch (err) {
       setAuthError(authErrorMessage(err));
       setLoading(false);

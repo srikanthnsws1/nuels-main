@@ -24,6 +24,6 @@ export const functions = getFunctions(app, "asia-south1");
 // NEXT_PUBLIC_USE_EMULATORS=1 points the app at the local Firebase emulators (for testing).
 if (process.env.NEXT_PUBLIC_USE_EMULATORS === "1") {
   connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
-  connectFirestoreEmulator(db, "127.0.0.1", Number(process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT ?? 8080));
+  connectFirestoreEmulator(db, "127.0.0.1", Number(process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT ?? 8085));
   connectFunctionsEmulator(functions, "127.0.0.1", 5001);
 }
