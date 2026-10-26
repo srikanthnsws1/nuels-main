@@ -236,6 +236,79 @@ service cloud.firestore {
 
     // Lesson videos. Free previews are readable by any signed-in user; paid videos only by
     // learners enrolled in the course.
+    // Mock tests from a stored question bank (free tier, no server code):
+    //  - questionBanks/{slug}_{lessonId}: questions and options only, readable by enrolled learners
+    //  - answerKeys/{slug}_{lessonId}:    correct answers and explanations, readable by a learner
+    //                                     only after they've submitted that test
+    //  - mockTests/{uid}_{slug}_{lessonId}: one attempt per learner; started on the server clock,
+    //                                     submitted once within the time limit, and the score is
+    //                                     re-checked here against the answer key
+    match /questionBanks/{id} {
+      allow get, list: if isAdmin() || hasPerm('courses.manage') || (signedIn() && enrolledIn(resource.data.slug));
+      allow write: if isAdmin() || hasPerm('courses.manage');
+    }
+
+    match /answerKeys/{id} {
+      allow get: if isAdmin()
+        || hasPerm('courses.manage')
+        || (signedIn()
+            && exists(/databases/$(database)/documents/mockTests/$(request.auth.uid + '_' + id))
+            && get(/databases/$(database)/documents/mockTests/$(request.auth.uid + '_' + id)).data.get('submittedAt', null) != null);
+      allow write: if isAdmin() || hasPerm('courses.manage');
+    }
+
+    match /mockTests/{id} {
+      function bankId(data) {
+        return data.slug + '_' + data.lessonId;
+      }
+      function point(a, k, i) {
+        return a[i] == k[i] ? 1 : 0;
+      }
+      function scoreOf(a, k) {
+        return point(a, k, 0) + point(a, k, 1) + point(a, k, 2) + point(a, k, 3) + point(a, k, 4)
+          + point(a, k, 5) + point(a, k, 6) + point(a, k, 7) + point(a, k, 8) + point(a, k, 9);
+      }
+
+      allow get, list: if isAdmin() || hasPerm('learners.manage') || (signedIn() && resource.data.uid == request.auth.uid);
+
+      // Start: own attempt, enrolled, lesson finished, a question bank exists, server-clock start.
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && id == request.auth.uid + '_' + bankId(request.resource.data)
+        && request.resource.data.keys().hasOnly(['uid', 'slug', 'lessonId', 'startedAt'])
+        && request.resource.data.startedAt == request.time
+        && enrolledIn(request.resource.data.slug)
+        && exists(/databases/$(database)/documents/questionBanks/$(bankId(request.resource.data)))
+        && request.resource.data.lessonId in get(/databases/$(database)/documents/progress/$(request.auth.uid + '_' + request.resource.data.slug)).data.get('completed', []);
+
+      // 1) Submit once. Within 10 minutes (+45 s grace) answers count; later, only a blank sheet is accepted.
+      // 2) Then, once, the score: it must equal what the answer key gives for the saved answers.
+      allow update: if signedIn()
+        && resource.data.uid == request.auth.uid
+        && (
+          (
+            resource.data.get('submittedAt', null) == null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answers', 'total', 'submittedAt'])
+            && request.resource.data.submittedAt == request.time
+            && request.resource.data.answers is list
+            && request.resource.data.answers.size() == 10
+            && request.resource.data.total == 10
+            && (request.time <= resource.data.startedAt + duration.value(645, 's') || request.resource.data.answers.hasOnly([null]))
+          )
+          || (
+            resource.data.get('submittedAt', null) != null
+            && !('score' in resource.data)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['score'])
+            && request.resource.data.score == scoreOf(
+                 resource.data.answers,
+                 get(/databases/$(database)/documents/answerKeys/$(bankId(resource.data))).data.answers)
+          )
+        );
+
+      // Admins can reset an attempt so the learner can take it again.
+      allow delete: if isAdmin() || hasPerm('learners.manage');
+    }
+
     match /courseContent/{slug} {
       allow get: if signedIn();
       allow write: if isAdmin() || hasPerm('videos.manage');

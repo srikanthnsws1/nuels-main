@@ -85,9 +85,13 @@ export function setDocumentReady(uid: string, slug: string, item: string, ready:
  */
 export type VideoMap = Record<string, string>;
 
-export function useCourseVideos(slug: string, enrolled: boolean): { free: VideoMap; paid: VideoMap } | null {
+/** Live-class links we accept: Google Meet, Zoom or Microsoft Teams, over https. */
+export const isLiveClassLink = (url?: string) =>
+  !!url && /^https:\/\/(meet\.google\.com|([a-z0-9-]+\.)?zoom\.us|teams\.microsoft\.com|teams\.live\.com)\//i.test(url.trim());
+
+export function useCourseVideos(slug: string, enrolled: boolean): { free: VideoMap; paid: VideoMap; meet: VideoMap } | null {
   const [free, setFree] = useState<VideoMap | null>(null);
-  const [paid, setPaid] = useState<VideoMap | null>(null);
+  const [paid, setPaid] = useState<{ videos: VideoMap; meet: VideoMap } | null>(null);
 
   useEffect(
     () =>
@@ -99,18 +103,24 @@ export function useCourseVideos(slug: string, enrolled: boolean): { free: VideoM
     [slug],
   );
   useEffect(() => {
-    if (!enrolled) return setPaid({});
+    if (!enrolled) return setPaid({ videos: {}, meet: {} });
     return onSnapshot(
       doc(db, "courseContent", slug, "paid", "videos"),
-      (snap) => setPaid((snap.data()?.videos as VideoMap | undefined) ?? {}),
-      () => setPaid({}),
+      (snap) => setPaid({ videos: (snap.data()?.videos as VideoMap | undefined) ?? {}, meet: (snap.data()?.meet as VideoMap | undefined) ?? {} }),
+      () => setPaid({ videos: {}, meet: {} }),
     );
   }, [slug, enrolled]);
 
-  return free && paid ? { free, paid } : null;
+  return free && paid ? { free, paid: paid.videos, meet: paid.meet } : null;
 }
 
 /** Admin: sets (or clears, with an empty url) a lesson's video, as a free preview or paid. */
+/** Saves (or clears) a lesson's live-class link; only enrolled learners can read it. */
+export function saveLessonMeet(slug: string, lessonId: string, url: string) {
+  const clean = url.trim();
+  return setDoc(doc(db, "courseContent", slug, "paid", "videos"), { meet: { [lessonId]: clean || deleteField() } }, { merge: true });
+}
+
 export async function saveLessonVideo(slug: string, lessonId: string, url: string, free: boolean) {
   const clean = url.trim();
   await Promise.all([

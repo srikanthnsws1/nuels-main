@@ -41,7 +41,7 @@ function Locked() {
   );
 }
 
-function StudentContent({ user }: { user: AppUser }) {
+function StudentContent({ user, page }: { user: AppUser; page: string }) {
   const catalog = useCatalog();
   const orders = useMyOrders(user.uid);
   const enrolled = coursesFor(user.enrolledCourses);
@@ -49,8 +49,11 @@ function StudentContent({ user }: { user: AppUser }) {
   const awaiting = (orders ?? []).filter(awaitingConfirmation);
   const explore = catalog.filter((c) => !user.enrolledCourses.includes(c.slug)).slice(0, 3);
 
+  // One sidebar item = one page; the overview also carries cart/payment notices and suggestions.
+  const overview = page === "overview";
   return (
     <>
+      {overview && (
       <WelcomeBanner id="overview" title={<>Welcome, {greetingName(user)}! 👋</>}>
         <p className="mt-3 text-sm leading-relaxed text-forest-100 sm:text-base">
           {enrolled.length
@@ -64,8 +67,9 @@ function StudentContent({ user }: { user: AppUser }) {
           {enrolled.length ? "Go to my courses" : "Browse courses"} <ArrowRightIcon className="h-4 w-4" />
         </Link>
       </WelcomeBanner>
+      )}
 
-      {user.cart.length > 0 && (
+      {overview && user.cart.length > 0 && (
         <Link
           href="/cart"
           className="flex flex-wrap items-center gap-4 rounded-3xl border border-spark-500/60 bg-spark-500/15 p-4 transition hover:bg-spark-500/25 sm:p-5"
@@ -83,7 +87,7 @@ function StudentContent({ user }: { user: AppUser }) {
         </Link>
       )}
 
-      {awaiting.map((o) => {
+      {overview && awaiting.map((o) => {
         const titles = coursesFor(o.courses)
           .map((c) => c.title)
           .join(", ");
@@ -107,6 +111,7 @@ function StudentContent({ user }: { user: AppUser }) {
         );
       })}
 
+      {page === "my-courses" && (
       <Card id="my-courses">
         <CardTitle title="My courses" />
         {enrolled.length === 0 ? (
@@ -150,18 +155,23 @@ function StudentContent({ user }: { user: AppUser }) {
           </div>
         )}
       </Card>
+      )}
 
       {/* Live sessions, assignments and certificates open up once a payment is approved. */}
-      <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+      {page === "schedule" && (
         <Card id="schedule">
           <CardTitle title="Upcoming live sessions" />
           {unlocked ? <EmptyState icon={CalendarIcon} title="No sessions scheduled" /> : <Locked />}
         </Card>
+      )}
+      {page === "assignments" && (
         <Card id="assignments">
           <CardTitle title="Assignments" />
           {unlocked ? <EmptyState icon={ClipboardIcon} title="No assignments yet" /> : <Locked />}
         </Card>
-        <Card id="certificates" className="lg:col-span-2 xl:col-span-1">
+      )}
+      {page === "certificates" && (
+        <Card id="certificates">
           <CardTitle title="Certificates" />
           {unlocked ? (
             <EmptyState icon={GraduationIcon} title="No certificates yet">
@@ -171,9 +181,9 @@ function StudentContent({ user }: { user: AppUser }) {
             <Locked />
           )}
         </Card>
-      </div>
+      )}
 
-      {explore.length > 0 && (
+      {overview && explore.length > 0 && (
         <Card>
           <CardTitle
             title="Explore courses"
@@ -220,8 +230,8 @@ function StudentContent({ user }: { user: AppUser }) {
 
 export default function Dashboard() {
   return (
-    <DashboardShell role="student" sections={sections} sidebarCard={sidebarCard}>
-      {(user) => <StudentContent user={user} />}
+    <DashboardShell role="student" sections={sections} sidebarCard={sidebarCard} paged>
+      {(user, page) => <StudentContent user={user} page={page} />}
     </DashboardShell>
   );
 }

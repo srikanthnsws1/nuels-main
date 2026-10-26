@@ -1,0 +1,137 @@
+{
+  "slug": "python-for-data-analysis",
+  "tests": [
+    {
+      "lessonId": "m1-l1",
+      "lessonTitle": "Variables and data types",
+      "questions": [
+        {
+          "question": "What is the data type of x after running: x = 3.0",
+          "correct": "float",
+          "wrong": ["int", "str", "bool"],
+          "explanation": "The decimal point makes 3.0 a floating-point number, so type(x) is float even though its value is whole."
+        },
+        {
+          "question": "Which of these is a valid Python variable name?",
+          "correct": "total_amount",
+          "wrong": ["2total", "total-amount", "class"],
+          "explanation": "Names can contain letters, digits and underscores but can't start with a digit, can't contain '-', and can't be a keyword like 'class'."
+        },
+        {
+          "question": "What does print(type(\"42\")) show?",
+          "correct": "<class 'str'>",
+          "wrong": ["<class 'int'>", "<class 'float'>", "An error"],
+          "explanation": "Anything inside quotes is a string, even if it looks like a number."
+        },
+        {
+          "question": "What is the value of 7 // 2 in Python?",
+          "correct": "3",
+          "wrong": ["3.5", "4", "1"],
+          "explanation": "// is floor division: it divides and rounds down to a whole number. 7 / 2 would give 3.5."
+        },
+        {
+          "question": "What is the result of int(\"12\") + 3?",
+          "correct": "15",
+          "wrong": ["\"123\"", "\"15\"", "TypeError"],
+          "explanation": "int(\"12\") converts the string to the number 12, and 12 + 3 = 15."
+        },
+        {
+          "question": "Which of these data types is mutable (can be changed after it is created)?",
+          "correct": "list",
+          "wrong": ["tuple", "str", "int"],
+          "explanation": "Lists can be changed in place (append, remove, edit items). Tuples, strings and integers are immutable."
+        },
+        {
+          "question": "What does bool(0) return?",
+          "correct": "False",
+          "wrong": ["True", "0", "None"],
+          "explanation": "Zero, empty strings, empty lists and None are 'falsy', so bool() turns them into False."
+        },
+        {
+          "question": "What is the result of \"5\" * 3?",
+          "correct": "\"555\"",
+          "wrong": ["15", "\"15\"", "TypeError"],
+          "explanation": "Multiplying a string by an integer repeats the string, so \"5\" * 3 gives \"555\"."
+        },
+        {
+          "question": "Which line creates a dictionary?",
+          "correct": "d = {\"a\": 1}",
+          "wrong": ["d = [\"a\", 1]", "d = (\"a\", 1)", "d = {\"a\", 1}"],
+          "explanation": "A dictionary uses key: value pairs inside braces. {\"a\", 1} without a colon is a set; [] is a list and () is a tuple."
+        },
+        {
+          "question": "After running a = 5, then b = a, then a = 10, what is the value of b?",
+          "correct": "5",
+          "wrong": ["10", "None", "An error"],
+          "explanation": "b = a copies the current value 5 into b. Reassigning a to 10 afterwards doesn't change b."
+        }
+      ]
+    },
+    {
+      "lessonId": "m1-l2",
+      "lessonTitle": "Loops and conditions",
+      "questions": [
+        {
+          "question": "What does this print?  for i in range(3): print(i)",
+          "correct": "0 1 2",
+          "wrong": ["1 2 3", "0 1 2 3", "1 2"],
+          "explanation": "range(3) starts at 0 and stops before 3, giving 0, 1 and 2."
+        },
+        {
+          "question": "Which keyword exits a loop immediately?",
+          "correct": "break",
+          "wrong": ["continue", "exit", "stop"],
+          "explanation": "break leaves the loop straight away. continue only skips to the next iteration."
+        },
+        {
+          "question": "What does continue do inside a loop?",
+          "correct": "Skips the rest of this iteration and moves to the next one",
+          "wrong": ["Ends the whole program", "Exits the loop", "Repeats the current iteration"],
+          "explanation": "continue jumps back to the top of the loop for the next item, skipping the remaining lines for this one."
+        },
+        {
+          "question": "x = 15. What is printed?  if x > 10: print(\"big\")  elif x > 5: print(\"medium\")  else: print(\"small\")",
+          "correct": "big",
+          "wrong": ["medium", "small", "big and medium"],
+          "explanation": "Python runs only the first branch whose condition is true. 15 > 10 is true, so it prints \"big\" and skips the rest."
+        },
+        {
+          "question": "n starts at 0. How many times does this loop body run?  while n < 5: n += 2",
+          "correct": "3",
+          "wrong": ["2", "5", "It never stops"],
+          "explanation": "n goes 0 → 2 → 4 → 6. The body runs while n is 0, 2 and 4, so 3 times, then 6 < 5 is false."
+        },
+        {
+          "question": "What values does range(2, 10, 3) produce?",
+          "correct": "2, 5, 8",
+          "wrong": ["2, 4, 6, 8", "3, 6, 9", "2, 5, 8, 11"],
+          "explanation": "Start at 2, add 3 each time, and stop before 10: 2, 5, 8."
+        },
+        {
+          "question": "Which of these is NOT a valid comparison operator in Python 3?",
+          "correct": "<>",
+          "wrong": ["==", "!=", ">="],
+          "explanation": "<> was removed in Python 3; use != for 'not equal'."
+        },
+        {
+          "question": "What does print(5 > 3 and 2 > 4) show?",
+          "correct": "False",
+          "wrong": ["True", "None", "An error"],
+          "explanation": "and needs both sides to be true. 5 > 3 is True but 2 > 4 is False, so the result is False."
+        },
+        {
+          "question": "When does the else block of a for loop run?",
+          "correct": "When the loop finishes without hitting break",
+          "wrong": ["On every iteration", "Only if the loop body raises an error", "Never: else on a loop is a syntax error"],
+          "explanation": "A loop's else runs after the loop completes normally. If break stops the loop early, the else is skipped."
+        },
+        {
+          "question": "What is total after this code?  total = 0  then  for n in [1, 2, 3, 4]: if n % 2 == 0: total += n",
+          "correct": "6",
+          "wrong": ["10", "4", "2"],
+          "explanation": "Only even numbers are added: 2 + 4 = 6."
+        }
+      ]
+    }
+  ]
+}

@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import DashboardShell, { type Section } from "../dashboard/DashboardShell";
+import MockTests from "./MockTests";
+import { useMyMockTests } from "@/lib/mockTests";
 import { Card, CardTitle, EmptyState, ProgressBar, WelcomeBanner } from "../dashboard/ui";
 import {
   ArrowLeftIcon,
@@ -13,6 +15,7 @@ import {
   CalendarIcon,
   CheckIcon,
   ClipboardIcon,
+  ClockIcon,
   GraduationIcon,
   GridIcon,
   LockIcon,
@@ -30,6 +33,7 @@ import {
   setDocumentReady,
   setLessonDone,
   submitAssignment,
+  isLiveClassLink,
   useCourseProgress,
   useCourseVideos,
   type CourseProgress,
@@ -40,6 +44,7 @@ const sections: Section[] = [
   { id: "lessons", label: "Course index & videos", icon: PlayIcon },
   { id: "free-videos", label: "Free videos", icon: StarIcon },
   { id: "assignments", label: "Assignments", icon: ClipboardIcon },
+  { id: "mock-tests", label: "Mock tests", icon: ClockIcon },
   { id: "interviews", label: "Mock interviews", icon: UsersIcon },
   { id: "attendance", label: "Attendance", icon: CalendarIcon },
   { id: "performance", label: "Performance report", icon: BriefcaseIcon },
@@ -70,9 +75,10 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   );
 }
 
-function Player({ lesson, url, done, onToggle, onPrev, onNext }: {
+function Player({ lesson, url, meetLink, done, onToggle, onPrev, onNext }: {
   lesson: Lesson;
   url?: string;
+  meetLink?: string;
   done: boolean;
   onToggle: () => void;
   onPrev?: () => void;
@@ -99,7 +105,9 @@ function Player({ lesson, url, done, onToggle, onPrev, onNext }: {
               <PlayIcon className="h-6 w-6" />
             </span>
             <p className="font-semibold text-white">Video coming soon</p>
-            <p className="max-w-sm text-sm text-forest-200">Your mentor is uploading this lesson. It&apos;s covered in the live sessions meanwhile.</p>
+            <p className="max-w-sm text-sm text-forest-200">
+              {meetLink ? "Join the live class below while your mentor uploads the recording." : "Your mentor is uploading this lesson. It's covered in the live sessions meanwhile."}
+            </p>
           </div>
         )}
       </div>
@@ -138,6 +146,27 @@ function Player({ lesson, url, done, onToggle, onPrev, onNext }: {
           </button>
         </div>
       </div>
+      {isLiveClassLink(meetLink) && (
+        <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-forest-100 bg-forest-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-forest-700 text-spark-400">
+              <UsersIcon className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-forest-950">Live class for this lesson</p>
+              <p className="text-xs text-slate-600">Prefer learning live? Join your mentor and classmates on Google Meet.</p>
+            </div>
+          </div>
+          <a
+            href={meetLink!.trim()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-forest-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-forest-600"
+          >
+            Join live class ↗
+          </a>
+        </div>
+      )}
     </div>
   );
 }
@@ -298,10 +327,11 @@ function printCertificate(name: string, course: CatalogCourse, memberId?: string
   win.document.close();
 }
 
-function CourseContent({ user, course }: { user: AppUser; course: CatalogCourse }) {
+function CourseContent({ user, course, page }: { user: AppUser; course: CatalogCourse; page: string }) {
   const slug = course.slug;
   const progress = useCourseProgress(user.uid, slug);
   const videos = useCourseVideos(slug, true);
+  const attempts = useMyMockTests(user.uid, slug);
   const syllabus = syllabusFor(course);
   const modules = modulesFor(syllabus);
   const lessons = modules.flatMap((m) => m.lessons);
@@ -334,6 +364,8 @@ function CourseContent({ user, course }: { user: AppUser; course: CatalogCourse 
     ? Math.round((progress.interviews.reduce((s, i) => s + i.score, 0) / progress.interviews.length) * 10) / 10
     : null;
   const docsReady = documents.filter((d) => progress.docs.includes(d));
+  const mockDone = Object.values(attempts ?? {}).filter((a) => a.submittedAt);
+  const mockTotals = mockDone.reduce((s, a) => ({ score: s.score + (a.score ?? 0), total: s.total + (a.total ?? 10) }), { score: 0, total: 0 });
   const certificateReady = coursePct === 100 && submitted.length === assignments.length;
 
   const index = lessons.findIndex((l) => l.id === current);
@@ -341,7 +373,8 @@ function CourseContent({ user, course }: { user: AppUser; course: CatalogCourse 
   const play = (id: string) => {
     setCurrent(id);
     openLesson(user.uid, slug, id).catch(() => {});
-    document.getElementById("lessons")?.scrollIntoView({ behavior: "smooth" });
+    if (page !== "lessons") window.location.hash = "lessons";
+    else document.getElementById("lessons")?.scrollIntoView({ behavior: "smooth" });
   };
   const toggle = (id: string) => setLessonDone(user.uid, slug, id, !progress.completed.includes(id)).catch((err) => console.error(err));
   const freeLessons = lessons.filter((l) => videos.free[l.id]);
@@ -353,6 +386,11 @@ function CourseContent({ user, course }: { user: AppUser; course: CatalogCourse 
     { label: "Average assignment score", value: avgGrade, text: avgGrade === null ? "Not graded yet" : `${avgGrade}/100` },
     { label: "Attendance", value: attendancePct, text: attendancePct === null ? "No sessions yet" : `${attended}/${progress.attendance.length} sessions` },
     { label: "Mock interviews", value: interviewAvg === null ? null : interviewAvg * 10, text: interviewAvg === null ? "None yet" : `${interviewAvg}/10 average` },
+    {
+      label: "Mock tests",
+      value: mockTotals.total ? pct(mockTotals.score, mockTotals.total) : null,
+      text: mockTotals.total ? `${mockDone.length} taken` : "None taken yet",
+    },
     { label: "Documents ready", value: pct(docsReady.length, documents.length), text: `${docsReady.length}/${documents.length}` },
   ];
   const scored = report.filter((r) => r.value !== null);
@@ -360,6 +398,7 @@ function CourseContent({ user, course }: { user: AppUser; course: CatalogCourse 
 
   return (
     <>
+      {page === "overview" && (
       <WelcomeBanner id="overview" title={course.title}>
         <p className="mt-2 text-sm text-forest-100">
           with {course.mentor} · {lessons.length} lessons · {course.hours} hours
@@ -388,7 +427,9 @@ function CourseContent({ user, course }: { user: AppUser; course: CatalogCourse 
           </button>
         )}
       </WelcomeBanner>
+      )}
 
+      {page === "lessons" && (
       <Card id="lessons">
         <CardTitle title="Course index & videos" action={<span className="text-sm font-semibold text-forest-700">{coursePct}% complete</span>} />
         <div className="mt-5 grid gap-6 xl:grid-cols-[1fr_360px]">
@@ -396,6 +437,7 @@ function CourseContent({ user, course }: { user: AppUser; course: CatalogCourse 
             <Player
               lesson={lesson}
               url={videoFor(lesson.id)}
+              meetLink={videos.meet[lesson.id]}
               done={progress.completed.includes(lesson.id)}
               onToggle={() => toggle(lesson.id)}
               onPrev={index > 0 ? () => play(lessons[index - 1].id) : undefined}
@@ -449,7 +491,9 @@ function CourseContent({ user, course }: { user: AppUser; course: CatalogCourse 
           </ol>
         </div>
       </Card>
+      )}
 
+      {page === "free-videos" && (
       <Card id="free-videos">
         <CardTitle title="Free videos" />
         {freeLessons.length === 0 ? (
@@ -478,7 +522,9 @@ function CourseContent({ user, course }: { user: AppUser; course: CatalogCourse 
           </ul>
         )}
       </Card>
+      )}
 
+      {page === "assignments" && (
       <Card id="assignments">
         <CardTitle title="Assignments" action={<span className="text-sm text-slate-500">{submitted.length}/{assignments.length} submitted</span>} />
         <ul className="mt-5 grid gap-3 lg:grid-cols-2">
@@ -487,8 +533,11 @@ function CourseContent({ user, course }: { user: AppUser; course: CatalogCourse 
           ))}
         </ul>
       </Card>
+      )}
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      {page === "mock-tests" && <MockTests uid={user.uid} slug={slug} modules={modules} progress={progress} />}
+
+      {page === "interviews" && (
         <Card id="interviews">
           <CardTitle title="Mock interviews" />
           {progress.interviews.length > 0 && (
@@ -528,7 +577,9 @@ function CourseContent({ user, course }: { user: AppUser; course: CatalogCourse 
             </>
           )}
         </Card>
+      )}
 
+      {page === "attendance" && (
         <Card id="attendance">
           <CardTitle title="Attendance" action={attendancePct !== null && <span className="text-sm font-semibold text-forest-700">{attendancePct}%</span>} />
           {progress.attendance.length === 0 ? (
@@ -556,8 +607,9 @@ function CourseContent({ user, course }: { user: AppUser; course: CatalogCourse 
             </>
           )}
         </Card>
-      </div>
+      )}
 
+      {page === "performance" && (
       <Card id="performance">
         <CardTitle title="Performance report" action={<span className="text-sm font-semibold text-forest-700">Overall {overall}%</span>} />
         <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -575,8 +627,9 @@ function CourseContent({ user, course }: { user: AppUser; course: CatalogCourse 
           ))}
         </ul>
       </Card>
+      )}
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      {page === "documents" && (
         <Card id="documents">
           <CardTitle title="Documents preparation" action={<span className="text-sm text-slate-500">{docsReady.length}/{documents.length} ready</span>} />
           <p className="mt-2 text-sm text-slate-600">Get these ready before you start applying. Tick each one off when it&apos;s done.</p>
@@ -599,7 +652,9 @@ function CourseContent({ user, course }: { user: AppUser; course: CatalogCourse 
             })}
           </ul>
         </Card>
+      )}
 
+      {page === "certificate" && (
         <Card id="certificate">
           <CardTitle title="Certificate" />
           {certificateReady ? (
@@ -634,7 +689,7 @@ function CourseContent({ user, course }: { user: AppUser; course: CatalogCourse 
             </div>
           )}
         </Card>
-      </div>
+      )}
     </>
   );
 }
@@ -644,8 +699,8 @@ export default function CourseView({ slug }: { slug: string }) {
   const course = useCourse(slug);
   const loaded = useCatalogLoaded();
   return (
-    <DashboardShell role="student" sections={sections} sidebarCard={sidebarCard}>
-      {(user) =>
+    <DashboardShell role="student" sections={sections} sidebarCard={sidebarCard} paged>
+      {(user, page) =>
         !course && !loaded ? (
           <div className="flex justify-center py-20">
             <span className="h-10 w-10 animate-spin rounded-full border-4 border-forest-100 border-t-forest-700" aria-label="Loading" />
@@ -659,7 +714,7 @@ export default function CourseView({ slug }: { slug: string }) {
             </EmptyState>
           </Card>
         ) : user.enrolledCourses.includes(course.slug) ? (
-          <CourseContent user={user} course={course} />
+          <CourseContent user={user} course={course} page={page} />
         ) : (
           <Card>
             <div className="flex flex-col items-center gap-4 py-10 text-center sm:flex-row sm:text-left">

@@ -88,3 +88,7 @@ export const sendWhatsAppWelcome = onDocumentCreated(
 );
 
 export { createRazorpayOrder, verifyRazorpayPayment } from "./payments";
+
+// AI-generated mock tests (needs Blaze + an Anthropic key) are in ./mockTests but not deployed yet:
+// the site uses stored question banks for now. To switch on later, export startMockTest and
+// submitMockTest from "./mockTests" and give that file its own Firestore collection.

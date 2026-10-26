@@ -7,27 +7,46 @@ import { Card, CardTitle, EmptyState } from "./ui";
 import { assignmentsFor, modulesFor } from "@/data/learning";
 import { syllabusFor, useCatalog } from "@/lib/catalog";
 import { db } from "@/lib/firebase";
-import { recordForLearner, saveLessonVideo, useCourseVideos, type CourseProgress } from "@/lib/learning";
+import { isLiveClassLink, recordForLearner, saveLessonMeet, saveLessonVideo, useCourseVideos, type CourseProgress } from "@/lib/learning";
 
 const input =
   "w-full rounded-2xl border border-forest-100 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-forest-300";
 const smallBtn = "rounded-full bg-forest-700 px-4 py-2 text-xs font-semibold text-white transition hover:bg-forest-600 disabled:opacity-50";
 
-function LessonVideoRow({ slug, id, title, url: savedUrl, free: savedFree }: { slug: string; id: string; title: string; url: string; free: boolean }) {
+function LessonVideoRow({
+  slug,
+  id,
+  title,
+  url: savedUrl,
+  free: savedFree,
+  meet: savedMeet,
+}: {
+  slug: string;
+  id: string;
+  title: string;
+  url: string;
+  free: boolean;
+  meet: string;
+}) {
   const [url, setUrl] = useState(savedUrl);
   const [free, setFree] = useState(savedFree);
-  const [state, setState] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const dirty = url.trim() !== savedUrl || free !== savedFree;
+  const [meet, setMeet] = useState(savedMeet);
+  const [state, setState] = useState<"idle" | "saving" | "saved" | "error" | "badMeet">("idle");
+  const videoDirty = url.trim() !== savedUrl || free !== savedFree;
+  const meetDirty = meet.trim() !== savedMeet;
+  const dirty = videoDirty || meetDirty;
 
   useEffect(() => {
     setUrl(savedUrl);
     setFree(savedFree);
-  }, [savedUrl, savedFree]);
+    setMeet(savedMeet);
+  }, [savedUrl, savedFree, savedMeet]);
 
   const save = async () => {
+    if (meet.trim() && !isLiveClassLink(meet)) return setState("badMeet");
     setState("saving");
     try {
-      await saveLessonVideo(slug, id, url, free);
+      await Promise.all([videoDirty ? saveLessonVideo(slug, id, url, free) : null, meetDirty ? saveLessonMeet(slug, id, meet) : null]);
       setState("saved");
     } catch {
       setState("error");
@@ -35,7 +54,7 @@ function LessonVideoRow({ slug, id, title, url: savedUrl, free: savedFree }: { s
   };
 
   return (
-    <li className="grid items-center gap-2 py-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto_auto]">
+    <li className="grid items-center gap-2 py-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,1fr)_auto_auto]">
       <p className="text-sm text-forest-950">{title}</p>
       <input
         value={url}
@@ -47,11 +66,21 @@ function LessonVideoRow({ slug, id, title, url: savedUrl, free: savedFree }: { s
         aria-label={`Video link for ${title}`}
         className={input}
       />
+      <input
+        value={meet}
+        onChange={(e) => {
+          setMeet(e.target.value);
+          setState("idle");
+        }}
+        placeholder="Google Meet link (live class)"
+        aria-label={`Live class link for ${title}`}
+        className={`${input} ${state === "badMeet" ? "border-red-300" : ""}`}
+      />
       <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
         <input type="checkbox" checked={free} onChange={(e) => setFree(e.target.checked)} className="h-4 w-4 accent-forest-700" /> Free
       </label>
       <button type="button" onClick={save} disabled={!dirty || state === "saving"} className={smallBtn}>
-        {state === "saving" ? "Saving…" : state === "saved" && !dirty ? "Saved" : state === "error" ? "Retry" : "Save"}
+        {state === "saving" ? "Saving…" : state === "saved" && !dirty ? "Saved" : state === "error" ? "Retry" : state === "badMeet" ? "Check link" : "Save"}
       </button>
     </li>
   );
@@ -68,7 +97,8 @@ export function CourseContentCard() {
     <Card id="course-content">
       <CardTitle title="Course videos" />
       <p className="mt-1 text-sm text-slate-500">
-        Paste a link for each lesson. Use unlisted YouTube, Vimeo or Google Drive (shared as &quot;Anyone with the link&quot;). Tick Free to make it a preview.
+        Paste a video link for each lesson (unlisted YouTube, Vimeo or Google Drive shared as &quot;Anyone with the link&quot;) and, optionally, a Google
+        Meet link for its live class. Tick Free to make the video a preview; live-class links are shown only to enrolled students.
       </p>
       <select
         value={slug}
@@ -101,6 +131,7 @@ export function CourseContentCard() {
                     title={l.title}
                     url={videos.free[l.id] ?? videos.paid[l.id] ?? ""}
                     free={!!videos.free[l.id]}
+                    meet={videos.meet[l.id] ?? ""}
                   />
                 ))}
               </ul>
