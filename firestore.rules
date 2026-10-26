@@ -269,7 +269,10 @@ service cloud.firestore {
           + point(a, k, 5) + point(a, k, 6) + point(a, k, 7) + point(a, k, 8) + point(a, k, 9);
       }
 
-      allow get, list: if isAdmin() || hasPerm('learners.manage') || (signedIn() && resource.data.uid == request.auth.uid);
+      // Ownership comes from the document id ({uid}_{course}_{lesson}), so a learner can also check for an
+      // attempt that doesn't exist yet (reading resource.data of a missing document is always denied).
+      allow get: if isAdmin() || hasPerm('learners.manage') || (signedIn() && id.matches(request.auth.uid + '_[a-z0-9-]+_m[0-9]+-l[0-9]+'));
+      allow list: if isAdmin() || hasPerm('learners.manage') || (signedIn() && resource.data.uid == request.auth.uid);
 
       // Start: own attempt, enrolled, lesson finished, a question bank exists, server-clock start.
       allow create: if signedIn()
