@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useLenis } from "lenis/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import Logo from "../Logo";
@@ -13,21 +14,42 @@ export type Section = { id: string; label: string; icon: ComponentType<IconProps
 /**
  * Sidebar + top bar layout shared by every dashboard, and the role guard for it:
  * signed-out visitors go to /login and users with another role go to their own dashboard.
+ * With `paged`, each sidebar item opens its own page (kept in the URL hash, e.g. /admin#users)
+ * instead of scrolling one long page; `children` receives the current page id.
  */
 export default function DashboardShell({
   role,
   sections,
   sidebarCard,
+  paged = false,
   children,
 }: {
   role: Role;
   sections: Section[];
   sidebarCard?: ReactNode;
-  children: (user: AppUser) => ReactNode;
+  paged?: boolean;
+  children: (user: AppUser, page: string) => ReactNode;
 }) {
   const router = useRouter();
+  const lenis = useLenis();
   const { user, ready } = useAuth();
   const [active, setActive] = useState(sections[0]?.id);
+
+  // Paged mode: the URL hash picks the page, so refresh, bookmarks and Back/Forward all work.
+  useEffect(() => {
+    if (!paged) return;
+    const sync = () => {
+      const id = window.location.hash.slice(1);
+      setActive(sections.some((s) => s.id === id) ? id : sections[0]?.id);
+    };
+    sync();
+    window.addEventListener("hashchange", sync);
+    window.addEventListener("popstate", sync);
+    return () => {
+      window.removeEventListener("hashchange", sync);
+      window.removeEventListener("popstate", sync);
+    };
+  }, [paged, sections]);
 
   useEffect(() => {
     if (!ready) return;
@@ -55,7 +77,16 @@ export default function DashboardShell({
       <a
         key={s.id}
         href={`#${s.id}`}
-        onClick={() => setActive(s.id)}
+        onClick={(e) => {
+          if (paged) {
+            // Open the page at the top instead of scrolling to an anchor.
+            e.preventDefault();
+            if (s.id !== active) window.history.pushState(null, "", `#${s.id}`);
+            lenis?.scrollTo(0, { immediate: true });
+            window.scrollTo(0, 0);
+          }
+          setActive(s.id);
+        }}
         aria-current={on ? "true" : undefined}
         className={
           compact
@@ -130,7 +161,7 @@ export default function DashboardShell({
           </nav>
         </header>
 
-        <main className="space-y-6 px-4 py-6 sm:px-6 sm:py-8 xl:px-10">{children(user)}</main>
+        <main className="space-y-6 px-4 py-6 sm:px-6 sm:py-8 xl:px-10">{children(user, active)}</main>
       </div>
     </div>
   );

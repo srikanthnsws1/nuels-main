@@ -325,7 +325,7 @@ function UsersCard({
   );
 }
 
-function AdminContent({ me }: { me: AppUser }) {
+function AdminContent({ me, page }: { me: AppUser; page: string }) {
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [error, setError] = useState("");
 
@@ -354,43 +354,50 @@ function AdminContent({ me }: { me: AppUser }) {
     { label: "Employees", value: count("employee"), icon: BriefcaseIcon },
   ];
 
+  // One sidebar item = one page.
   return (
     <>
-      <WelcomeBanner id="overview" title={<>Welcome, {greetingName(me)}!</>}>
-        <p className="mt-3 text-sm leading-relaxed text-forest-100 sm:text-base">
-          Manage user accounts, add students or tutors, and update platform roles.
-        </p>
-      </WelcomeBanner>
+      {page === "overview" && (
+        <>
+          <WelcomeBanner id="overview" title={<>Welcome, {greetingName(me)}!</>}>
+            <p className="mt-3 text-sm leading-relaxed text-forest-100 sm:text-base">
+              Manage user accounts, add students or tutors, and update platform roles.
+            </p>
+          </WelcomeBanner>
 
-      <StatTiles stats={stats} />
+          <StatTiles stats={stats} />
+        </>
+      )}
 
-      <OrdersCard me={me} />
+      {page === "orders" && <OrdersCard me={me} />}
 
-      <UsersCard
-        me={me}
-        users={users}
-        error={error}
-        onRoleChange={setRole}
-        onStatusChange={setStatus}
-      />
+      {page === "users" && (
+        <UsersCard
+          me={me}
+          users={users}
+          error={error}
+          onRoleChange={setRole}
+          onStatusChange={setStatus}
+        />
+      )}
 
-      <EmployeesCard canEdit />
+      {page === "employees" && <EmployeesCard canEdit />}
 
-      <PaymentDetailsCard />
+      {page === "payment-details" && <PaymentDetailsCard />}
 
-      <LearnersCard users={users} />
+      {page === "learners" && <LearnersCard users={users} />}
 
-      <CoursesCard extraMentors={(users ?? []).filter((u) => u.role === "mentor").map((u) => u.name)} />
+      {page === "courses" && <CoursesCard extraMentors={(users ?? []).filter((u) => u.role === "mentor").map((u) => u.name)} />}
 
-      <CourseContentCard />
+      {page === "course-content" && <CourseContentCard />}
     </>
   );
 }
 
 export default function AdminDashboard() {
   return (
-    <DashboardShell role="admin" sections={sections}>
-      {(user) => <AdminContent me={user} />}
+    <DashboardShell role="admin" sections={sections} paged>
+      {(user, page) => <AdminContent me={user} page={page} />}
     </DashboardShell>
   );
 }
