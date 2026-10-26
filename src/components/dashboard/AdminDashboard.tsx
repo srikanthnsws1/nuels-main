@@ -1,7 +1,7 @@
 "use client";
 
 import { collection, doc, onSnapshot, updateDoc, type Timestamp } from "firebase/firestore";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { BookIcon, BriefcaseIcon, CartIcon, GraduationIcon, GridIcon, PlayIcon, SearchIcon, ShieldIcon, UsersIcon } from "../icons";
 import { CoursesCard } from "./AdminCourses";
 import { CourseContentCard, LearnersCard } from "./AdminLearning";
@@ -26,7 +26,7 @@ const sections: Section[] = [
   { id: "course-content", label: "Course Videos", icon: PlayIcon },
 ];
 
-type UserRow = { uid: string; name: string; email: string; phone?: string; role: Role; status?: "active" | "inactive"; requestedRole?: string; memberId?: string; institution?: string; city?: string; district?: string; state?: string; createdAt?: Timestamp };
+type UserRow = { uid: string; name: string; email: string; phone?: string; role: Role; designation?: string; status?: "active" | "inactive"; requestedRole?: string; memberId?: string; institution?: string; city?: string; district?: string; state?: string; createdAt?: Timestamp };
 
 const dateFormat = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
@@ -325,6 +325,114 @@ function UsersCard({
   );
 }
 
+/** Overview list opened from a count tile, with its own search. */
+type OverviewList = "all" | "student" | "mentor" | "employee";
+
+function OverviewUserList({
+  list,
+  users,
+  me,
+  onClose,
+}: {
+  list: OverviewList;
+  users: UserRow[] | null;
+  me: AppUser;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const title = { all: "All users", student: "Students", mentor: "Mentors", employee: "Employees" }[list];
+  const rows = (users ?? []).filter((u) => list === "all" || u.role === list);
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? rows.filter((u) =>
+        [u.name, u.email, u.memberId, u.phone, u.designation, u.institution, u.city, u.district, u.state, roleLabel[u.role]]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q)),
+      )
+    : rows;
+
+  return (
+    <Card id="overview-list">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-lg font-bold tracking-tight text-forest-950">
+          {title} <span className="text-slate-400">· {rows.length}</span>
+        </h2>
+        <div className="flex items-center gap-2">
+          <div className="flex flex-1 items-center gap-3 rounded-full border border-forest-100 bg-white px-4 py-2 transition focus-within:border-forest-300 sm:w-80 sm:flex-none">
+            <SearchIcon className="h-4 w-4 shrink-0 text-slate-400" />
+            <input
+              type="search"
+              autoFocus
+              placeholder={`Search ${title.toLowerCase()}: name, email, ID, phone…`}
+              aria-label={`Search ${title.toLowerCase()}`}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full min-w-0 bg-transparent py-1 text-sm text-slate-700 outline-none placeholder:text-slate-400"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="shrink-0 rounded-full px-3 py-2 text-sm font-semibold text-slate-500 transition hover:bg-forest-50 hover:text-forest-700"
+          >
+            Hide
+          </button>
+        </div>
+      </div>
+
+      {q && (
+        <p className="mt-3 text-sm text-slate-500">
+          {visible.length} result{visible.length === 1 ? "" : "s"} for &ldquo;{query.trim()}&rdquo;
+        </p>
+      )}
+
+      {users === null ? (
+        <p className="mt-6 text-sm text-slate-500">Loading…</p>
+      ) : visible.length === 0 ? (
+        <EmptyState icon={UsersIcon} title={rows.length ? "No matches" : `No ${title.toLowerCase()} yet`} />
+      ) : (
+        <div className="mt-5 overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="text-xs uppercase tracking-wider text-slate-400">
+              <tr>
+                <th className="pb-3 font-semibold">Name</th>
+                <th className="pb-3 font-semibold">Email</th>
+                <th className="pb-3 font-semibold">Mobile</th>
+                <th className="pb-3 font-semibold">{list === "employee" ? "Designation" : list === "all" ? "Role" : "School / Location"}</th>
+                <th className="pb-3 font-semibold">Joined</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-forest-100">
+              {visible.map((u) => (
+                <tr key={u.uid}>
+                  <td className="py-3 pr-4 font-semibold text-forest-950">
+                    {u.name}
+                    {u.uid === me.uid && <span className="ml-2 text-xs font-medium text-slate-400">(you)</span>}
+                    {u.status === "inactive" && (
+                      <span className="ml-2 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">Inactive</span>
+                    )}
+                    {u.memberId && <span className="block font-mono text-xs font-semibold text-forest-700">{u.memberId}</span>}
+                  </td>
+                  <td className="py-3 pr-4 text-slate-600">{u.email}</td>
+                  <td className="py-3 pr-4 text-slate-600">{u.phone || "—"}</td>
+                  <td className="py-3 pr-4 text-slate-600">
+                    {list === "employee"
+                      ? u.designation || "—"
+                      : list === "all"
+                        ? roleLabel[u.role]
+                        : [u.institution, u.city, u.district, u.state].filter(Boolean).join(", ") || "—"}
+                  </td>
+                  <td className="py-3 text-slate-500">{u.createdAt ? dateFormat.format(u.createdAt.toDate()) : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function AdminContent({ me, page }: { me: AppUser; page: string }) {
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [error, setError] = useState("");
@@ -347,6 +455,15 @@ function AdminContent({ me, page }: { me: AppUser; page: string }) {
   const setStatus = (uid: string, status: "active" | "inactive") => updateDoc(doc(db, "users", uid), { status });
 
   const count = (role: Role) => users?.filter((u) => u.role === role).length ?? "—";
+  // Overview tiles open their list below; clicking the same tile again hides it.
+  const tileLists: OverviewList[] = ["all", "student", "mentor", "employee"];
+  const [openList, setOpenList] = useState<OverviewList | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const selectTile = (i: number) => {
+    const next = openList === tileLists[i] ? null : tileLists[i];
+    setOpenList(next);
+    if (next) requestAnimationFrame(() => listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
   const stats = [
     { label: "Total users", value: users?.length ?? "—", icon: UsersIcon },
     { label: "Students", value: count("student"), icon: GraduationIcon },
@@ -365,7 +482,13 @@ function AdminContent({ me, page }: { me: AppUser; page: string }) {
             </p>
           </WelcomeBanner>
 
-          <StatTiles stats={stats} />
+          <StatTiles stats={stats} onSelect={selectTile} selected={openList ? tileLists.indexOf(openList) : null} />
+
+          {openList && (
+            <div ref={listRef} className="scroll-mt-28">
+              <OverviewUserList key={openList} list={openList} users={users} me={me} onClose={() => setOpenList(null)} />
+            </div>
+          )}
         </>
       )}
 

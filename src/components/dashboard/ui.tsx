@@ -50,12 +50,13 @@ export function ProgressBar({ value }: { value: number }) {
 
 export type Stat = { label: string; value: React.ReactNode; icon: ComponentType<IconProps> };
 
-export function StatTiles({ stats }: { stats: Stat[] }) {
+/** Count tiles. With `onSelect`, each tile is a button and `selected` marks the active one. */
+export function StatTiles({ stats, onSelect, selected }: { stats: Stat[]; onSelect?: (index: number) => void; selected?: number | null }) {
   return (
     <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-      {stats.map(({ label, value, icon: Icon }, i) => (
-        <Reveal immediate key={label} delay={i * 80} className="h-full">
-          <div className="flex h-full flex-col gap-4 rounded-3xl border border-forest-100 bg-white p-4 sm:flex-row sm:items-center sm:p-5">
+      {stats.map(({ label, value, icon: Icon }, i) => {
+        const body = (
+          <>
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-forest-700 text-spark-400">
               <Icon className="h-5 w-5" />
             </span>
@@ -63,9 +64,28 @@ export function StatTiles({ stats }: { stats: Stat[] }) {
               <p className="text-2xl font-bold text-forest-950">{value}</p>
               <p className="text-xs text-slate-500 sm:text-sm">{label}</p>
             </div>
-          </div>
-        </Reveal>
-      ))}
+          </>
+        );
+        const tile = "flex h-full w-full flex-col gap-4 rounded-3xl border bg-white p-4 text-left sm:flex-row sm:items-center sm:p-5";
+        return (
+          <Reveal immediate key={label} delay={i * 80} className="h-full">
+            {onSelect ? (
+              <button
+                type="button"
+                onClick={() => onSelect(i)}
+                aria-pressed={selected === i}
+                className={`${tile} transition hover:-translate-y-0.5 hover:border-forest-300 hover:shadow-lg hover:shadow-forest-900/5 ${
+                  selected === i ? "border-forest-700 ring-2 ring-forest-700/20" : "border-forest-100"
+                }`}
+              >
+                {body}
+              </button>
+            ) : (
+              <div className={`${tile} border-forest-100`}>{body}</div>
+            )}
+          </Reveal>
+        );
+      })}
     </div>
   );
 }
