@@ -64,7 +64,13 @@ export type PaymentDetails = {
   ifsc?: string;
   branch?: string;
   note?: string;
+  /** Razorpay Payment Page / payment link (made in the Razorpay dashboard, no API keys needed). */
+  razorpayLink?: string;
 };
+
+/** Accepts only https links on Razorpay's own domains. */
+export const isRazorpayLink = (url?: string) =>
+  !!url && /^https:\/\/([a-z0-9-]+\.)*(razorpay\.com|razorpay\.me|rzp\.io)(\/|$)/i.test(url.trim());
 
 /** Online payments show only once the Razorpay key is configured at build time. */
 export const razorpayKeyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? "";

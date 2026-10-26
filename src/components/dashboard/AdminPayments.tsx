@@ -9,17 +9,7 @@ import type { AppUser } from "@/lib/auth";
 import { useCatalog } from "@/lib/catalog";
 import { db } from "@/lib/firebase";
 import { compressImage } from "@/lib/image";
-import {
-  cancelOrder,
-  coursesFor,
-  markOrderPaid,
-  rejectOrder,
-  savePaymentDetails,
-  totalFor,
-  usePaymentDetails,
-  type Order,
-  type PaymentDetails,
-} from "@/lib/orders";
+import { cancelOrder, coursesFor, markOrderPaid, rejectOrder, savePaymentDetails, totalFor, usePaymentDetails, type Order, type PaymentDetails, isRazorpayLink } from "@/lib/orders";
 
 const dateFormat = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
 
@@ -255,6 +245,7 @@ const fields: { key: Exclude<keyof PaymentDetails, "qrImage" | "note">; label: s
   { key: "ifsc", label: "IFSC code", placeholder: "HDFC0001234" },
   { key: "bankName", label: "Bank name", placeholder: "HDFC Bank" },
   { key: "branch", label: "Branch", placeholder: "Hyderabad" },
+  { key: "razorpayLink", label: "Razorpay payment page link (optional)", placeholder: "https://rzp.io/l/nuelsmart" },
 ];
 
 /** The UPI and bank details students see at checkout. */
@@ -283,8 +274,11 @@ export function PaymentDetailsCard() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!values.upiId?.trim() && !values.accountNumber?.trim()) {
-      return setMessage({ ok: false, text: "Add at least a UPI ID or a bank account number." });
+    if (!values.upiId?.trim() && !values.accountNumber?.trim() && !values.razorpayLink?.trim()) {
+      return setMessage({ ok: false, text: "Add at least a UPI ID, a bank account number or a Razorpay payment link." });
+    }
+    if (values.razorpayLink?.trim() && !isRazorpayLink(values.razorpayLink)) {
+      return setMessage({ ok: false, text: "The Razorpay link should start with https://rzp.io/, https://razorpay.me/ or https://pages.razorpay.com/." });
     }
     setSaving(true);
     try {

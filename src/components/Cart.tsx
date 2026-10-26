@@ -23,6 +23,7 @@ import {
   type Order,
   type PaymentDetails,
   type PaymentMethod,
+  isRazorpayLink,
 } from "@/lib/orders";
 
 const rupee = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
@@ -78,7 +79,8 @@ function PaymentInstructions({ order, details }: { order: Order; details: Paymen
 
   const hasUpi = !!details.upiId;
   const hasBank = !!details.accountNumber;
-  if (!hasUpi && !hasBank) {
+  const hasRazorpay = isRazorpayLink(details.razorpayLink);
+  if (!hasUpi && !hasBank && !hasRazorpay) {
     return (
       <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
         Payment details are being updated. Please check back shortly or contact us from the Contact page.
@@ -120,6 +122,24 @@ function PaymentInstructions({ order, details }: { order: Order; details: Paymen
             <CopyRow label="IFSC" value={details.ifsc} />
             <CopyRow label="Bank" value={[details.bankName, details.branch].filter(Boolean).join(", ")} />
           </dl>
+        </div>
+      )}
+      {hasRazorpay && (
+        <div className="rounded-2xl border border-[#3395FF]/30 bg-[#3395FF]/5 p-4 md:col-span-2">
+          <p className="text-sm font-bold text-forest-950">Pay online with Razorpay</p>
+          <p className="mt-1 text-sm text-slate-600">
+            UPI, debit/credit cards, netbanking or wallets. Enter exactly <strong className="text-forest-950">{rupee.format(amount)}</strong>{" "}
+            and your email <strong className="text-forest-950">{order.email}</strong> on the Razorpay page, then come back here and upload the
+            receipt screenshot with your Razorpay payment ID (starts with <span className="font-mono">pay_</span>).
+          </p>
+          <a
+            href={details.razorpayLink!.trim()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#072654] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0b3478] sm:w-auto"
+          >
+            Pay {rupee.format(amount)} on Razorpay ↗
+          </a>
         </div>
       )}
       {details.note && <p className="text-xs leading-relaxed text-slate-500 md:col-span-2">{details.note}</p>}
@@ -181,14 +201,14 @@ function ProofUpload({ order, onDone }: { order: Order; onDone?: () => void }) {
         </button>
         <div className="flex-1">
           <label htmlFor={`${id}-ref`} className="mb-1.5 block text-sm font-medium text-forest-900">
-            UPI transaction ID / UTR <span className="font-normal text-slate-400">(optional)</span>
+            UPI transaction ID / UTR / Razorpay payment ID <span className="font-normal text-slate-400">(optional)</span>
           </label>
           <input
             id={`${id}-ref`}
             value={paymentRef}
             maxLength={40}
             onChange={(e) => setPaymentRef(e.target.value)}
-            placeholder="e.g. 412345678901"
+            placeholder="e.g. 412345678901 or pay_Nx3AbC..."
             className="w-full rounded-2xl border border-forest-100 px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-forest-300"
           />
           <p className="mt-2 text-xs text-slate-500">
@@ -560,7 +580,7 @@ function Checkout({ user }: { user: AppUser }) {
             </button>
             <p className="mt-3 text-center text-xs leading-relaxed text-slate-500">
               {method === "manual"
-                ? "Next you'll see our UPI and bank details. Your courses unlock after we approve your payment screenshot."
+                ? "Next you'll see how to pay: UPI, bank transfer or Razorpay. Your courses unlock after we approve your payment screenshot."
                 : "7-day refund policy on every course."}
             </p>
           </aside>
