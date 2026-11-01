@@ -314,6 +314,11 @@ export function CoursesCard({ extraMentors = [] }: { extraMentors?: string[] }) 
   const mentorNames = [...new Set([...mentors.map((m) => m.name), ...extraMentors])].sort();
 
   const toggle = async (c: CatalogCourse) => {
+    // Courses imported without a price carry a placeholder of ₹1 until an admin sets one.
+    if (c.hidden && c.price <= 1) {
+      window.alert(`Set a price for "${c.title}" (Edit) before showing it to students.`);
+      return;
+    }
     setBusy(c.slug);
     await setCourseHidden(c.slug, !c.hidden).catch((err) => console.error(err));
     setBusy(null);

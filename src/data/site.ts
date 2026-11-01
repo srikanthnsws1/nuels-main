@@ -68,6 +68,9 @@ export const courseFilters = [
   "Marketing",
   "Business",
   "Language",
+  "Data & AI",
+  "Cloud & DevOps",
+  "Testing",
 ];
 
 export const courses: Course[] = [
