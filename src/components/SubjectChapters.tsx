@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ArrowRightIcon, BookIcon, CalendarIcon, CartIcon, CheckIcon, PlayIcon, UsersIcon } from "./icons";
+import { ArrowRightIcon, BookIcon, CalendarIcon, CartIcon, CheckIcon, ClockIcon, CloseIcon, PlayIcon, UsersIcon } from "./icons";
 import Reveal from "./motion/Reveal";
 import { useAuth } from "@/lib/auth";
 import { learnHref, subjectGroups, useCatalogLoaded, useSubjectChapters, syllabusFor, type CatalogCourse } from "@/lib/catalog";
@@ -178,9 +178,21 @@ export default function SubjectChapters({ group }: { group: string }) {
                                 onChange={() => toggle(c.slug)}
                                 className="mt-1 h-5 w-5 shrink-0 rounded accent-forest-700"
                               />
-                            ) : (
-                              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-forest-700 text-spark-400">
+                            ) : st === "enrolled" ? (
+                              <span title="Enrolled" className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-forest-700 text-spark-400">
                                 <CheckIcon className="h-3.5 w-3.5" />
+                              </span>
+                            ) : st === "pending" && order?.status === "rejected" ? (
+                              <span title="Payment rejected" className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+                                <CloseIcon className="h-3.5 w-3.5" />
+                              </span>
+                            ) : st === "pending" ? (
+                              <span title="Waiting for payment" className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                                <ClockIcon className="h-3.5 w-3.5" />
+                              </span>
+                            ) : (
+                              <span title="In your cart" className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-forest-50 text-forest-700">
+                                <CartIcon className="h-3.5 w-3.5" />
                               </span>
                             )}
                             <span className="min-w-0">
@@ -188,6 +200,15 @@ export default function SubjectChapters({ group }: { group: string }) {
                                 Chapter {c.chapterNo}: {c.title.replace(/^Class 10 Maths – /, "")}
                               </span>
                               <span className="mt-1 block text-sm leading-relaxed text-slate-600">{topics.join(" · ")}</span>
+                              {st === "pending" && (
+                                <span className={`mt-2 block text-xs font-semibold ${order?.status === "rejected" ? "text-red-600" : "text-amber-700"}`}>
+                                  {order?.status === "rejected"
+                                    ? "Your payment screenshot wasn't approved. Upload a new one from your cart."
+                                    : order && needsScreenshot(order)
+                                      ? "You've ordered this chapter but haven't paid yet. Pay and upload the screenshot to unlock it, or cancel the order from your cart."
+                                      : "Payment screenshot received. The chapter unlocks once it's approved."}
+                                </span>
+                              )}
                             </span>
                           </label>
                           <div className="flex shrink-0 items-center gap-3 pl-8 sm:pl-0 sm:text-right">
@@ -196,9 +217,17 @@ export default function SubjectChapters({ group }: { group: string }) {
                                 Enrolled · Open <ArrowRightIcon className="h-4 w-4" />
                               </Link>
                             ) : st === "pending" ? (
-                              <Link href="/cart#orders" className="rounded-full bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800">
-                                {order && needsScreenshot(order) ? "Complete payment" : "Payment under review"}
-                              </Link>
+                              order?.status === "rejected" ? (
+                                <Link href="/cart#orders" className="rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100">
+                                  Payment rejected · Upload again →
+                                </Link>
+                              ) : order && needsScreenshot(order) ? (
+                                <Link href="/cart#orders" className="rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-forest-950 hover:bg-amber-300">
+                                  Payment pending · Pay now →
+                                </Link>
+                              ) : (
+                                <span className="rounded-full bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800">Under review</span>
+                              )
                             ) : st === "cart" ? (
                               <Link href="/cart" className="inline-flex items-center gap-1.5 rounded-full border border-forest-200 px-4 py-2 text-sm font-semibold text-forest-700">
                                 <CartIcon className="h-4 w-4" /> In cart
