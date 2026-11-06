@@ -90,6 +90,11 @@ export function addToCart(uid: string, slug: string) {
   return updateDoc(doc(db, "users", uid), { cart: arrayUnion(slug) });
 }
 
+/** Adds several courses (e.g. chosen chapters) to the cart at once. */
+export function addManyToCart(uid: string, slugs: string[]) {
+  return updateDoc(doc(db, "users", uid), { cart: arrayUnion(...slugs) });
+}
+
 export function removeFromCart(uid: string, slug: string) {
   return updateDoc(doc(db, "users", uid), { cart: arrayRemove(slug) });
 }

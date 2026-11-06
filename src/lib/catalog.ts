@@ -19,6 +19,27 @@ export type CatalogCourse = Course & {
   hidden?: boolean;
   /** Added by an admin (no pre-built page). */
   custom?: boolean;
+  /** Chapter of a school subject sold chapter by chapter (key of `subjectGroups`). */
+  group?: string;
+  chapterNo?: number;
+  /** Syllabus unit the chapter belongs to, e.g. "Algebra". */
+  unit?: string;
+};
+
+/**
+ * School subjects sold per chapter. Each chapter is its own catalog course (own price, cart line,
+ * payment approval and access); the subject is shown once, on its own page, where learners pick chapters.
+ */
+export const subjectGroups: Record<string, { title: string; short: string; href: string; image: string; poster: string; description: string }> = {
+  "class-10-maths": {
+    title: "Class 10 Mathematics",
+    short: "Class 10 Maths",
+    href: "/courses/class-10-mathematics",
+    image: "/images/class10-maths.webp",
+    poster: "/images/class10-maths-poster.webp",
+    description:
+      "Chapter-wise live classes for Tenth Class Mathematics (CBSE 2026-27): concepts, formulas and tricks, solved examples, doubt clearing and exam-oriented practice. Pick only the chapters you need.",
+  },
 };
 
 export const levels = ["Beginner", "Intermediate", "Advanced"] as const;
@@ -104,9 +125,19 @@ export function findCourse(slug: string) {
   return getCatalog().find((c) => c.slug === slug);
 }
 
-/** Built-in courses have a pre-built page; added ones use the client-rendered view. */
+/** Built-in courses have a pre-built page; subject chapters open their subject page; added ones use the client-rendered view. */
 export function courseHref(slug: string) {
-  return builtInSlugs.has(slug) ? `/courses/${slug}` : `/courses/view?c=${encodeURIComponent(slug)}`;
+  if (builtInSlugs.has(slug)) return `/courses/${slug}`;
+  const group = merged.find((c) => c.slug === slug)?.group;
+  if (group && subjectGroups[group]) return `${subjectGroups[group].href}#${slug}`;
+  return `/courses/view?c=${encodeURIComponent(slug)}`;
+}
+
+/** A subject's chapters in order; hidden ones are left out unless asked for. */
+export function useSubjectChapters(group: string, includeHidden = false): CatalogCourse[] {
+  return useCatalog(includeHidden)
+    .filter((c) => c.group === group)
+    .sort((a, b) => (a.chapterNo ?? 0) - (b.chapterNo ?? 0));
 }
 
 export const learnHref = (slug: string) => `/learn?course=${encodeURIComponent(slug)}`;

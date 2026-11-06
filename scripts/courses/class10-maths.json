@@ -1,0 +1,283 @@
+[
+  {
+    "slug": "class-10-maths-01-real-numbers",
+    "chapterNo": 1,
+    "unit": "Unit I: Number Systems",
+    "title": "Class 10 Maths – Real Numbers",
+    "description": "Fundamental Theorem of Arithmetic and proofs of irrationality, with exam-style practice.",
+    "topics": [
+      "Fundamental Theorem of Arithmetic",
+      "Proofs of irrationality of √2, √3, √5",
+      "Irrationality of numbers like 3 + 2√5"
+    ],
+    "group": "class-10-maths",
+    "category": "School",
+    "level": "Beginner",
+    "image": "/images/class10-maths.webp",
+    "price": 299,
+    "oldPrice": 499,
+    "hidden": false,
+    "moduleTitle": "Chapter topics"
+  },
+  {
+    "slug": "class-10-maths-02-polynomials",
+    "chapterNo": 2,
+    "unit": "Unit II: Algebra",
+    "title": "Class 10 Maths – Polynomials",
+    "description": "Zeroes of polynomials, graphically and algebraically, and their relation to coefficients.",
+    "topics": [
+      "Zeroes of a polynomial",
+      "Finding zeroes graphically and algebraically",
+      "Relationship between zeroes and coefficients of quadratic polynomials"
+    ],
+    "group": "class-10-maths",
+    "category": "School",
+    "level": "Beginner",
+    "image": "/images/class10-maths.webp",
+    "price": 299,
+    "oldPrice": 499,
+    "hidden": false,
+    "moduleTitle": "Chapter topics"
+  },
+  {
+    "slug": "class-10-maths-03-linear-equations",
+    "chapterNo": 3,
+    "unit": "Unit II: Algebra",
+    "title": "Class 10 Maths – Pair of Linear Equations in Two Variables",
+    "description": "Solve pairs of linear equations graphically and algebraically, and model real situations.",
+    "topics": [
+      "Graphical method, consistency and inconsistency",
+      "Algebraic conditions for the number of solutions",
+      "Solving by substitution and elimination",
+      "Simple situational problems"
+    ],
+    "group": "class-10-maths",
+    "category": "School",
+    "level": "Beginner",
+    "image": "/images/class10-maths.webp",
+    "price": 299,
+    "oldPrice": 499,
+    "hidden": false,
+    "moduleTitle": "Chapter topics"
+  },
+  {
+    "slug": "class-10-maths-04-quadratic-equations",
+    "chapterNo": 4,
+    "unit": "Unit II: Algebra",
+    "title": "Class 10 Maths – Quadratic Equations",
+    "description": "Solve quadratic equations by factorisation and the formula, and use the discriminant.",
+    "topics": [
+      "Standard form ax² + bx + c = 0",
+      "Solving by factorisation and the quadratic formula",
+      "Discriminant and nature of roots",
+      "Situational problems from day-to-day life"
+    ],
+    "group": "class-10-maths",
+    "category": "School",
+    "level": "Beginner",
+    "image": "/images/class10-maths.webp",
+    "price": 299,
+    "oldPrice": 499,
+    "hidden": false,
+    "moduleTitle": "Chapter topics"
+  },
+  {
+    "slug": "class-10-maths-05-arithmetic-progressions",
+    "chapterNo": 5,
+    "unit": "Unit II: Algebra",
+    "title": "Class 10 Maths – Arithmetic Progressions",
+    "description": "The nth term and sum of an AP, applied to everyday problems.",
+    "topics": [
+      "Motivation for studying Arithmetic Progressions",
+      "nth term of an AP",
+      "Sum of the first n terms",
+      "Applying AP to daily-life problems"
+    ],
+    "group": "class-10-maths",
+    "category": "School",
+    "level": "Beginner",
+    "image": "/images/class10-maths.webp",
+    "price": 299,
+    "oldPrice": 499,
+    "hidden": false,
+    "moduleTitle": "Chapter topics"
+  },
+  {
+    "slug": "class-10-maths-06-coordinate-geometry",
+    "chapterNo": 6,
+    "unit": "Unit III: Coordinate Geometry",
+    "title": "Class 10 Maths – Coordinate Geometry",
+    "description": "Distance and section formulas on the coordinate plane.",
+    "topics": [
+      "Review of coordinate geometry concepts",
+      "Distance formula",
+      "Section formula (internal division)"
+    ],
+    "group": "class-10-maths",
+    "category": "School",
+    "level": "Beginner",
+    "image": "/images/class10-maths.webp",
+    "price": 299,
+    "oldPrice": 499,
+    "hidden": false,
+    "moduleTitle": "Chapter topics"
+  },
+  {
+    "slug": "class-10-maths-07-triangles",
+    "chapterNo": 7,
+    "unit": "Unit IV: Geometry",
+    "title": "Class 10 Maths – Triangles",
+    "description": "Similar triangles, the Basic Proportionality Theorem and similarity criteria.",
+    "topics": [
+      "Similar triangles: definitions, examples and counter-examples",
+      "Basic Proportionality Theorem (proof) and its converse",
+      "AAA, SSS and SAS similarity criteria"
+    ],
+    "group": "class-10-maths",
+    "category": "School",
+    "level": "Beginner",
+    "image": "/images/class10-maths.webp",
+    "price": 299,
+    "oldPrice": 499,
+    "hidden": false,
+    "moduleTitle": "Chapter topics"
+  },
+  {
+    "slug": "class-10-maths-08-circles",
+    "chapterNo": 8,
+    "unit": "Unit IV: Geometry",
+    "title": "Class 10 Maths – Circles",
+    "description": "Tangents to a circle and the two key theorems with proofs.",
+    "topics": [
+      "Tangent to a circle at the point of contact",
+      "Tangent is perpendicular to the radius (proof)",
+      "Tangents from an external point are equal (proof)"
+    ],
+    "group": "class-10-maths",
+    "category": "School",
+    "level": "Beginner",
+    "image": "/images/class10-maths.webp",
+    "price": 299,
+    "oldPrice": 499,
+    "hidden": false,
+    "moduleTitle": "Chapter topics"
+  },
+  {
+    "slug": "class-10-maths-09-introduction-to-trigonometry",
+    "chapterNo": 9,
+    "unit": "Unit V: Trigonometry",
+    "title": "Class 10 Maths – Introduction to Trigonometry",
+    "description": "Trigonometric ratios, standard angles and the identity sin²A + cos²A = 1.",
+    "topics": [
+      "Trigonometric ratios of an acute angle",
+      "Values for 0°, 30°, 45°, 60° and 90°",
+      "Relationships between the ratios",
+      "Identity sin²A + cos²A = 1 and simple identities"
+    ],
+    "group": "class-10-maths",
+    "category": "School",
+    "level": "Beginner",
+    "image": "/images/class10-maths.webp",
+    "price": 299,
+    "oldPrice": 499,
+    "hidden": false,
+    "moduleTitle": "Chapter topics"
+  },
+  {
+    "slug": "class-10-maths-10-heights-and-distances",
+    "chapterNo": 10,
+    "unit": "Unit V: Trigonometry",
+    "title": "Class 10 Maths – Some Applications of Trigonometry",
+    "description": "Heights and distances using angles of elevation and depression.",
+    "topics": [
+      "Angles of elevation and depression",
+      "Heights and distances problems (30°, 45°, 60°)"
+    ],
+    "group": "class-10-maths",
+    "category": "School",
+    "level": "Beginner",
+    "image": "/images/class10-maths.webp",
+    "price": 299,
+    "oldPrice": 499,
+    "hidden": false,
+    "moduleTitle": "Chapter topics"
+  },
+  {
+    "slug": "class-10-maths-11-areas-related-to-circles",
+    "chapterNo": 11,
+    "unit": "Unit VI: Mensuration",
+    "title": "Class 10 Maths – Areas Related to Circles",
+    "description": "Areas of sectors and segments, and perimeter problems.",
+    "topics": [
+      "Area of sectors and segments of a circle",
+      "Areas and perimeters with central angles of 60°, 90° and 120°"
+    ],
+    "group": "class-10-maths",
+    "category": "School",
+    "level": "Beginner",
+    "image": "/images/class10-maths.webp",
+    "price": 299,
+    "oldPrice": 499,
+    "hidden": false,
+    "moduleTitle": "Chapter topics"
+  },
+  {
+    "slug": "class-10-maths-12-surface-areas-and-volumes",
+    "chapterNo": 12,
+    "unit": "Unit VI: Mensuration",
+    "title": "Class 10 Maths – Surface Areas and Volumes",
+    "description": "Surface areas and volumes of combinations of solids.",
+    "topics": [
+      "Combinations of cubes, cuboids, spheres and hemispheres",
+      "Combinations with right circular cylinders and cones",
+      "Surface area and volume problems"
+    ],
+    "group": "class-10-maths",
+    "category": "School",
+    "level": "Beginner",
+    "image": "/images/class10-maths.webp",
+    "price": 299,
+    "oldPrice": 499,
+    "hidden": false,
+    "moduleTitle": "Chapter topics"
+  },
+  {
+    "slug": "class-10-maths-13-statistics",
+    "chapterNo": 13,
+    "unit": "Unit VII: Statistics and Probability",
+    "title": "Class 10 Maths – Statistics",
+    "description": "Mean, median and mode of grouped data by every method.",
+    "topics": [
+      "Mean of grouped data: direct, assumed mean and step deviation",
+      "Median of grouped data",
+      "Mode of grouped data"
+    ],
+    "group": "class-10-maths",
+    "category": "School",
+    "level": "Beginner",
+    "image": "/images/class10-maths.webp",
+    "price": 299,
+    "oldPrice": 499,
+    "hidden": false,
+    "moduleTitle": "Chapter topics"
+  },
+  {
+    "slug": "class-10-maths-14-probability",
+    "chapterNo": 14,
+    "unit": "Unit VII: Statistics and Probability",
+    "title": "Class 10 Maths – Probability",
+    "description": "Classical probability and simple real-life problems.",
+    "topics": [
+      "Classical definition of probability",
+      "Simple problems on the probability of an event"
+    ],
+    "group": "class-10-maths",
+    "category": "School",
+    "level": "Beginner",
+    "image": "/images/class10-maths.webp",
+    "price": 299,
+    "oldPrice": 499,
+    "hidden": false,
+    "moduleTitle": "Chapter topics"
+  }
+]

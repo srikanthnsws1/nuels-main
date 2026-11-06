@@ -71,6 +71,7 @@ export const courseFilters = [
   "Data & AI",
   "Cloud & DevOps",
   "Testing",
+  "School",
 ];
 
 export const courses: Course[] = [

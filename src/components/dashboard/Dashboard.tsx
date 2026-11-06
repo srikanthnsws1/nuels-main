@@ -47,7 +47,8 @@ function StudentContent({ user, page }: { user: AppUser; page: string }) {
   const enrolled = coursesFor(user.enrolledCourses);
   const unlocked = enrolled.length > 0;
   const awaiting = (orders ?? []).filter(awaitingConfirmation);
-  const explore = catalog.filter((c) => !user.enrolledCourses.includes(c.slug)).slice(0, 3);
+  // Subject chapters are bought from their subject page, so they aren't suggested one by one.
+  const explore = catalog.filter((c) => !c.group && !user.enrolledCourses.includes(c.slug)).slice(0, 3);
 
   // One sidebar item = one page; the overview also carries cart/payment notices and suggestions.
   const overview = page === "overview";

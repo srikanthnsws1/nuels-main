@@ -54,7 +54,7 @@ def request(token, method, path, body=None):
 def main(path):
     token = access_token()
     for c in json.load(open(path, encoding="utf-8")):
-        slug = slugify(c["title"])
+        slug = c.get("slug") or slugify(c["title"])
         try:
             request(token, "GET", f"catalog/{slug}")
             print(f"skip   {slug} (already exists)")
@@ -67,15 +67,19 @@ def main(path):
             "description": c["description"],
             "category": c["category"],
             "level": c["level"],
-            "mentor": "Nuel Smart Faculty",
+            "mentor": c.get("mentor", "Nuel Smart Faculty"),
             "image": c["image"],
             "lessons": len(c["topics"]),
-            "hours": 0,
-            "price": 1,
-            "oldPrice": 1,
-            "hidden": True,
-            "modules": [{"title": "What you'll learn", "topics": c["topics"]}],
+            "hours": c.get("hours", 0),
+            # Without a price the course stays hidden at a ₹1 placeholder until an admin prices it.
+            "price": c.get("price", 1),
+            "oldPrice": c.get("oldPrice", c.get("price", 1)),
+            "hidden": c.get("hidden", "price" not in c),
+            "modules": [{"title": c.get("moduleTitle", "What you'll learn"), "topics": c["topics"]}],
         }
+        for extra in ("group", "chapterNo", "unit"):
+            if extra in c:
+                doc[extra] = c[extra]
         # currentDocument.exists=false: create only, never overwrite.
         request(token, "PATCH", f"catalog/{slug}?currentDocument.exists=false", {"fields": {k: value(v) for k, v in doc.items()}})
         print(f"added  {slug}")

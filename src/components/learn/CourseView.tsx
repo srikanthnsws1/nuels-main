@@ -401,7 +401,7 @@ function CourseContent({ user, course, page }: { user: AppUser; course: CatalogC
       {page === "overview" && (
       <WelcomeBanner id="overview" title={course.title}>
         <p className="mt-2 text-sm text-forest-100">
-          with {course.mentor} · {lessons.length} lessons · {course.hours} hours
+          with {course.mentor} · {lessons.length} lessons{course.hours ? ` · ${course.hours} hours` : ""}
         </p>
         <div className="mt-5 max-w-md">
           <div className="flex items-center justify-between text-sm font-semibold text-white">

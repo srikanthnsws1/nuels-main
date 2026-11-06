@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 import { CourseEnrollCard, CourseFacts, CourseMentor, CourseMentorBio } from "./CourseLive";
 import { CheckIcon } from "./icons";
-import { syllabusFor, useCatalogLoaded, useCourse } from "@/lib/catalog";
+import { subjectGroups, syllabusFor, useCatalogLoaded, useCourse } from "@/lib/catalog";
 
 /** /courses/view?c={slug}: the page for courses added from the admin panel. */
 export default function CourseDetailView() {
@@ -12,11 +13,18 @@ export default function CourseDetailView() {
   const course = useCourse(slug);
   const loaded = useCatalogLoaded();
   const syllabus = syllabusFor(course);
+  const router = useRouter();
+  const subject = course?.group ? subjectGroups[course.group] : undefined;
 
-  if (!course || course.hidden) {
+  // A subject chapter (e.g. Class 10 Maths) is chosen on its subject page.
+  useEffect(() => {
+    if (subject) router.replace(`${subject.href}#${slug}`);
+  }, [subject, slug, router]);
+
+  if (!course || course.hidden || subject) {
     return (
       <section className="px-4 pb-20 pt-32 text-center sm:pt-40">
-        {!course && !loaded ? (
+        {(!course && !loaded) || subject ? (
           <span className="mx-auto block h-10 w-10 animate-spin rounded-full border-4 border-forest-100 border-t-forest-700" aria-label="Loading" />
         ) : (
           <>
