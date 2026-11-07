@@ -1,6 +1,6 @@
 import { Card, CardTitle } from "../dashboard/ui";
 import { CheckIcon, StarIcon } from "../icons";
-import { chapterSyllabus, highWeightage, percentOf, theoryMarks, unitFor, type ChapterSyllabus as Syllabus } from "@/data/class10Maths";
+import { chapterSyllabus, highWeightage, percentOf, theoryMarks, unitFor, type ChapterSyllabus as Syllabus, type Point } from "@/data/class10Maths";
 import type { CatalogCourse } from "@/lib/catalog";
 
 export const hasChapterSyllabus = (slug: string) => slug in chapterSyllabus;
@@ -28,20 +28,41 @@ export function ChapterMarks({ course, dark = false }: { course: CatalogCourse; 
   );
 }
 
-function Points({ items }: { items: string[] }) {
+const text = (p: Point) => (typeof p === "string" ? p : p.text);
+
+function SubPoints({ p }: { p: Point }) {
+  if (typeof p === "string") return null;
   return (
-    <ul className="mt-2 space-y-2">
-      {items.map((t) => (
-        <li key={t} className="flex items-start gap-2 text-sm leading-relaxed text-slate-700">
-          <CheckIcon className="mt-1 h-3.5 w-3.5 shrink-0 text-forest-600" />
-          {t}
+    <ul className="mt-1.5 space-y-1 pl-1">
+      {p.sub.map((x) => (
+        <li key={x} className="flex items-center gap-2 text-sm text-slate-600">
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-spark-500" />
+          {x}
         </li>
       ))}
     </ul>
   );
 }
 
-/** The board's complete syllabus for one chapter: content, competencies and what the learner should be able to do. */
+function Points({ items }: { items: Point[] }) {
+  return (
+    <ul className="mt-2 space-y-2">
+      {items.map((p) => (
+        <li key={text(p)} className="flex items-start gap-2 text-sm leading-relaxed text-slate-700">
+          <CheckIcon className="mt-1 h-3.5 w-3.5 shrink-0 text-forest-600" />
+          <span>
+            {text(p)}
+            <SubPoints p={p} />
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const heading = "text-sm font-bold uppercase tracking-wider text-forest-600";
+
+/** The complete syllabus for one chapter: topics, theorems, competencies and expected learning outcomes. */
 export default function ChapterSyllabus({ course }: { course: CatalogCourse }) {
   const s: Syllabus | undefined = chapterSyllabus[course.slug];
   if (!s) return null;
@@ -58,30 +79,45 @@ export default function ChapterSyllabus({ course }: { course: CatalogCourse }) {
         </p>
       )}
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-3">
-        <section className="rounded-2xl border border-forest-100 p-4 lg:col-span-3">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-forest-600">Content</h3>
-          {s.content.map((block, i) => (
-            <div key={i} className={i ? "mt-4" : ""}>
-              {block.heading && <p className="mt-2 font-semibold text-forest-950">{block.heading}</p>}
-              <ol className="mt-2 space-y-2">
-                {block.points.map((t, j) => (
-                  <li key={t} className="flex items-start gap-3 text-sm leading-relaxed text-slate-700">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-forest-700 text-xs font-bold text-spark-400">{j + 1}</span>
-                    <span className="pt-0.5">{t}</span>
+      <div className="mt-6 grid gap-5 lg:grid-cols-2">
+        <section className="rounded-2xl border border-forest-100 p-4 lg:col-span-2">
+          <h3 className={heading}>Topics{s.topicsHeading ? `: ${s.topicsHeading}` : ""}</h3>
+          {s.topics.length > 0 && (
+            <ol className="mt-3 space-y-3">
+              {s.topics.map((p, i) => (
+                <li key={text(p)} className="flex items-start gap-3 text-sm leading-relaxed text-slate-700">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-forest-700 text-xs font-bold text-spark-400">{i + 1}</span>
+                  <span className="pt-0.5">
+                    {text(p)}
+                    <SubPoints p={p} />
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+          {s.theorems && (
+            <>
+              {s.topics.length > 0 && <h4 className={`${heading} mt-6`}>Theorems and statements</h4>}
+              <ol className="mt-3 space-y-3">
+                {s.theorems.map((t, i) => (
+                  <li key={i} className="rounded-xl bg-forest-50/70 p-3 text-sm leading-relaxed text-slate-700">
+                    <span className="font-semibold text-forest-950">
+                      {i + 1}. {t.label}:
+                    </span>{" "}
+                    {t.text}
                   </li>
                 ))}
               </ol>
-            </div>
-          ))}
+            </>
+          )}
         </section>
         <section className="rounded-2xl bg-forest-50/60 p-4">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-forest-600">Competencies</h3>
+          <h3 className={heading}>Competencies</h3>
           <Points items={s.competencies} />
         </section>
-        <section className="rounded-2xl bg-spark-500/10 p-4 lg:col-span-2">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-forest-600">What you&apos;ll be able to do</h3>
-          <Points items={s.explanation} />
+        <section className="rounded-2xl bg-spark-500/10 p-4">
+          <h3 className={heading}>Expected learning outcomes</h3>
+          <Points items={s.outcomes} />
         </section>
       </div>
     </Card>

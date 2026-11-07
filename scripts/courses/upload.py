@@ -6,6 +6,10 @@ Usage (after `npx.cmd firebase-tools login`):
 Each course gets one module ("What you'll learn") whose topics become its lessons, mentor
 "Nuel Smart Faculty", and a placeholder price of ₹1. Admin → Courses won't show a course to
 students until a real price is set. Courses that already exist are skipped, so admin edits are kept.
+
+With --update, existing courses get their syllabus fields refreshed (title, description, topics,
+lesson count, chapter number and unit); price, visibility and mentor are never touched:
+    python scripts/courses/upload.py scripts/courses/class10-maths.json --update
 """
 import json
 import os
@@ -51,13 +55,25 @@ def request(token, method, path, body=None):
         return json.loads(r.read() or b"{}")
 
 
-def main(path):
+def main(path, update=False):
     token = access_token()
     for c in json.load(open(path, encoding="utf-8")):
         slug = c.get("slug") or slugify(c["title"])
         try:
             request(token, "GET", f"catalog/{slug}")
-            print(f"skip   {slug} (already exists)")
+            if not update:
+                print(f"skip   {slug} (already exists)")
+                continue
+            fields = {
+                "title": c["title"],
+                "description": c["description"],
+                "lessons": len(c["topics"]),
+                "modules": [{"title": c.get("moduleTitle", "What you'll learn"), "topics": c["topics"]}],
+                **{k: c[k] for k in ("chapterNo", "unit") if k in c},
+            }
+            mask = "&".join(f"updateMask.fieldPaths={k}" for k in fields)
+            request(token, "PATCH", f"catalog/{slug}?{mask}&currentDocument.exists=true", {"fields": {k: value(v) for k, v in fields.items()}})
+            print(f"update {slug}")
             continue
         except urllib.error.HTTPError as e:
             if e.code != 404:
@@ -86,4 +102,4 @@ def main(path):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv[1], update="--update" in sys.argv[2:])

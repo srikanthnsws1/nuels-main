@@ -6,9 +6,8 @@
     "title": "Class 10 Maths – Real Numbers",
     "description": "Fundamental Theorem of Arithmetic and proofs of irrationality, with exam-style practice.",
     "topics": [
-      "Fundamental Theorem of Arithmetic",
-      "Proofs of irrationality of √2, √3, √5",
-      "Irrationality of numbers like 3 + 2√5"
+      "Fundamental Theorem of Arithmetic: statements and motivation through examples",
+      "Proofs of irrationality of √2, √3 and √5"
     ],
     "group": "class-10-maths",
     "category": "School",
@@ -27,7 +26,6 @@
     "description": "Zeroes of polynomials, graphically and algebraically, and their relation to coefficients.",
     "topics": [
       "Zeroes of a polynomial",
-      "Finding zeroes graphically and algebraically",
       "Relationship between zeroes and coefficients of quadratic polynomials"
     ],
     "group": "class-10-maths",
@@ -46,9 +44,10 @@
     "title": "Class 10 Maths – Pair of Linear Equations in Two Variables",
     "description": "Solve pairs of linear equations graphically and algebraically, and model real situations.",
     "topics": [
-      "Graphical method, consistency and inconsistency",
+      "Pair of linear equations and the graphical method of solution",
+      "Consistency and inconsistency",
       "Algebraic conditions for the number of solutions",
-      "Solving by substitution and elimination",
+      "Solving algebraically: substitution and elimination methods",
       "Simple situational problems"
     ],
     "group": "class-10-maths",
@@ -67,10 +66,10 @@
     "title": "Class 10 Maths – Quadratic Equations",
     "description": "Solve quadratic equations by factorisation and the formula, and use the discriminant.",
     "topics": [
-      "Standard form ax² + bx + c = 0",
+      "Standard form ax² + bx + c = 0, a ≠ 0",
       "Solving by factorisation and the quadratic formula",
       "Discriminant and nature of roots",
-      "Situational problems from day-to-day life"
+      "Situational problems from day-to-day activities"
     ],
     "group": "class-10-maths",
     "category": "School",
@@ -89,8 +88,7 @@
     "description": "The nth term and sum of an AP, applied to everyday problems.",
     "topics": [
       "Motivation for studying Arithmetic Progressions",
-      "nth term of an AP",
-      "Sum of the first n terms",
+      "nth term and sum of the first n terms of an AP",
       "Applying AP to daily-life problems"
     ],
     "group": "class-10-maths",
@@ -111,7 +109,10 @@
     "topics": [
       "Review of coordinate geometry concepts",
       "Distance formula",
-      "Section formula (internal division)"
+      "Section formula (internal division)",
+      "Geometrical relations in the coordinate plane",
+      "Distance between two given points",
+      "Coordinates of a point between two given points"
     ],
     "group": "class-10-maths",
     "category": "School",
@@ -129,9 +130,10 @@
     "title": "Class 10 Maths – Triangles",
     "description": "Similar triangles, the Basic Proportionality Theorem and similarity criteria.",
     "topics": [
-      "Similar triangles: definitions, examples and counter-examples",
+      "Definitions and examples of similar triangles",
+      "Counter-examples of similar triangles",
       "Basic Proportionality Theorem (proof) and its converse",
-      "AAA, SSS and SAS similarity criteria"
+      "Similarity criteria: AAA, SSS and SAS"
     ],
     "group": "class-10-maths",
     "category": "School",
@@ -167,12 +169,32 @@
     "chapterNo": 9,
     "unit": "Unit V: Trigonometry",
     "title": "Class 10 Maths – Introduction to Trigonometry",
-    "description": "Trigonometric ratios, standard angles and the identity sin²A + cos²A = 1.",
+    "description": "Trigonometric ratios of acute angles, their values at standard angles and the relationships between them.",
     "topics": [
-      "Trigonometric ratios of an acute angle",
-      "Values for 0°, 30°, 45°, 60° and 90°",
-      "Relationships between the ratios",
-      "Identity sin²A + cos²A = 1 and simple identities"
+      "Trigonometric ratios of an acute angle of a right-angled triangle",
+      "Proof of their existence (well defined)",
+      "Ratios defined at 0° and 90°",
+      "Values for 30°, 45° and 60°",
+      "Relationships between the ratios"
+    ],
+    "group": "class-10-maths",
+    "category": "School",
+    "level": "Beginner",
+    "image": "/images/class10-maths.webp",
+    "price": 299,
+    "oldPrice": 499,
+    "hidden": false,
+    "moduleTitle": "Chapter topics"
+  },
+  {
+    "slug": "class-10-maths-trigonometric-identities",
+    "chapterNo": 10,
+    "unit": "Unit V: Trigonometry",
+    "title": "Class 10 Maths – Trigonometric Identities",
+    "description": "Prove and apply sin²A + cos²A = 1 and simple trigonometric identities.",
+    "topics": [
+      "Proof and applications of sin²A + cos²A = 1",
+      "Simple trigonometric identities"
     ],
     "group": "class-10-maths",
     "category": "School",
@@ -185,13 +207,16 @@
   },
   {
     "slug": "class-10-maths-10-heights-and-distances",
-    "chapterNo": 10,
+    "chapterNo": 11,
     "unit": "Unit V: Trigonometry",
-    "title": "Class 10 Maths – Some Applications of Trigonometry",
+    "title": "Class 10 Maths – Heights and Distances",
     "description": "Heights and distances using angles of elevation and depression.",
     "topics": [
-      "Angles of elevation and depression",
-      "Heights and distances problems (30°, 45°, 60°)"
+      "Angle of elevation",
+      "Angle of depression",
+      "Simple problems on heights and distances",
+      "Problems with at most two right triangles",
+      "Angles of 30°, 45° and 60° only"
     ],
     "group": "class-10-maths",
     "category": "School",
@@ -204,13 +229,14 @@
   },
   {
     "slug": "class-10-maths-11-areas-related-to-circles",
-    "chapterNo": 11,
+    "chapterNo": 12,
     "unit": "Unit VI: Mensuration",
     "title": "Class 10 Maths – Areas Related to Circles",
     "description": "Areas of sectors and segments, and perimeter problems.",
     "topics": [
       "Area of sectors and segments of a circle",
-      "Areas and perimeters with central angles of 60°, 90° and 120°"
+      "Areas and perimeter / circumference problems",
+      "Segments with central angles of 60°, 90° and 120°"
     ],
     "group": "class-10-maths",
     "category": "School",
@@ -223,7 +249,7 @@
   },
   {
     "slug": "class-10-maths-12-surface-areas-and-volumes",
-    "chapterNo": 12,
+    "chapterNo": 13,
     "unit": "Unit VI: Mensuration",
     "title": "Class 10 Maths – Surface Areas and Volumes",
     "description": "Surface areas and volumes of combinations of solids.",
@@ -243,14 +269,14 @@
   },
   {
     "slug": "class-10-maths-13-statistics",
-    "chapterNo": 13,
+    "chapterNo": 14,
     "unit": "Unit VII: Statistics and Probability",
     "title": "Class 10 Maths – Statistics",
     "description": "Mean, median and mode of grouped data by every method.",
     "topics": [
       "Mean of grouped data: direct, assumed mean and step deviation",
       "Median of grouped data",
-      "Mode of grouped data"
+      "Mode of grouped data (no bimodal cases)"
     ],
     "group": "class-10-maths",
     "category": "School",
@@ -263,7 +289,7 @@
   },
   {
     "slug": "class-10-maths-14-probability",
-    "chapterNo": 14,
+    "chapterNo": 15,
     "unit": "Unit VII: Statistics and Probability",
     "title": "Class 10 Maths – Probability",
     "description": "Classical probability and simple real-life problems.",
