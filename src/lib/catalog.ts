@@ -140,7 +140,21 @@ export function useSubjectChapters(group: string, includeHidden = false): Catalo
     .sort((a, b) => (a.chapterNo ?? 0) - (b.chapterNo ?? 0));
 }
 
-export const learnHref = (slug: string) => `/learn?course=${encodeURIComponent(slug)}`;
+type Titled = Pick<CatalogCourse, "title" | "chapterNo" | "group">;
+
+/** "Chapter 2: Polynomials" for a subject chapter; any other course keeps its title. */
+export function chapterName(c: Titled) {
+  if (!c.group || !c.chapterNo) return c.title;
+  return `Chapter ${c.chapterNo}: ${c.title.replace(/^.*?\s[–-]\s/, "")}`;
+}
+
+/** "Class 10 Maths – Chapter 2: Polynomials", for carts, orders and lists that mix subjects and courses. */
+export function courseTitle(c: Titled) {
+  const subject = c.group ? subjectGroups[c.group] : undefined;
+  return subject && c.chapterNo ? `${subject.short} – ${chapterName(c)}` : c.title;
+}
+
+export const learnHref =(slug: string) => `/learn?course=${encodeURIComponent(slug)}`;
 
 export function syllabusFor(course: Pick<CatalogCourse, "slug" | "modules"> | undefined): Syllabus {
   if (!course) return [];

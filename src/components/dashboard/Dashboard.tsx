@@ -6,7 +6,8 @@ import { ArrowRightIcon, BookIcon, CalendarIcon, CartIcon, CheckIcon, ClipboardI
 import DashboardShell, { type Section } from "./DashboardShell";
 import { Card, CardTitle, EmptyState, WelcomeBanner, rupee } from "./ui";
 import { greetingName, type AppUser } from "@/lib/auth";
-import { courseHref, learnHref, useCatalog } from "@/lib/catalog";
+import { ChapterMarks } from "../learn/ChapterSyllabus";
+import { chapterName, courseHref, courseTitle, learnHref, subjectGroups, useCatalog } from "@/lib/catalog";
 import { awaitingConfirmation, coursesFor, needsScreenshot, useMyOrders } from "@/lib/orders";
 
 const sections: Section[] = [
@@ -44,7 +45,11 @@ function Locked() {
 function StudentContent({ user, page }: { user: AppUser; page: string }) {
   const catalog = useCatalog();
   const orders = useMyOrders(user.uid);
-  const enrolled = coursesFor(user.enrolledCourses);
+  // Subject chapters sit together, in chapter order, after the other courses' enrolment order.
+  const enrolled = coursesFor(user.enrolledCourses)
+    .map((c, i) => ({ c, i }))
+    .sort((a, b) => (a.c.group && a.c.group === b.c.group ? (a.c.chapterNo ?? 0) - (b.c.chapterNo ?? 0) : a.i - b.i))
+    .map(({ c }) => c);
   const unlocked = enrolled.length > 0;
   const awaiting = (orders ?? []).filter(awaitingConfirmation);
   // Subject chapters are bought from their subject page, so they aren't suggested one by one.
@@ -90,7 +95,7 @@ function StudentContent({ user, page }: { user: AppUser; page: string }) {
 
       {overview && awaiting.map((o) => {
         const titles = coursesFor(o.courses)
-          .map((c) => c.title)
+          .map(courseTitle)
           .join(", ");
         const [tone, title, text, action] =
           o.status === "rejected"
@@ -141,9 +146,14 @@ function StudentContent({ user, page }: { user: AppUser; page: string }) {
                 </div>
                 <div className="p-2 pt-3">
                   <p className="text-xs font-medium text-forest-600">
-                    {c.category} · {c.level}
+                    {c.group && subjectGroups[c.group] ? subjectGroups[c.group].title : `${c.category} · ${c.level}`}
                   </p>
-                  <p className="mt-1 font-semibold leading-snug text-forest-950">{c.title}</p>
+                  <p className="mt-1 font-semibold leading-snug text-forest-950">{chapterName(c)}</p>
+                  {c.group && (
+                    <div className="mt-2">
+                      <ChapterMarks course={c} />
+                    </div>
+                  )}
                   <p className="mt-1 text-sm text-slate-500">
                     {c.lessons} lessons · with {c.mentor}
                   </p>

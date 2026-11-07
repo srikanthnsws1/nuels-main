@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { CartIcon, CheckIcon, CloseIcon } from "../icons";
 import { Card, CardTitle, EmptyState, rupee } from "./ui";
 import type { AppUser } from "@/lib/auth";
-import { useCatalog } from "@/lib/catalog";
+import { courseTitle, useCatalog } from "@/lib/catalog";
 import { db } from "@/lib/firebase";
 import { compressImage } from "@/lib/image";
 import { cancelOrder, coursesFor, markOrderPaid, rejectOrder, savePaymentDetails, totalFor, usePaymentDetails, type Order, type PaymentDetails, isRazorpayLink } from "@/lib/orders";
@@ -180,7 +180,7 @@ export function OrdersCard({ me, canApprove = true }: { me: AppUser; canApprove?
                 </p>
                 <p className="mt-1.5 line-clamp-2 text-xs text-slate-600">
                   {coursesFor(o.courses)
-                    .map((c) => c.title)
+                    .map(courseTitle)
                     .join(", ")}
                 </p>
                 <p className="mt-1 text-sm font-bold text-forest-700">

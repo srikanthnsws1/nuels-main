@@ -5,7 +5,7 @@ import { useEffect, useId, useState, type FormEvent } from "react";
 import { BookIcon, CheckIcon, UsersIcon } from "../icons";
 import { Card, CardTitle, EmptyState } from "./ui";
 import { assignmentsFor, modulesFor } from "@/data/learning";
-import { syllabusFor, useCatalog } from "@/lib/catalog";
+import { courseTitle, syllabusFor, useCatalog } from "@/lib/catalog";
 import { db } from "@/lib/firebase";
 import { isLiveClassLink, recordForLearner, saveLessonMeet, saveLessonVideo, useCourseVideos, type CourseProgress } from "@/lib/learning";
 
@@ -361,7 +361,7 @@ export function LearnersCard({ users }: { users: Learner[] | null }) {
                       {u?.name ?? r.uid}
                       {u?.memberId && <span className="ml-2 font-mono text-xs text-forest-700">{u.memberId}</span>}
                     </span>
-                    <span className="block text-xs text-slate-500">{course(r.slug)?.title ?? r.slug}</span>
+                    <span className="block text-xs text-slate-500">{courseTitle(course(r.slug) ?? { title: r.slug })}</span>
                   </span>
                   <span className="text-sm font-semibold text-forest-700">{total ? Math.round((r.completed.length / total) * 100) : 0}%</span>
                   {pendingGrades > 0 && <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">{pendingGrades} to grade</span>}

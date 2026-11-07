@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useId, useRef, useState } from "react";
 import { ArrowRightIcon, CameraIcon, CartIcon, CheckIcon, ClockIcon, LockIcon } from "./icons";
 import { useAuth, type AppUser } from "@/lib/auth";
-import { useCatalog } from "@/lib/catalog";
+import { courseHref, courseTitle, useCatalog } from "@/lib/catalog";
 import { compressImage } from "@/lib/image";
 import {
   awaitingConfirmation,
@@ -270,7 +270,7 @@ function OpenOrder({ order, details }: { order: Order; details: PaymentDetails |
     <li className="rounded-3xl border border-forest-100 bg-forest-50/50 p-4 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-semibold text-forest-950">{items.map((c) => c.title).join(", ")}</p>
+          <p className="font-semibold text-forest-950">{items.map(courseTitle).join(", ")}</p>
           <p className="mt-1 text-xs text-slate-500">
             Order <span className="font-mono">{order.id}</span>
             {order.createdAt && ` · ${dateFormat.format(order.createdAt.toDate())}`}
@@ -347,7 +347,7 @@ function PastOrder({ order }: { order: Order }) {
       <div className="min-w-0">
         <p className="font-semibold text-forest-950">
           {coursesFor(order.courses)
-            .map((c) => c.title)
+            .map(courseTitle)
             .join(", ")}
         </p>
         <p className="mt-1 text-xs text-slate-500">
@@ -447,7 +447,7 @@ function Checkout({ user }: { user: AppUser }) {
                 {unavailable.map((s) => (
                   <li key={s} className="flex items-center justify-between gap-3 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
                     <span>
-                      <strong>{catalog.find((c) => c.slug === s)?.title ?? "A course"}</strong>{" "}
+                      <strong>{courseTitle(catalog.find((x) => x.slug === s) ?? { title: "A course" })}</strong>{" "}
                       {user.enrolledCourses.includes(s) ? "is already in your courses." : "is no longer available."}
                     </span>
                     <button
@@ -479,13 +479,13 @@ function Checkout({ user }: { user: AppUser }) {
               <ul className="mt-5 divide-y divide-forest-100">
                 {items.map((c) => (
                   <li key={c.slug} className="flex gap-4 py-4 first:pt-0 last:pb-0">
-                    <Link href={`/courses/${c.slug}`} className="relative h-16 w-24 shrink-0 overflow-hidden rounded-xl sm:h-20 sm:w-32">
+                    <Link href={courseHref(c.slug)} className="relative h-16 w-24 shrink-0 overflow-hidden rounded-xl sm:h-20 sm:w-32">
                       <Image src={c.image} alt="" fill sizes="128px" className="object-cover" />
                     </Link>
                     <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0">
-                        <Link href={`/courses/${c.slug}`} className="font-semibold leading-snug text-forest-950 hover:text-forest-600">
-                          {c.title}
+                        <Link href={courseHref(c.slug)} className="font-semibold leading-snug text-forest-950 hover:text-forest-600">
+                          {courseTitle(c)}
                         </Link>
                         <p className="text-xs text-slate-500">
                           by {c.mentor} · {c.level} · {c.lessons} lessons

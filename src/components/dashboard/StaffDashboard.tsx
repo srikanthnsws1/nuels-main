@@ -10,7 +10,7 @@ import { EmployeesCard } from "./AdminStaff";
 import DashboardShell, { type Section } from "./DashboardShell";
 import { Avatar, Card, CardTitle, EmptyState, WelcomeBanner } from "./ui";
 import { displayRole, greetingName, useAuth, type AppUser } from "@/lib/auth";
-import { useCatalog } from "@/lib/catalog";
+import { courseTitle, useCatalog } from "@/lib/catalog";
 import { coursesFor } from "@/lib/orders";
 import { db } from "@/lib/firebase";
 import { can, permissionList } from "@/lib/staff";
@@ -96,7 +96,7 @@ function StudentsCard({ students, error }: { students: Student[] | null; error: 
                   </td>
                   <td className="py-3 pr-4 text-slate-600">
                     {coursesFor(s.enrolledCourses ?? [])
-                      .map((c) => c.title)
+                      .map(courseTitle)
                       .join(", ") || <span className="text-slate-400">—</span>}
                     {!!s.cart?.length && <span className="block text-xs text-amber-700">{s.cart.length} in cart</span>}
                   </td>

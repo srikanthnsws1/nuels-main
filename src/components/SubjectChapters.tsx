@@ -4,11 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ArrowRightIcon, BookIcon, CalendarIcon, CartIcon, CheckIcon, ClockIcon, CloseIcon, PlayIcon, UsersIcon } from "./icons";
+import { ArrowRightIcon, BookIcon, CalendarIcon, CartIcon, CheckIcon, ClockIcon, CloseIcon, PlayIcon, StarIcon, UsersIcon } from "./icons";
+import MarksWeightage from "./MarksWeightage";
 import Reveal from "./motion/Reveal";
+import { highWeightage, percentOf, unitFor } from "@/data/class10Maths";
 import { useAuth } from "@/lib/auth";
 import { learnHref, subjectGroups, useCatalogLoaded, useSubjectChapters, syllabusFor, type CatalogCourse } from "@/lib/catalog";
-import { addManyToCart, awaitingConfirmation, needsScreenshot, useMyOrders } from "@/lib/orders";
+import { addManyToCart, awaitingConfirmation, cancelOrder, needsScreenshot, useMyOrders, type Order } from "@/lib/orders";
 
 const rupee = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
@@ -31,6 +33,24 @@ export default function SubjectChapters({ group }: { group: string }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState("");
+  const [cancelling, setCancelling] = useState<string | null>(null);
+
+  // An unpaid order locks its chapters; let the learner drop it here to pick chapters again.
+  const cancelUnpaid = async (order: Order) => {
+    const titles = chapters.filter((c) => order.courses.includes(c.slug)).map((c) => `Chapter ${c.chapterNo}`);
+    const what = titles.length > 1 ? `${titles.join(", ")} (one order)` : titles[0] ?? "this chapter";
+    if (!window.confirm(`Cancel your unpaid order for ${what}? You can choose these chapters again afterwards.`)) return;
+    setCancelling(order.id);
+    setError("");
+    try {
+      await cancelOrder(order.id);
+    } catch (err) {
+      console.error("Could not cancel order", err);
+      setError("Couldn't cancel the order. Please try again.");
+    } finally {
+      setCancelling(null);
+    }
+  };
 
   const pendingOrder = (slug: string) => orders?.find((o) => awaitingConfirmation(o) && o.courses.includes(slug));
   const status = (c: CatalogCourse) =>
@@ -128,6 +148,8 @@ export default function SubjectChapters({ group }: { group: string }) {
         </div>
       </section>
 
+      {group === "class-10-maths" && <MarksWeightage chapterCount={(roman) => chapters.filter((c) => unitFor(c.unit)?.roman === roman).length} />}
+
       {/* chapter picker */}
       <section className="mx-auto max-w-5xl px-4 pb-32 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -154,7 +176,7 @@ export default function SubjectChapters({ group }: { group: string }) {
           <div className="mt-8 space-y-8">
             {units.map((u) => (
               <div key={u.name}>
-                <p className="text-xs font-bold uppercase tracking-wider text-forest-600">{u.name}</p>
+                <UnitHeading name={u.name} />
                 <ul className="mt-3 space-y-3">
                   {u.chapters.map((c) => {
                     const st = status(c);
@@ -222,9 +244,19 @@ export default function SubjectChapters({ group }: { group: string }) {
                                   Payment rejected · Upload again →
                                 </Link>
                               ) : order && needsScreenshot(order) ? (
-                                <Link href="/cart#orders" className="rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-forest-950 hover:bg-amber-300">
-                                  Payment pending · Pay now →
-                                </Link>
+                                <span className="flex flex-col items-start gap-1.5 sm:items-end">
+                                  <Link href="/cart#orders" className="rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-forest-950 hover:bg-amber-300">
+                                    Payment pending · Pay now →
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    onClick={() => cancelUnpaid(order)}
+                                    disabled={cancelling === order.id}
+                                    className="px-1 text-xs font-semibold text-red-600 hover:text-red-700 disabled:opacity-50"
+                                  >
+                                    {cancelling === order.id ? "Cancelling…" : "Cancel order"}
+                                  </button>
+                                </span>
                               ) : (
                                 <span className="rounded-full bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800">Under review</span>
                               )
@@ -302,5 +334,26 @@ export default function SubjectChapters({ group }: { group: string }) {
         </div>
       </div>
     </>
+  );
+}
+
+/** "UNIT II: ALGEBRA · 20 marks (25%) · High weightage" */
+function UnitHeading({ name }: { name: string }) {
+  const unit = unitFor(name);
+  const high = unit && highWeightage.has(unit.roman);
+  return (
+    <p className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+      <span className="text-xs font-bold uppercase tracking-wider text-forest-600">{name}</span>
+      {unit && (
+        <span className="rounded-full bg-forest-50 px-2.5 py-0.5 text-xs font-semibold text-forest-800">
+          {unit.marks} marks · {percentOf(unit.marks)}
+        </span>
+      )}
+      {high && (
+        <span className="inline-flex items-center gap-1 rounded-full bg-spark-500 px-2.5 py-0.5 text-xs font-bold text-forest-900">
+          <StarIcon className="h-3 w-3" /> High weightage
+        </span>
+      )}
+    </p>
   );
 }

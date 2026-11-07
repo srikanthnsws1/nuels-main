@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useState, type FormEvent } from "react";
 import DashboardShell, { type Section } from "../dashboard/DashboardShell";
+import ChapterSyllabus, { ChapterMarks, hasChapterSyllabus } from "./ChapterSyllabus";
 import MockTests from "./MockTests";
 import { useMyMockTests } from "@/lib/mockTests";
 import { Card, CardTitle, EmptyState, ProgressBar, WelcomeBanner } from "../dashboard/ui";
@@ -25,7 +26,7 @@ import {
 } from "../icons";
 import { assignmentsFor, documentsFor, embedUrl, modulesFor, type Lesson } from "@/data/learning";
 import type { AppUser } from "@/lib/auth";
-import { courseHref, syllabusFor, useCatalogLoaded, useCourse, type CatalogCourse } from "@/lib/catalog";
+import { chapterName, courseHref, courseTitle, subjectGroups, syllabusFor, useCatalogLoaded, useCourse, type CatalogCourse } from "@/lib/catalog";
 import {
   cancelMockInterviewRequest,
   openLesson,
@@ -399,7 +400,13 @@ function CourseContent({ user, course, page }: { user: AppUser; course: CatalogC
   return (
     <>
       {page === "overview" && (
-      <WelcomeBanner id="overview" title={course.title}>
+      <WelcomeBanner id="overview" title={chapterName(course)}>
+        {course.group && subjectGroups[course.group] && (
+          <div className="mt-2 space-y-2">
+            <p className="text-sm font-semibold text-spark-400">{subjectGroups[course.group].title}</p>
+            <ChapterMarks course={course} dark />
+          </div>
+        )}
         <p className="mt-2 text-sm text-forest-100">
           with {course.mentor} · {lessons.length} lessons{course.hours ? ` · ${course.hours} hours` : ""}
         </p>
@@ -426,8 +433,15 @@ function CourseContent({ user, course, page }: { user: AppUser; course: CatalogC
             <PlayIcon className="h-4 w-4" /> {done.length ? "Continue" : "Start"}: {nextUp.title}
           </button>
         )}
+        {hasChapterSyllabus(slug) && (
+          <a href="#syllabus" className="ml-3 mt-6 inline-flex items-center gap-2 rounded-full border border-white/30 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+            <BookIcon className="h-4 w-4" /> Full chapter syllabus
+          </a>
+        )}
       </WelcomeBanner>
       )}
+
+      {page === "syllabus" && <ChapterSyllabus course={course} />}
 
       {page === "lessons" && (
       <Card id="lessons">
@@ -698,8 +712,11 @@ function CourseContent({ user, course, page }: { user: AppUser; course: CatalogC
 export default function CourseView({ slug }: { slug: string }) {
   const course = useCourse(slug);
   const loaded = useCatalogLoaded();
+  // Subject chapters (e.g. Class 10 Maths) get a page with the board's full chapter syllabus.
+  const withSyllabus = !!course && hasChapterSyllabus(course.slug);
+  const pages = useMemo(() => (withSyllabus ? [sections[0], { id: "syllabus", label: "Chapter syllabus", icon: BookIcon }, ...sections.slice(1)] : sections), [withSyllabus]);
   return (
-    <DashboardShell role="student" sections={sections} sidebarCard={sidebarCard} paged>
+    <DashboardShell role="student" sections={pages} sidebarCard={sidebarCard} paged>
       {(user, page) =>
         !course && !loaded ? (
           <div className="flex justify-center py-20">
@@ -723,7 +740,7 @@ export default function CourseView({ slug }: { slug: string }) {
               </div>
               <div className="flex-1">
                 <p className="flex items-center justify-center gap-2 font-semibold text-forest-950 sm:justify-start">
-                  <LockIcon className="h-4 w-4" /> {course.title} is locked
+                  <LockIcon className="h-4 w-4" /> {courseTitle(course)} is locked
                 </p>
                 <p className="mt-1 text-sm text-slate-600">Enroll and get your payment approved to open the lessons, assignments and certificate.</p>
               </div>
