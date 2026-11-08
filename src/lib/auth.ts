@@ -226,10 +226,10 @@ async function loadProfileOnce(user: User): Promise<AppUser> {
   }
 
   const data = snap.data();
-  // Staff accounts an admin has deactivated can't sign in.
-  if (data.status === "inactive") {
+  // Accounts an admin has deactivated or removed can't sign in.
+  if (data.status === "inactive" || data.status === "removed") {
     await firebaseSignOut(auth);
-    throw Object.assign(new Error("Account deactivated"), { code: "auth/user-disabled" });
+    throw Object.assign(new Error("Account blocked"), { code: data.status === "removed" ? "nuels/account-removed" : "auth/user-disabled" });
   }
   let role: Role = roles.includes(data.role) ? data.role : "student";
 
@@ -290,7 +290,7 @@ function watchProfile(uid: string) {
       const data = snap.data();
       const current = state.user;
       if (!data || current?.uid !== uid) return;
-      if (data.status === "inactive") {
+      if (data.status === "inactive" || data.status === "removed") {
         firebaseSignOut(auth).catch(() => {});
         return;
       }
@@ -410,6 +410,8 @@ export function authErrorMessage(err: unknown) {
       return "Please enter a valid email address.";
     case "auth/user-disabled":
       return "This account has been deactivated. Contact your administrator or info@nuelsmart.com.";
+    case "nuels/account-removed":
+      return "This account has been removed. Contact info@nuelsmart.com if you think this is a mistake.";
     case "auth/too-many-requests":
       return "Too many attempts. Please wait a moment and try again.";
     case "auth/network-request-failed":

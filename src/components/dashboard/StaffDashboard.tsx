@@ -37,7 +37,7 @@ function useStudents(enabled: boolean) {
     return onSnapshot(
       query(collection(db, "users"), where("role", "==", "student")),
       (snap) => {
-        const rows = snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as Student);
+        const rows = snap.docs.filter((d) => d.data().status !== "removed").map((d) => ({ uid: d.id, ...d.data() }) as Student);
         rows.sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
         setStudents(rows);
       },

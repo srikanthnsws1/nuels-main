@@ -25,7 +25,8 @@ service cloud.firestore {
       return isBootstrapAdmin()
         || (signedIn()
             && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('status', 'active') == 'active');
     }
 
     // Company employees: an active "employee" account whose admin-granted permissions include p.

@@ -33,7 +33,7 @@ export function useEmployees(): { employees: Employee[] | null; error: string } 
     () =>
       onSnapshot(
         query(collection(db, "users"), where("role", "==", "employee")),
-        (snap) => setEmployees(snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as Employee).sort((a, b) => a.name.localeCompare(b.name))),
+        (snap) => setEmployees(snap.docs.filter((d) => d.data().status !== "removed").map((d) => ({ uid: d.id, ...d.data() }) as Employee).sort((a, b) => a.name.localeCompare(b.name))),
         () => setError("Couldn't load employees. Make sure the Firestore rules are deployed."),
       ),
     [],
