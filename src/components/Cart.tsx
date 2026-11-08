@@ -13,6 +13,7 @@ import {
   coursesFor,
   needsScreenshot,
   onlinePaymentsEnabled,
+  orderAmount,
   payOnline,
   placeManualOrder,
   removeFromCart,
@@ -74,7 +75,7 @@ function CopyRow({ label, value }: { label: string; value?: string }) {
 }
 
 function PaymentInstructions({ order, details }: { order: Order; details: PaymentDetails | null }) {
-  const amount = totalFor(order.courses);
+  const amount = orderAmount(order);
   if (details === null) return <p className="text-sm text-slate-500">Loading payment details…</p>;
 
   const hasUpi = !!details.upiId;
@@ -245,7 +246,7 @@ function OpenOrder({ order, details }: { order: Order; details: PaymentDetails |
   const [cancelling, setCancelling] = useState(false);
   const [replacing, setReplacing] = useState(false);
   const items = coursesFor(order.courses);
-  const amount = totalFor(order.courses);
+  const amount = orderAmount(order);
   const underReview = !needsScreenshot(order) && !replacing;
 
   const cancel = async () => {
@@ -270,7 +271,7 @@ function OpenOrder({ order, details }: { order: Order; details: PaymentDetails |
     <li className="rounded-3xl border border-forest-100 bg-forest-50/50 p-4 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-semibold text-forest-950">{items.map(courseTitle).join(", ")}</p>
+          <p className="font-semibold text-forest-950">{items.length ? items.map(courseTitle).join(", ") : "Loading course details…"}</p>
           <p className="mt-1 text-xs text-slate-500">
             Order <span className="font-mono">{order.id}</span>
             {order.createdAt && ` · ${dateFormat.format(order.createdAt.toDate())}`}
@@ -326,7 +327,7 @@ function OpenOrder({ order, details }: { order: Order; details: PaymentDetails |
             Keep the current screenshot
           </button>
         )}
-        {!order.screenshot && (
+        {(!order.screenshot || order.status === "rejected") && (
           <button
             type="button"
             onClick={cancel}
@@ -356,7 +357,7 @@ function PastOrder({ order }: { order: Order }) {
         </p>
       </div>
       <div className="text-right">
-        <p className="font-bold text-forest-900">{rupee.format(totalFor(order.courses))}</p>
+        <p className="font-bold text-forest-900">{rupee.format(orderAmount(order))}</p>
         <span className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusStyle[order.status]}`}>{statusLabel(order)}</span>
       </div>
     </li>
@@ -375,8 +376,10 @@ function Checkout({ user }: { user: AppUser }) {
   const past = (orders ?? []).filter((o) => !awaitingConfirmation(o) && !(o.method === "razorpay" && o.status !== "paid"));
   const details = usePaymentDetails(open.length > 0);
 
-  // Never charge for a course the learner already owns, or one that's been withdrawn.
-  const slugs = user.cart.filter((s) => !user.enrolledCourses.includes(s) && catalog.some((c) => c.slug === s && !c.hidden));
+  // Never charge for a course the learner already owns, one that's been withdrawn, or one that's
+  // already in an order waiting for payment (that would bill it twice).
+  const inOpenOrder = (s: string) => open.some((o) => o.courses.includes(s));
+  const slugs = user.cart.filter((s) => !user.enrolledCourses.includes(s) && !inOpenOrder(s) && catalog.some((c) => c.slug === s && !c.hidden));
   const items = coursesFor(slugs);
   // Courses still in the cart that can't be bought (withdrawn, or already owned): show them so
   // they can be removed instead of silently inflating the cart count.
@@ -385,7 +388,7 @@ function Checkout({ user }: { user: AppUser }) {
   const listPrice = items.reduce((sum, c) => sum + c.oldPrice, 0);
 
   const checkout = async () => {
-    if (!items.length) return;
+    if (!items.length || orders === null) return;
     setBusy(true);
     setError("");
     setPaidOnline(false);
@@ -448,7 +451,11 @@ function Checkout({ user }: { user: AppUser }) {
                   <li key={s} className="flex items-center justify-between gap-3 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
                     <span>
                       <strong>{courseTitle(catalog.find((x) => x.slug === s) ?? { title: "A course" })}</strong>{" "}
-                      {user.enrolledCourses.includes(s) ? "is already in your courses." : "is no longer available."}
+                      {user.enrolledCourses.includes(s)
+                        ? "is already in your courses."
+                        : inOpenOrder(s)
+                          ? "is already in an order above. Complete or cancel that payment."
+                          : "is no longer available."}
                     </span>
                     <button
                       type="button"
@@ -567,7 +574,7 @@ function Checkout({ user }: { user: AppUser }) {
             <button
               type="button"
               onClick={checkout}
-              disabled={busy || items.length === 0}
+              disabled={busy || items.length === 0 || orders === null}
               className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-forest-700 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-forest-700/20 transition hover:bg-forest-600 disabled:opacity-60"
             >
               {busy ? (

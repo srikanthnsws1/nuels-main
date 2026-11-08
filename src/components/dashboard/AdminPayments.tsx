@@ -9,7 +9,7 @@ import type { AppUser } from "@/lib/auth";
 import { courseTitle, useCatalog } from "@/lib/catalog";
 import { db } from "@/lib/firebase";
 import { compressImage } from "@/lib/image";
-import { cancelOrder, coursesFor, markOrderPaid, rejectOrder, savePaymentDetails, totalFor, usePaymentDetails, type Order, type PaymentDetails, isRazorpayLink } from "@/lib/orders";
+import { cancelOrder, coursesFor, markOrderPaid, orderAmount, rejectOrder, savePaymentDetails, usePaymentDetails, type Order, type PaymentDetails, isRazorpayLink } from "@/lib/orders";
 
 const dateFormat = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
 
@@ -55,7 +55,7 @@ function Screenshot({ order, onClose }: { order: Order; onClose: () => void }) {
         {/* eslint-disable-next-line @next/next/no-img-element -- uploaded screenshot data URL */}
         <img src={order.screenshot} alt={`Payment screenshot from ${order.name}`} className="max-h-[80dvh] w-auto rounded-2xl" />
         <p className="px-2 pb-1 pt-3 text-sm text-slate-600">
-          <strong className="text-forest-950">{order.name}</strong> · {rupee.format(totalFor(order.courses))}
+          <strong className="text-forest-950">{order.name}</strong> · {rupee.format(orderAmount(order))}
           {order.paymentRef && <> · Ref. {order.paymentRef}</>}
         </p>
       </div>
@@ -105,7 +105,10 @@ export function OrdersCard({ me, canApprove = true }: { me: AppUser; canApprove?
   };
 
   const accept = (o: Order) => {
-    if (!window.confirm(`Accept ${rupee.format(totalFor(o.courses))} from ${o.name}? Their courses and full dashboard unlock immediately.`)) return;
+    const question = o.screenshot
+      ? `Accept ${rupee.format(orderAmount(o))} from ${o.name}? Their courses and full dashboard unlock immediately.`
+      : `${o.name} hasn't uploaded a screenshot. Only continue if you've confirmed ${rupee.format(orderAmount(o))} reached your account. Mark it paid and unlock their courses?`;
+    if (!window.confirm(question)) return;
     run(o, () => markOrderPaid(o, me.uid));
   };
   const reject = (o: Order) => {
@@ -184,7 +187,7 @@ export function OrdersCard({ me, canApprove = true }: { me: AppUser; canApprove?
                     .join(", ")}
                 </p>
                 <p className="mt-1 text-sm font-bold text-forest-700">
-                  {rupee.format(totalFor(o.courses))}
+                  {rupee.format(orderAmount(o))}
                   {o.paymentRef && <span className="ml-2 font-mono text-xs font-normal text-slate-500">Ref. {o.paymentRef}</span>}
                 </p>
                 <p className="text-[11px] text-slate-400">
@@ -192,29 +195,31 @@ export function OrdersCard({ me, canApprove = true }: { me: AppUser; canApprove?
                 </p>
                 {o.status === "rejected" && o.rejectReason && <p className="mt-1 text-xs text-red-600">Rejected: {o.rejectReason}</p>}
 
-                {o.status === "pending" && canApprove && (
+                {(o.status === "pending" || o.status === "rejected") && o.method === "manual" && canApprove && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    {o.screenshot && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => accept(o)}
-                          disabled={busy === o.id}
-                          className="inline-flex items-center gap-1 rounded-full bg-forest-700 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-forest-600 disabled:opacity-50"
-                        >
-                          <CheckIcon className="h-3.5 w-3.5" /> Accept
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => reject(o)}
-                          disabled={busy === o.id}
-                          className="rounded-full border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
-                        >
-                          Reject
-                        </button>
-                      </>
+                    <button
+                      type="button"
+                      onClick={() => accept(o)}
+                      disabled={busy === o.id}
+                      className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 ${
+                        o.screenshot && o.status === "pending"
+                          ? "bg-forest-700 text-white hover:bg-forest-600"
+                          : "border border-forest-200 text-forest-700 hover:bg-forest-50"
+                      }`}
+                    >
+                      <CheckIcon className="h-3.5 w-3.5" /> {o.screenshot && o.status === "pending" ? "Accept" : "Mark as paid"}
+                    </button>
+                    {o.screenshot && o.status === "pending" && (
+                      <button
+                        type="button"
+                        onClick={() => reject(o)}
+                        disabled={busy === o.id}
+                        className="rounded-full border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                      >
+                        Reject
+                      </button>
                     )}
-                    {!o.screenshot && (
+                    {(!o.screenshot || o.status === "rejected") && (
                       <button
                         type="button"
                         onClick={() => cancel(o)}

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import EnrollModal from "./EnrollModal";
 import { CartIcon, CheckIcon } from "./icons";
@@ -22,6 +23,7 @@ export default function EnrollButton({ course, className, children }: { course: 
   const [failed, setFailed] = useState(false);
   const close = useCallback(() => setOpen(false), []);
   const live = useCourse(course.slug);
+  const router = useRouter();
 
   if (user?.enrolledCourses.includes(course.slug)) {
     return (
@@ -60,10 +62,10 @@ export default function EnrollButton({ course, className, children }: { course: 
     setFailed(false);
     try {
       await addToCart(user.uid, course.slug);
+      router.push("/cart");
     } catch (err) {
       console.error("Could not add to cart", err);
       setFailed(true);
-    } finally {
       setAdding(false);
     }
   };

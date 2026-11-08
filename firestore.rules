@@ -138,7 +138,7 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Course orders. Learners create pending orders and may cancel their own pending ones.
+    // Course orders. Learners create pending orders and may cancel their own pending or rejected ones.
     // Only an admin (offline payments) or the verifyRazorpayPayment Cloud Function (which
     // bypasses these rules) can mark an order paid.
     match /orders/{orderId} {
@@ -168,7 +168,7 @@ service cloud.firestore {
         || (
           signedIn()
           && resource.data.uid == request.auth.uid
-          && resource.data.status == 'pending'
+          && resource.data.status in ['pending', 'rejected']
           && request.resource.data.status == 'cancelled'
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancelledAt'])
         )

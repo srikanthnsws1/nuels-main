@@ -65,7 +65,7 @@ export default function LoginForm() {
 
   return (
     <Reveal immediate>
-      <h2 className="text-3xl font-bold tracking-tight text-forest-950 sm:text-4xl">Log in to Nuels</h2>
+      <h2 className="text-3xl font-bold tracking-tight text-forest-950 sm:text-4xl">Log in to Nuel Smart</h2>
       <p className="mt-2 text-sm text-slate-600 sm:text-base">Welcome back! Enter your details to continue learning.</p>
 
       <form onSubmit={submit} noValidate className="mt-8 space-y-5">
@@ -155,7 +155,7 @@ export default function LoginForm() {
 
       <div className="my-8 flex items-center gap-4 text-xs font-medium uppercase tracking-wider text-slate-400">
         <span className="h-px flex-1 bg-forest-100" />
-        New to Nuels?
+        New to Nuel Smart?
         <span className="h-px flex-1 bg-forest-100" />
       </div>
 

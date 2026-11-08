@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useState } from "react";
 import EnrollButton from "./EnrollButton";
 import SectionHeading from "./SectionHeading";
-import { BookIcon, ClockIcon } from "./icons";
+import { BookIcon, ClockIcon, CloseIcon, SearchIcon } from "./icons";
 import Reveal from "./motion/Reveal";
 import { courseFilters } from "@/data/site";
-import { courseHref, subjectGroups, useCatalog, type CatalogCourse as Course } from "@/lib/catalog";
+import { courseHref, subjectGroups, syllabusFor, useCatalog, type CatalogCourse as Course } from "@/lib/catalog";
 
 const rupee = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
@@ -54,10 +54,12 @@ function CourseCard({ course }: { course: Course }) {
             <BookIcon className="h-3.5 w-3.5 text-forest-600" />
             {course.lessons} Lessons
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-forest-50 px-3 py-1.5">
-            <ClockIcon className="h-3.5 w-3.5 text-forest-600" />
-            {course.hours} Hours
-          </span>
+          {course.hours > 0 && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-forest-50 px-3 py-1.5">
+              <ClockIcon className="h-3.5 w-3.5 text-forest-600" />
+              {course.hours} Hours
+            </span>
+          )}
         </div>
 
         <div className="flex-1 pt-5" />
@@ -127,10 +129,27 @@ function SubjectCard({ group, chapters }: { group: string; chapters: Course[] })
   );
 }
 
+/** Everything a learner might type to find a course: title, tools and topics, category, mentor, subject. */
+function searchText(c: Course) {
+  const subject = c.group ? subjectGroups[c.group] : undefined;
+  return [c.title, c.description, c.category, c.level, c.mentor, subject?.title, subject?.short, ...syllabusFor(c).flatMap((m) => [m.title, ...m.topics])]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+/** Every word typed must appear somewhere in the course ("python data", "power bi"). */
+const matches = (c: Course, words: string[]) => {
+  const text = searchText(c);
+  return words.every((w) => text.includes(w));
+};
+
 export default function PopularCourses({ standalone = false }: { standalone?: boolean }) {
   const [active, setActive] = useState(courseFilters[0]);
+  const [query, setQuery] = useState("");
   const courses = useCatalog();
-  const filtered = active === courseFilters[0] ? courses : courses.filter((c) => c.category === active);
+  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const filtered = (active === courseFilters[0] ? courses : courses.filter((c) => c.category === active)).filter((c) => !words.length || matches(c, words));
   // Chapters of a school subject show as one subject card, where the first chapter would be.
   const visible: ({ kind: "course"; course: Course } | { kind: "subject"; group: string; chapters: Course[] })[] = [];
   for (const c of filtered) {
@@ -152,7 +171,24 @@ export default function PopularCourses({ standalone = false }: { standalone?: bo
           />
         )}
 
-        <div className={`no-scrollbar flex gap-2 overflow-x-auto pb-2 sm:justify-center ${standalone ? "" : "mt-10"}`}>
+        <div className={`mx-auto flex max-w-xl items-center gap-3 rounded-full border border-forest-100 bg-white px-5 py-3 shadow-sm transition focus-within:border-forest-300 focus-within:shadow-md ${standalone ? "" : "mt-10"}`}>
+          <SearchIcon className="h-5 w-5 shrink-0 text-slate-400" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search courses, tools or topics (e.g. Python, Power BI, AWS)"
+            aria-label="Search courses"
+            className="w-full min-w-0 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 sm:text-base [&::-webkit-search-cancel-button]:hidden"
+          />
+          {query && (
+            <button type="button" onClick={() => setQuery("")} aria-label="Clear search" className="shrink-0 rounded-full p-1 text-slate-400 hover:bg-forest-50 hover:text-forest-700">
+              <CloseIcon className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        <div className="no-scrollbar mt-5 flex gap-2 overflow-x-auto pb-2 sm:justify-center">
           {courseFilters.map((f) => (
             <button
               key={f}
@@ -169,9 +205,32 @@ export default function PopularCourses({ standalone = false }: { standalone?: bo
           ))}
         </div>
 
+        {words.length > 0 && visible.length > 0 && (
+          <p className="mt-6 text-center text-sm text-slate-500" aria-live="polite">
+            {visible.length} {visible.length === 1 ? "result" : "results"} for &ldquo;{query.trim()}&rdquo;
+            {active === courseFilters[0] ? "" : ` in ${active}`}
+          </p>
+        )}
+        {words.length > 0 && visible.length === 0 && (
+          <div className="mx-auto mt-6 max-w-md rounded-3xl border border-forest-100 bg-white p-8 text-center">
+            <p className="font-semibold text-forest-950">No courses match &ldquo;{query.trim()}&rdquo;</p>
+            <p className="mt-1 text-sm text-slate-500">Try another tool or topic{active === courseFilters[0] ? "" : `, or search all categories`}.</p>
+            <button
+              type="button"
+              onClick={() => {
+                setQuery("");
+                setActive(courseFilters[0]);
+              }}
+              className="mt-4 rounded-full bg-forest-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-forest-600"
+            >
+              Show all courses
+            </button>
+          </div>
+        )}
+
         <div className="mt-8 grid gap-5 sm:mt-10 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
           {visible.map((item, i) => (
-            <Reveal key={`${active}-${item.kind === "course" ? item.course.slug : item.group}`} delay={(i % 3) * 120} className="h-full">
+            <Reveal key={`${active}-${query}-${item.kind === "course" ? item.course.slug : item.group}`} delay={(i % 3) * 120} className="h-full">
               {item.kind === "course" ? <CourseCard course={item.course} /> : <SubjectCard group={item.group} chapters={item.chapters} />}
             </Reveal>
           ))}

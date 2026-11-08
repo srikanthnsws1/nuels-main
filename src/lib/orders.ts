@@ -81,6 +81,13 @@ export const coursesFor = (slugs: string[]) => slugs.map(courseBySlug).filter((c
 /** Always priced from the catalog, never from what's stored on an order. */
 export const totalFor = (slugs: string[]) => coursesFor(slugs).reduce((sum, c) => sum + c.price, 0);
 
+/**
+ * What an order costs: the live catalog price once every course on it is known, otherwise the
+ * amount saved on the order (e.g. while the catalog is still loading, or a course was withdrawn).
+ */
+export const orderAmount = (o: Pick<Order, "courses" | "amount">) =>
+  coursesFor(o.courses).length === o.courses.length ? totalFor(o.courses) : o.amount;
+
 /** A manual order that isn't settled yet: waiting for a screenshot, under review, or rejected. */
 export const awaitingConfirmation = (o: Order) => o.method === "manual" && (o.status === "pending" || o.status === "rejected");
 /** The learner still has to upload (or re-upload) a payment screenshot. */
