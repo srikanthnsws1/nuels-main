@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useId, useRef, useState } from "react";
 import { ArrowRightIcon, CameraIcon, CartIcon, CheckIcon, ClockIcon, LockIcon } from "./icons";
+import { PaymentHistoryList } from "./PaymentHistory";
 import { useAuth, type AppUser } from "@/lib/auth";
 import { courseHref, courseTitle, useCatalog } from "@/lib/catalog";
 import { compressImage } from "@/lib/image";
@@ -40,7 +41,7 @@ const statusStyle: Record<Order["status"], string> = {
 function statusLabel(o: Order) {
   if (o.status === "paid") return "Approved";
   if (o.status === "cancelled") return "Cancelled";
-  if (o.status === "rejected") return "Screenshot rejected";
+  if (o.status === "rejected") return "Payment rejected";
   if (o.method === "razorpay") return "Payment not completed";
   return o.screenshot ? "Under review" : "Awaiting payment";
 }
@@ -304,12 +305,6 @@ function OpenOrder({ order, details }: { order: Order; details: PaymentDetails |
         </div>
       ) : (
         <div className="mt-5 space-y-5">
-          {order.status === "rejected" && (
-            <p role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">
-              <strong>Your screenshot was not approved:</strong> {order.rejectReason || "the payment couldn't be verified."} Please upload a clear
-              screenshot of a successful payment.
-            </p>
-          )}
           <div className="space-y-3">
             {step(1, `Pay ${rupee.format(amount)} using UPI or bank transfer`)}
             <PaymentInstructions order={order} details={details} />
@@ -327,7 +322,7 @@ function OpenOrder({ order, details }: { order: Order; details: PaymentDetails |
             Keep the current screenshot
           </button>
         )}
-        {(!order.screenshot || order.status === "rejected") && (
+        {!order.screenshot && (
           <button
             type="button"
             onClick={cancel}
@@ -337,28 +332,6 @@ function OpenOrder({ order, details }: { order: Order; details: PaymentDetails |
             {cancelling ? "Cancelling…" : "Cancel order"}
           </button>
         )}
-      </div>
-    </li>
-  );
-}
-
-function PastOrder({ order }: { order: Order }) {
-  return (
-    <li className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-forest-100 p-4">
-      <div className="min-w-0">
-        <p className="font-semibold text-forest-950">
-          {coursesFor(order.courses)
-            .map(courseTitle)
-            .join(", ")}
-        </p>
-        <p className="mt-1 text-xs text-slate-500">
-          Order <span className="font-mono">{order.id}</span>
-          {order.createdAt && ` · ${dateFormat.format(order.createdAt.toDate())}`}
-        </p>
-      </div>
-      <div className="text-right">
-        <p className="font-bold text-forest-900">{rupee.format(orderAmount(order))}</p>
-        <span className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusStyle[order.status]}`}>{statusLabel(order)}</span>
       </div>
     </li>
   );
@@ -597,11 +570,9 @@ function Checkout({ user }: { user: AppUser }) {
       {past.length > 0 && (
         <section className="rounded-3xl border border-forest-100 bg-white p-5 sm:p-6">
           <h2 className="text-lg font-bold tracking-tight text-forest-950">Order history</h2>
-          <ul className="mt-5 space-y-3">
-            {past.map((o) => (
-              <PastOrder key={o.id} order={o} />
-            ))}
-          </ul>
+          <div className="mt-5">
+            <PaymentHistoryList user={user} orders={past} />
+          </div>
         </section>
       )}
     </div>

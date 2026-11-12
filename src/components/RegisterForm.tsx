@@ -8,6 +8,7 @@ import Reveal from "./motion/Reveal";
 import AvatarPicker from "./AvatarPicker";
 import { authErrorMessage, greetingName, homeFor, register, type AppUser, type Role } from "@/lib/auth";
 import { countries, districtsByState, indianStates, syllabusOptions } from "@/data/locations";
+import { QUIZ_LANDING_KEY, studyClassGroups } from "@/data/dailyQuiz";
 
 const passwordRules = [
   { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
@@ -35,6 +36,7 @@ export default function RegisterForm({ defaultRole }: { defaultRole?: Role }) {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [studyClass, setStudyClass] = useState("");
   const [institution, setInstitution] = useState("");
   const [syllabus, setSyllabus] = useState("");
   const [country, setCountry] = useState("India");
@@ -61,6 +63,7 @@ export default function RegisterForm({ defaultRole }: { defaultRole?: Role }) {
   const termsError = submitted && !terms ? "Please accept the Terms & Privacy Policy to continue." : "";
   const nicknameError = nickname.trim() && !/^[\p{L}\p{N} ._-]{2,30}$/u.test(nickname.trim()) ? "Use 2–30 letters, numbers, spaces, dots or dashes." : "";
   const required = (v: string, label: string) => (submitted && !v.trim() ? `Please enter your ${label}.` : "");
+  const studyClassError = role === "student" && submitted && !studyClass ? "Please choose your class, standard or course." : "";
   const institutionError = required(institution, role === "mentor" ? "institution or organisation" : "school or college name");
   const syllabusError = required(syllabus, "syllabus, board or university");
   const countryError = required(country, "country");
@@ -84,6 +87,7 @@ export default function RegisterForm({ defaultRole }: { defaultRole?: Role }) {
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
       !/^(\+91[\s-]?)?[6-9]\d{9}$/.test(phone.replace(/\s/g, "")) ||
       missingDetails ||
+      (role === "student" && !studyClass) ||
       !!nicknameError ||
       !passwordRules.every((r) => r.test(password)) ||
       confirm !== password ||
@@ -100,10 +104,19 @@ export default function RegisterForm({ defaultRole }: { defaultRole?: Role }) {
         phone: phone.replace(/\s/g, ""),
         password,
         role,
-        profile: { institution, syllabus, country, state, district, mandal, city, nickname, photo, whatsappOptIn: whatsapp },
+        profile: { ...(role === "student" ? { studyClass } : {}), institution, syllabus, country, state, district, mandal, city, nickname, photo, whatsappOptIn: whatsapp },
       });
       setCreated(user);
       setLoading(false);
+      // New learners go straight to today's daily quiz (or the overview when it's closed).
+      if (user.role === "student" && user.requestedRole !== "mentor") {
+        try {
+          sessionStorage.setItem(QUIZ_LANDING_KEY, "1");
+        } catch {
+          /* private mode */
+        }
+        setTimeout(() => router.push("/dashboard#daily-quiz"), 4000);
+      }
     } catch (err) {
       setErrorMsg(authErrorMessage(err));
       setLoading(false);
@@ -151,13 +164,26 @@ export default function RegisterForm({ defaultRole }: { defaultRole?: Role }) {
           Please verify your email using the link we sent to <strong className="text-forest-800">{created.email}</strong>.
           {whatsapp && " Your welcome message is also on its way to your WhatsApp."}
         </p>
-        <button
-          type="button"
-          onClick={() => router.push(homeFor[created.role])}
-          className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-forest-700 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-forest-600"
-        >
-          Go to my dashboard <ArrowRightIcon className="h-4 w-4" />
-        </button>
+        {created.role === "student" && !tutor ? (
+          <>
+            <p className="mt-4 text-sm font-semibold text-forest-700">Taking you to today&apos;s daily quiz…</p>
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard#daily-quiz")}
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-forest-700 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-forest-600"
+            >
+              Start today&apos;s quiz now <ArrowRightIcon className="h-4 w-4" />
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => router.push(homeFor[created.role])}
+            className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-forest-700 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-forest-600"
+          >
+            Go to my dashboard <ArrowRightIcon className="h-4 w-4" />
+          </button>
+        )}
       </Reveal>
     );
   }
@@ -282,6 +308,38 @@ export default function RegisterForm({ defaultRole }: { defaultRole?: Role }) {
             {phoneError && <p className="mt-1.5 text-xs font-medium text-red-600">{phoneError}</p>}
           </div>
         </div>
+
+        {/* Class / standard / course (learners): decides the daily quiz pattern */}
+        {role === "student" && (
+          <div>
+            <label htmlFor="reg-class" className="mb-1.5 block text-sm font-medium text-forest-900">
+              Class / Standard / Course
+            </label>
+            <select
+              id="reg-class"
+              value={studyClass}
+              onChange={(e) => setStudyClass(e.target.value)}
+              aria-invalid={!!studyClassError}
+              className={`${field} ${inputBorder(!!studyClassError)} ${studyClass ? "" : "text-slate-400"}`}
+            >
+              <option value="">Select your class or course</option>
+              {studyClassGroups.map((g) => (
+                <optgroup key={g.label} label={g.label} className="text-slate-700">
+                  {g.options.map((o) => (
+                    <option key={o.id} value={o.id} className="text-slate-700">
+                      {o.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            {studyClassError ? (
+              <p className="mt-1.5 text-xs font-medium text-red-600">{studyClassError}</p>
+            ) : (
+              <p className="mt-1.5 text-xs text-slate-500">Your daily quiz questions are set for this class.</p>
+            )}
+          </div>
+        )}
 
         {/* Education */}
         <div className="grid gap-4 sm:grid-cols-2">

@@ -1,0 +1,462 @@
+[
+  {
+    "id": "INT-ENG",
+    "questions": [
+      ["Choose the correct sentence.", "Each of the students has a book.", "Each of the students have a book.", "Each of the student have a book.", "Each students has a book."],
+      ["Choose the synonym of 'abundant'.", "Plentiful", "Scarce", "Rare", "Empty"],
+      ["Choose the antonym of 'expand'.", "Contract", "Enlarge", "Extend", "Spread"],
+      ["One word for 'a person who can speak two languages':", "Bilingual", "Biography", "Bicycle", "Bilateral"],
+      ["Change into passive voice: 'They are building a bridge.'", "A bridge is being built by them.", "A bridge was built by them.", "A bridge has been built by them.", "A bridge is built by them."],
+      ["Fill in the blank: I look forward ___ meeting you.", "to", "for", "at", "on"],
+      ["What does the idiom 'break the ice' mean?", "Start a conversation in an awkward situation", "Break something cold", "Become very angry", "End a friendship"],
+      ["Choose the indirect speech: She said, 'I will come tomorrow.'", "She said that she would come the next day.", "She said that she will come tomorrow.", "She said that I would come tomorrow.", "She says that she would come the next day."],
+      ["Which word is spelt correctly?", "Necessary", "Neccessary", "Necesary", "Neccesary"],
+      ["Fill in the blank: He is good ___ mathematics.", "at", "of", "on", "with"],
+      ["Hardly had he arrived ___ it started raining.", "when", "than", "then", "that"],
+      ["What part of speech is 'quickly'?", "Adverb", "Adjective", "Noun", "Verb"],
+      ["Choose the question tag: Let's go for a walk, ___?", "shall we", "will we", "don't we", "won't you"],
+      ["What does 'ubiquitous' mean?", "Present everywhere", "Very rare", "Extremely old", "Hard to understand"],
+      ["Fill in the blank: The news ___ good.", "is", "are", "were", "have been"]
+    ]
+  },
+  {
+    "id": "INT-M1A",
+    "questions": [
+      ["A is a 3 × 3 matrix with |A| = 4. What is |2A|?", "32", "8", "16", "64"],
+      ["If f(x) = 2x + 3, then f⁻¹(x) = ?", "(x − 3)/2", "(x + 3)/2", "2x − 3", "1/(2x + 3)"],
+      ["sin 2A = ?", "2 sin A cos A", "sin²A − cos²A", "2 sin A", "cos²A − sin²A"],
+      ["What is the period of sin x?", "2π", "π", "π/2", "4π"],
+      ["What is the determinant of [[1, 2], [3, 4]]?", "−2", "2", "10", "−10"],
+      ["What is the domain of f(x) = 1/(x − 2)?", "ℝ − {2}", "ℝ", "ℝ − {0}", "(2, ∞)"],
+      ["What is the trace of the 3 × 3 identity matrix?", "3", "1", "0", "9"],
+      ["If a = 2i + 3j and b = i − j, then a · b = ?", "−1", "5", "1", "−5"],
+      ["sin⁻¹(1) = ?", "π/2", "π", "0", "π/4"],
+      ["cos(A + B) = ?", "cos A cos B − sin A sin B", "cos A cos B + sin A sin B", "sin A cos B + cos A sin B", "sin A sin B − cos A cos B"],
+      ["In triangle ABC, a / sin A = ?", "2R", "R", "R/2", "4R"],
+      ["What is the magnitude of i + j + k?", "√3", "3", "1", "√2"],
+      ["cosh²x − sinh²x = ?", "1", "0", "−1", "2"],
+      ["A matrix A with Aᵀ = A is called …", "Symmetric", "Skew-symmetric", "Singular", "Orthogonal"],
+      ["tan(45° + 45°) is …", "Not defined", "0", "1", "2"]
+    ]
+  },
+  {
+    "id": "INT-M1B",
+    "questions": [
+      ["What is the slope of the line 2x + 3y + 5 = 0?", "−2/3", "2/3", "−3/2", "3/2"],
+      ["What is the distance between (1, 2) and (4, 6)?", "5", "7", "√7", "25"],
+      ["lim (x → 0) sin x / x = ?", "1", "0", "∞", "Does not exist"],
+      ["d/dx (x³) = ?", "3x²", "x²", "3x", "x³/3"],
+      ["d/dx (sin x) = ?", "cos x", "−cos x", "sin x", "−sin x"],
+      ["Two lines have slopes m and −1/m. The angle between them is …", "90°", "0°", "45°", "60°"],
+      ["What is the midpoint of (2, 4) and (6, 8)?", "(4, 6)", "(8, 12)", "(3, 4)", "(2, 2)"],
+      ["What is the distance of the line 3x + 4y = 10 from the origin?", "2", "10", "5/2", "1"],
+      ["What is the centroid of the triangle with vertices (0, 0), (6, 0) and (0, 9)?", "(2, 3)", "(3, 3)", "(6, 9)", "(2, 4.5)"],
+      ["If y = log x, then dy/dx = ?", "1/x", "x", "log x / x", "eˣ"],
+      ["What are the direction cosines of the x-axis?", "(1, 0, 0)", "(0, 1, 0)", "(0, 0, 1)", "(1, 1, 1)"],
+      ["lim (x → 2) (x² − 4)/(x − 2) = ?", "4", "0", "2", "Not defined"],
+      ["What is the equation of the line through the origin with slope 2?", "y = 2x", "y = x + 2", "x = 2y", "y = 2"],
+      ["If f′(c) = 0 and f″(c) < 0, then at x = c the function has a …", "Local maximum", "Local minimum", "Point of discontinuity", "Vertical tangent"],
+      ["d/dx (eˣ) = ?", "eˣ", "x eˣ⁻¹", "1/x", "eˣ⁻¹"]
+    ]
+  },
+  {
+    "id": "INT-PHY",
+    "questions": [
+      ["What is the dimensional formula of force?", "[M L T⁻²]", "[M L² T⁻²]", "[M L T⁻¹]", "[M L⁻¹ T⁻²]"],
+      ["What is the SI unit of work?", "Joule", "Watt", "Newton", "Pascal"],
+      ["Newton's first law is also called the law of …", "Inertia", "Momentum", "Gravitation", "Action and reaction"],
+      ["Acceleration due to gravity at the Earth's surface is about …", "9.8 m/s²", "8.9 m/s²", "1.6 m/s²", "98 m/s²"],
+      ["Kinetic energy = ?", "½mv²", "mgh", "mv", "½mv"],
+      ["The escape velocity from the Earth is about …", "11.2 km/s", "7.9 km/s", "3 × 10⁸ m/s", "1.1 km/s"],
+      ["What is the SI unit of momentum?", "kg·m/s", "kg·m/s²", "N/m", "J·s"],
+      ["A projectile has its maximum range when thrown at …", "45°", "30°", "60°", "90°"],
+      ["The time period of a simple pendulum is T = ?", "2π√(l/g)", "2π√(g/l)", "π√(l/g)", "2πl/g"],
+      ["Bernoulli's theorem is based on conservation of …", "Energy", "Mass", "Momentum", "Charge"],
+      ["Absolute zero is …", "0 K (−273.15 °C)", "0 °C", "−100 °C", "273 K"],
+      ["In an isothermal process, what stays constant?", "Temperature", "Pressure", "Volume", "Heat"],
+      ["Within the elastic limit, stress is proportional to …", "Strain", "Volume", "Density", "Time"],
+      ["What is the SI unit of power?", "Watt", "Joule", "Newton", "Volt"],
+      ["In rotational motion, moment of inertia plays the role that ___ plays in linear motion.", "Mass", "Velocity", "Force", "Displacement"]
+    ]
+  },
+  {
+    "id": "INT-CHE",
+    "questions": [
+      ["What is the value of Avogadro's number?", "6.022 × 10²³", "3 × 10⁸", "1.6 × 10⁻¹⁹", "9.1 × 10⁻³¹"],
+      ["How many orbitals are there in a d subshell?", "5", "3", "7", "1"],
+      ["Which element has the highest electronegativity?", "Fluorine", "Oxygen", "Chlorine", "Nitrogen"],
+      ["What is the shape of a methane molecule?", "Tetrahedral", "Linear", "Trigonal planar", "Octahedral"],
+      ["What is the hybridisation of carbon in ethyne (C₂H₂)?", "sp", "sp²", "sp³", "dsp²"],
+      ["What is the ideal gas equation?", "PV = nRT", "PV = RT/n", "P = nRTV", "PV = nR/T"],
+      ["What is the mass of 1 mole of water?", "18 g", "16 g", "10 g", "20 g"],
+      ["What is the pH of 0.01 M HCl?", "2", "1", "12", "0.01"],
+      ["Hard water contains salts of …", "Calcium and magnesium", "Sodium and potassium", "Iron and copper", "Silver and gold"],
+      ["The bond angle in a water molecule is about …", "104.5°", "109.5°", "120°", "180°"],
+      ["What is the IUPAC name of CH₃CH₂OH?", "Ethanol", "Methanol", "Ethanal", "Ethanoic acid"],
+      ["Which quantum number gives the shape of an orbital?", "Azimuthal (l)", "Principal (n)", "Magnetic (m)", "Spin (s)"],
+      ["The first law of thermodynamics is the law of conservation of …", "Energy", "Mass", "Charge", "Momentum"],
+      ["Which of these is an alkali metal?", "Potassium", "Calcium", "Aluminium", "Iron"],
+      ["Le Chatelier's principle applies to …", "Systems in equilibrium", "Only solids", "Nuclear reactions", "Only gases at 0 K"]
+    ]
+  },
+  {
+    "id": "INT-BOT",
+    "questions": [
+      ["Who is known as the father of Botany?", "Theophrastus", "Aristotle", "Linnaeus", "Mendel"],
+      ["Who introduced binomial nomenclature?", "Carolus Linnaeus", "Charles Darwin", "Robert Brown", "Theophrastus"],
+      ["The plant cell wall is mainly made of …", "Cellulose", "Chitin", "Protein", "Lipid"],
+      ["Which tissue increases the girth (thickness) of a stem?", "Lateral meristem (cambium)", "Apical meristem", "Permanent tissue", "Epidermis"],
+      ["Light reactions of photosynthesis take place in the …", "Thylakoids (grana)", "Stroma", "Cytoplasm", "Mitochondria"],
+      ["In the C₄ pathway, the first stable product is …", "Oxaloacetic acid", "3-phosphoglyceric acid", "Glucose", "Pyruvic acid"],
+      ["Which plant group is called the 'amphibians of the plant kingdom'?", "Bryophytes", "Pteridophytes", "Gymnosperms", "Algae"],
+      ["Crossing over takes place during …", "Pachytene of prophase I", "Metaphase I", "Anaphase II", "Telophase I"],
+      ["Which bacterium fixes nitrogen in the root nodules of legumes?", "Rhizobium", "Lactobacillus", "E. coli", "Streptococcus"],
+      ["The inflorescence of a sunflower is a …", "Head (capitulum)", "Spike", "Umbel", "Raceme"],
+      ["Which plant hormone ripens fruits?", "Ethylene", "Auxin", "Gibberellin", "Cytokinin"],
+      ["Gymnosperms have …", "Naked seeds", "Seeds inside fruits", "No seeds", "Spores only"],
+      ["Which cell organelle is called the 'suicide bag'?", "Lysosome", "Ribosome", "Golgi body", "Plastid"],
+      ["What is the main photosynthetic pigment?", "Chlorophyll a", "Carotene", "Xanthophyll", "Anthocyanin"],
+      ["The study of fossil plants is called …", "Palaeobotany", "Phycology", "Mycology", "Pteridology"]
+    ]
+  },
+  {
+    "id": "INT-ZOO",
+    "questions": [
+      ["Earthworms belong to the phylum …", "Annelida", "Arthropoda", "Mollusca", "Nematoda"],
+      ["Which is the largest phylum of the animal kingdom?", "Arthropoda", "Chordata", "Mollusca", "Porifera"],
+      ["Pore-bearing animals (sponges) belong to …", "Porifera", "Cnidaria", "Platyhelminthes", "Echinodermata"],
+      ["What is the respiratory organ of a cockroach?", "Tracheae", "Lungs", "Gills", "Skin"],
+      ["Which blood cells fight infection?", "White blood cells", "Red blood cells", "Platelets", "Plasma"],
+      ["Malaria is caused by …", "Plasmodium", "Entamoeba", "Trypanosoma", "Leishmania"],
+      ["Which hormone do the β-cells of the pancreas secrete?", "Insulin", "Glucagon", "Thyroxine", "Cortisol"],
+      ["Which of these animals is NOT a chordate?", "Starfish", "Frog", "Fish", "Pigeon"],
+      ["What are the excretory organs of a cockroach?", "Malpighian tubules", "Nephridia", "Flame cells", "Kidneys"],
+      ["Which is the longest bone in the human body?", "Femur", "Humerus", "Tibia", "Radius"],
+      ["Sleeping sickness is caused by …", "Trypanosoma", "Plasmodium", "Giardia", "Paramecium"],
+      ["How many pairs of cranial nerves do humans have?", "12", "10", "31", "8"],
+      ["The stinging cells of cnidarians are called …", "Cnidoblasts", "Flame cells", "Choanocytes", "Nephrocytes"],
+      ["Which animal goes through metamorphosis?", "Frog", "Cow", "Pigeon", "Snake"],
+      ["Which blood group is called the universal donor?", "O negative", "AB positive", "A positive", "B negative"]
+    ]
+  },
+  {
+    "id": "INT-COM",
+    "questions": [
+      ["What is the accounting equation?", "Assets = Liabilities + Capital", "Assets = Capital − Liabilities", "Capital = Assets + Liabilities", "Liabilities = Assets + Capital"],
+      ["'Debit what comes in, credit what goes out' is the rule for …", "Real accounts", "Personal accounts", "Nominal accounts", "All accounts"],
+      ["Which is the book of original entry?", "Journal", "Ledger", "Balance sheet", "Trial balance"],
+      ["A trial balance is prepared to check …", "Arithmetical accuracy of accounts", "Profit or loss", "Cash balance", "Tax payable"],
+      ["Rent paid is a ___ account.", "Nominal", "Real", "Personal", "Capital"],
+      ["What is the golden rule for nominal accounts?", "Debit all expenses and losses, credit all incomes and gains", "Debit the receiver, credit the giver", "Debit what comes in, credit what goes out", "Debit incomes, credit expenses"],
+      ["A sole proprietorship is owned by …", "One person", "Two persons", "Seven persons", "The government"],
+      ["What is the minimum number of members in a public company?", "7", "2", "3", "50"],
+      ["Depreciation is charged on …", "Fixed assets", "Current assets", "Capital", "Liabilities"],
+      ["Goods taken by the owner for personal use are recorded as …", "Drawings", "Sales", "Purchases", "Capital"],
+      ["Partnerships in India are governed by the …", "Indian Partnership Act, 1932", "Companies Act, 2013", "Sale of Goods Act, 1930", "Negotiable Instruments Act, 1881"],
+      ["Buying and selling of goods is called …", "Trade", "Industry", "Profession", "Employment"],
+      ["A bank reconciliation statement matches the balances of the …", "Cash book and pass book", "Ledger and journal", "Trial balance and balance sheet", "Sales and purchases books"],
+      ["Outstanding expenses are …", "A liability", "An asset", "An income", "Capital"],
+      ["Discount allowed to customers is …", "A loss (expense) for the business", "An income", "An asset", "A liability"]
+    ]
+  },
+  {
+    "id": "INT-ECO",
+    "questions": [
+      ["Who is known as the father of Economics?", "Adam Smith", "Alfred Marshall", "J. M. Keynes", "Karl Marx"],
+      ["By the law of demand, when price rises, demand …", "Falls", "Rises", "Stays the same", "Becomes zero"],
+      ["The central problem of economics arises because of …", "Scarcity of resources", "Abundance of resources", "Too many banks", "Money"],
+      ["In economics, utility means …", "The want-satisfying power of a commodity", "The price of a commodity", "Usefulness to society only", "The cost of production"],
+      ["When total utility is at its maximum, marginal utility is …", "Zero", "Maximum", "Negative", "Increasing"],
+      ["Which is India's central bank?", "Reserve Bank of India", "State Bank of India", "NITI Aayog", "SEBI"],
+      ["GST was introduced in India in …", "2017", "2014", "2016", "2019"],
+      ["A market with a single seller is called …", "Monopoly", "Perfect competition", "Oligopoly", "Duopoly"],
+      ["National income can be measured by the …", "Product, income and expenditure methods", "Tax collection only", "Population only", "Exports only"],
+      ["The factors of production are …", "Land, labour, capital and organisation", "Money, gold, silver and land", "Demand, supply, price and cost", "Exports, imports, tax and profit"],
+      ["Inflation means …", "A general rise in prices", "A fall in prices", "A rise in production", "A fall in unemployment"],
+      ["The Planning Commission was replaced by …", "NITI Aayog", "Finance Commission", "RBI", "SEBI"],
+      ["Price elasticity of demand measures how demand responds to a change in …", "Price", "Population", "Weather", "Tax rates only"],
+      ["The reward for land as a factor of production is …", "Rent", "Wages", "Interest", "Profit"],
+      ["Macroeconomics studies …", "The economy as a whole", "A single firm", "A single consumer", "One commodity"]
+    ]
+  },
+  {
+    "id": "INT-CIV",
+    "questions": [
+      ["The Preamble declares India to be a …", "Sovereign, Socialist, Secular, Democratic Republic", "Federal Monarchy", "Military State", "Theocratic State"],
+      ["Fundamental Rights are in which Part of the Constitution?", "Part III", "Part IV", "Part II", "Part V"],
+      ["Who is the head of the Indian state?", "The President", "The Prime Minister", "The Chief Justice", "The Speaker"],
+      ["What is the normal term of the Lok Sabha?", "5 years", "6 years", "4 years", "2 years"],
+      ["The Rajya Sabha is a ___ house.", "Permanent", "Temporary", "Lower", "Nominated-only"],
+      ["Which Indus Valley city had the Great Bath?", "Mohenjo-daro", "Harappa", "Lothal", "Kalibangan"],
+      ["Who founded the Maurya Empire?", "Chandragupta Maurya", "Ashoka", "Bindusara", "Bimbisara"],
+      ["Who fought the Kalinga War?", "Ashoka", "Chandragupta Maurya", "Samudragupta", "Harsha"],
+      ["Who built the Taj Mahal?", "Shah Jahan", "Akbar", "Jahangir", "Aurangzeb"],
+      ["The Battle of Plassey was fought in …", "1757", "1764", "1857", "1761"],
+      ["Directive Principles of State Policy are in which Part?", "Part IV", "Part III", "Part V", "Part II"],
+      ["Who appoints the Chief Justice of India?", "The President", "The Prime Minister", "Parliament", "The Law Minister"],
+      ["Which period is often called the Golden Age of ancient India?", "Gupta period", "Mughal period", "Maurya period", "Chola period"],
+      ["What was the capital of the Kakatiya dynasty?", "Warangal (Orugallu)", "Hampi", "Golconda", "Amaravati"],
+      ["How many Fundamental Duties are listed in Article 51A?", "11", "10", "6", "12"]
+    ]
+  },
+  {
+    "id": "DIP-MAT",
+    "questions": [
+      ["log₁₀ 1000 = ?", "3", "10", "100", "2"],
+      ["∫ x dx = ?", "x²/2 + C", "x² + C", "1 + C", "2x + C"],
+      ["d/dx (cos x) = ?", "−sin x", "sin x", "cos x", "−cos x"],
+      ["What is the determinant of [[2, 1], [1, 2]]?", "3", "5", "4", "1"],
+      ["What is the distance between (0, 0) and (3, 4)?", "5", "7", "1", "25"],
+      ["sin 30° = ?", "1/2", "√3/2", "1", "0"],
+      ["What is the slope of y = 3x + 2?", "3", "2", "1/3", "−3"],
+      ["The sum of the first n natural numbers is …", "n(n + 1)/2", "n²", "n(n − 1)/2", "2n + 1"],
+      ["(a + b)² = ?", "a² + 2ab + b²", "a² + b²", "a² − 2ab + b²", "2a + 2b"],
+      ["If log₂ x = 5, then x = ?", "32", "10", "25", "7"],
+      ["What is the area of a circle of radius 7 cm? (π = 22/7)", "154 cm²", "44 cm²", "49 cm²", "308 cm²"],
+      ["∫ eˣ dx = ?", "eˣ + C", "x eˣ + C", "eˣ⁺¹/(x + 1) + C", "log x + C"],
+      ["For complex numbers, i² = ?", "−1", "1", "i", "0"],
+      ["tan 45° = ?", "1", "0", "√3", "1/√3"],
+      ["A matrix with 2 rows and 3 columns has order …", "2 × 3", "3 × 2", "6 × 1", "5"]
+    ]
+  },
+  {
+    "id": "DIP-SCI",
+    "questions": [
+      ["What is the SI unit of pressure?", "Pascal", "Newton", "Joule", "Watt"],
+      ["What is the unit of frequency?", "Hertz", "Metre", "Second", "Decibel"],
+      ["Ohm's law relates …", "Voltage, current and resistance", "Force and mass", "Heat and temperature", "Pressure and volume"],
+      ["What is the speed of light in vacuum?", "3 × 10⁸ m/s", "3 × 10⁶ m/s", "3 × 10⁵ m/s", "340 m/s"],
+      ["What is the speed of sound in air, approximately?", "340 m/s", "3 × 10⁸ m/s", "1500 m/s", "34 m/s"],
+      ["Which of these is a good conductor of electricity?", "Copper", "Rubber", "Glass", "Wood"],
+      ["Rusting (corrosion) of iron needs …", "Oxygen and moisture", "Only nitrogen", "Only heat", "Only light"],
+      ["Hardness of water is caused by …", "Calcium and magnesium salts", "Sodium chloride", "Dissolved oxygen", "Chlorine"],
+      ["Which of these is a thermosetting plastic?", "Bakelite", "Polythene", "PVC", "Polystyrene"],
+      ["Electroplating is done by …", "Electrolysis", "Distillation", "Filtration", "Combustion"],
+      ["A solution with pH less than 7 is …", "Acidic", "Basic", "Neutral", "Salty"],
+      ["What is the SI unit of heat?", "Joule", "Calorie", "Kelvin", "Watt"],
+      ["Young's modulus is a measure of …", "Elasticity", "Viscosity", "Density", "Conductivity"],
+      ["Which fuel has the highest calorific value?", "Hydrogen", "Coal", "Wood", "Kerosene"],
+      ["Lubricants are used to reduce …", "Friction", "Weight", "Voltage", "Density"]
+    ]
+  },
+  {
+    "id": "DIP-ENG",
+    "questions": [
+      ["Which instrument measures electric current?", "Ammeter", "Voltmeter", "Ohmmeter", "Wattmeter"],
+      ["A voltmeter is connected in ___ with the component.", "Parallel", "Series", "Either way", "Not connected"],
+      ["In first-angle projection, the top view is placed …", "Below the front view", "Above the front view", "Left of the front view", "Right of the front view"],
+      ["Which tool is used to cut thin metal sheets?", "Snips (tin cutter)", "Trowel", "Spirit level", "Try square"],
+      ["Which instrument precisely measures small diameters, like a wire's?", "Micrometer screw gauge", "Measuring tape", "Steel rule", "Try square"],
+      ["What is the frequency of the AC supply in India?", "50 Hz", "60 Hz", "100 Hz", "25 Hz"],
+      ["What is the domestic supply voltage in India?", "230 V", "110 V", "440 V", "12 V"],
+      ["A fuse works on the …", "Heating effect of current", "Magnetic effect of current", "Chemical effect of current", "Photoelectric effect"],
+      ["Which device changes the voltage level of AC?", "Transformer", "Rectifier", "Battery", "Resistor"],
+      ["Welding joins metals using …", "Heat (and sometimes pressure)", "Glue only", "Nails", "Paint"],
+      ["How many strokes make one cycle of a four-stroke engine?", "4", "2", "6", "1"],
+      ["Which tool checks right angles in a workshop?", "Try square", "Hacksaw", "Hammer", "File"],
+      ["In engineering drawing, hidden edges are shown by …", "Dashed lines", "Thick continuous lines", "Chain lines", "Wavy lines"],
+      ["Earthing of electrical appliances is done for …", "Safety from electric shock", "Increasing voltage", "Saving power", "Decorating wires"],
+      ["Electricity at home is billed in …", "kWh (units)", "Watts", "Volts", "Amperes"]
+    ]
+  },
+  {
+    "id": "ENT-ALG",
+    "questions": [
+      ["What are the roots of x² − 5x + 6 = 0?", "2 and 3", "−2 and −3", "1 and 6", "−1 and 6"],
+      ["In how many ways can the letters of 'APPLE' be arranged?", "60", "120", "24", "30"],
+      ["ⁿCᵣ = ?", "n! / (r!(n − r)!)", "n! / (n − r)!", "n! / r!", "r! / n!"],
+      ["What is the sum of the infinite GP 1 + 1/2 + 1/4 + …?", "2", "1", "∞", "1/2"],
+      ["If z = 3 + 4i, then |z| = ?", "5", "7", "1", "25"],
+      ["For the cube roots of unity, 1 + ω + ω² = ?", "0", "1", "−1", "3"],
+      ["How many terms are there in the expansion of (a + b)¹⁰?", "11", "10", "12", "20"],
+      ["If α and β are the roots of x² + 3x + 2 = 0, then α + β = ?", "−3", "3", "2", "−2"],
+      ["⁵C₂ = ?", "10", "20", "5", "25"],
+      ["The middle term of (x + y)⁶ is the …", "4th term", "3rd term", "6th term", "7th term"],
+      ["What is the 10th term of the AP 2, 5, 8, …?", "29", "30", "32", "27"],
+      ["A fair coin is tossed once. What is the probability of a head?", "1/2", "1", "1/4", "0"],
+      ["How many subsets does a set with 4 elements have?", "16", "8", "4", "12"],
+      ["For any integer n, i⁴ⁿ⁺¹ = ?", "i", "1", "−1", "−i"],
+      ["The discriminant of ax² + bx + c = 0 is …", "b² − 4ac", "b² + 4ac", "4ac − b²", "2b − 4ac"]
+    ]
+  },
+  {
+    "id": "ENT-TRI",
+    "questions": [
+      ["sin(90° − θ) = ?", "cos θ", "sin θ", "−cos θ", "tan θ"],
+      ["tan 60° = ?", "√3", "1/√3", "1", "0"],
+      ["1 + tan²θ = ?", "sec²θ", "cosec²θ", "cot²θ", "cos²θ"],
+      ["cos 2θ in terms of sin θ is …", "1 − 2 sin²θ", "2 sin²θ − 1", "1 + 2 sin²θ", "2 sin θ"],
+      ["What is the period of tan x?", "π", "2π", "π/2", "4π"],
+      ["What is the maximum value of 3 sin x + 4 cos x?", "5", "7", "1", "12"],
+      ["For any vector a, a × a = ?", "The zero vector", "|a|²", "1", "a"],
+      ["i × j = ?", "k", "−k", "0", "i"],
+      ["Two non-zero vectors have a · b = 0. The angle between them is …", "90°", "0°", "180°", "45°"],
+      ["tan⁻¹(1) = ?", "π/4", "π/2", "π/3", "0"],
+      ["sin 3θ = ?", "3 sin θ − 4 sin³θ", "4 sin³θ − 3 sin θ", "3 sin θ + 4 sin³θ", "4 cos³θ − 3 cos θ"],
+      ["The area of a triangle with adjacent sides a and b is …", "½ |a × b|", "|a · b|", "½ (a · b)", "|a × b|"],
+      ["sin 15° = ?", "(√6 − √2)/4", "(√6 + √2)/4", "1/2", "(√3 − 1)/2"],
+      ["The scalar triple product [a b c] gives the volume of a …", "Parallelepiped", "Sphere", "Cone", "Triangle"],
+      ["What is the general solution of sin θ = 0?", "θ = nπ, n ∈ ℤ", "θ = 2nπ + π/2", "θ = nπ/2", "θ = (2n + 1)π"]
+    ]
+  },
+  {
+    "id": "ENT-CAL",
+    "questions": [
+      ["d/dx (tan x) = ?", "sec²x", "cosec²x", "−sec²x", "cot x"],
+      ["∫ (1/x) dx = ?", "ln|x| + C", "1/x² + C", "x + C", "−1/x² + C"],
+      ["∫₀¹ x dx = ?", "1/2", "1", "0", "2"],
+      ["lim (x → ∞) (1 + 1/x)ˣ = ?", "e", "1", "∞", "0"],
+      ["The circle with centre (0, 0) and radius 5 is …", "x² + y² = 25", "x² + y² = 5", "x² − y² = 25", "x + y = 5"],
+      ["What is the eccentricity of a parabola?", "1", "0", "Less than 1", "Greater than 1"],
+      ["What is the focus of the parabola y² = 4ax?", "(a, 0)", "(0, a)", "(−a, 0)", "(4a, 0)"],
+      ["d/dx (x ln x) = ?", "ln x + 1", "1/x", "ln x", "x"],
+      ["What is the area under y = x² from x = 0 to x = 3?", "9", "27", "3", "6"],
+      ["What is the slope of the tangent to y = x² at x = 2?", "4", "2", "8", "1"],
+      ["What is the order of the differential equation d²y/dx² + y = 0?", "2", "1", "0", "3"],
+      ["∫ sin x dx = ?", "−cos x + C", "cos x + C", "sin x + C", "−sin x + C"],
+      ["What is the eccentricity of a circle?", "0", "1", "2", "Infinity"],
+      ["What is the centre of the circle x² + y² − 4x + 6y = 0?", "(2, −3)", "(−2, 3)", "(4, −6)", "(−4, 6)"],
+      ["f(x) = |x| is not differentiable at …", "x = 0", "x = 1", "x = −1", "Any point"]
+    ]
+  },
+  {
+    "id": "ENT-PHY",
+    "questions": [
+      ["Work done by force F over displacement s at angle θ is …", "Fs cos θ", "Fs sin θ", "F/s", "Fs tan θ"],
+      ["By Coulomb's law, the force between two charges is proportional to …", "q₁q₂ / r²", "q₁q₂ r²", "q₁ + q₂", "1/r³"],
+      ["What is the SI unit of capacitance?", "Farad", "Henry", "Tesla", "Weber"],
+      ["What is the SI unit of magnetic field?", "Tesla", "Farad", "Ohm", "Coulomb"],
+      ["The lens formula (Cartesian sign convention) is …", "1/f = 1/v − 1/u", "f = u + v", "f = uv", "1/f = u − v"],
+      ["Who explained the photoelectric effect?", "Albert Einstein", "Isaac Newton", "Michael Faraday", "Christiaan Huygens"],
+      ["The energy of a photon is E = ?", "hν", "mc", "hλ", "h/ν"],
+      ["Half-life in terms of the decay constant λ is …", "0.693/λ", "λ/0.693", "2λ", "1/λ²"],
+      ["Which radiation has the highest penetrating power?", "Gamma rays", "Alpha particles", "Beta particles", "Visible light"],
+      ["n equal resistors R in parallel give a resistance of …", "R/n", "nR", "R", "n/R"],
+      ["Faraday's law relates the induced emf to the …", "Rate of change of magnetic flux", "Charge stored", "Resistance", "Temperature"],
+      ["In Bohr's model, angular momentum is an integral multiple of …", "h/2π", "h", "2πh", "h/π"],
+      ["In Young's double-slit experiment, fringe width β = ?", "λD/d", "λd/D", "D/(λd)", "λ/(Dd)"],
+      ["What is the SI unit of inductance?", "Henry", "Farad", "Tesla", "Ohm"],
+      ["Which logic gate gives output 1 only when both inputs are 1?", "AND", "OR", "NOR", "XOR"]
+    ]
+  },
+  {
+    "id": "ENT-CHE",
+    "questions": [
+      ["What is the unit of the rate constant of a first-order reaction?", "s⁻¹", "mol L⁻¹ s⁻¹", "L mol⁻¹ s⁻¹", "mol⁻¹"],
+      ["Which of these is a colligative property?", "Osmotic pressure", "Density", "Viscosity", "Colour"],
+      ["What is the oxidation state of Mn in KMnO₄?", "+7", "+6", "+5", "+2"],
+      ["Which test tells aldehydes apart from ketones?", "Tollens' test", "Biuret test", "Litmus test", "Flame test"],
+      ["An SN2 reaction proceeds with …", "Inversion of configuration", "Retention of configuration", "Complete racemisation", "A carbocation intermediate"],
+      ["What is the hybridisation of carbon in benzene?", "sp²", "sp", "sp³", "sp³d"],
+      ["Which of these is a polysaccharide?", "Starch", "Glucose", "Fructose", "Sucrose"],
+      ["Lanthanoid contraction is due to poor shielding by …", "4f electrons", "3d electrons", "2p electrons", "1s electrons"],
+      ["What is the coordination number of Fe in [Fe(CN)₆]⁴⁻?", "6", "4", "2", "8"],
+      ["Raoult's law relates …", "The vapour pressure of a solution to mole fraction", "Pressure to volume", "Rate to concentration", "Heat to temperature"],
+      ["The Faraday constant is about …", "96500 C/mol", "6.022 × 10²³", "8.314 J/mol·K", "1.6 × 10⁻¹⁹ C"],
+      ["What is the monomer of natural rubber?", "Isoprene", "Ethylene", "Styrene", "Vinyl chloride"],
+      ["Which of these is a Lewis acid?", "BF₃", "NH₃", "H₂O", "OH⁻"],
+      ["How many unpaired electrons does Fe³⁺ (3d⁵) have?", "5", "3", "4", "0"],
+      ["What is the IUPAC name of CH₃COCH₃?", "Propanone", "Propanal", "Ethanone", "Propanol"]
+    ]
+  },
+  {
+    "id": "NEET-BIO",
+    "questions": [
+      ["What is the structural and functional unit of life?", "Cell", "Tissue", "Organ", "Nucleus"],
+      ["Who proposed the double-helix model of DNA?", "Watson and Crick", "Mendel and Morgan", "Darwin and Wallace", "Hooke and Brown"],
+      ["In DNA, adenine pairs with …", "Thymine", "Guanine", "Cytosine", "Uracil"],
+      ["Which codon starts translation?", "AUG", "UAA", "UAG", "UGA"],
+      ["Haemophilia is inherited as a …", "X-linked recessive trait", "Autosomal dominant trait", "Y-linked trait", "Bacterial infection"],
+      ["Which is the pacemaker of the heart?", "SA node", "AV node", "Bundle of His", "Purkinje fibres"],
+      ["What is the normal blood pressure of a healthy adult?", "120/80 mm Hg", "80/120 mm Hg", "160/110 mm Hg", "200/120 mm Hg"],
+      ["Which posterior pituitary hormone reduces urine output?", "ADH (vasopressin)", "Oxytocin", "Prolactin", "Growth hormone"],
+      ["How many chromosomes are there in a human somatic cell?", "46", "23", "44", "48"],
+      ["Down syndrome is caused by trisomy of chromosome …", "21", "18", "13", "X"],
+      ["Where does fertilisation take place in the human female?", "Ampullary region of the fallopian tube", "Uterus", "Ovary", "Cervix"],
+      ["What is the functional unit of muscle contraction?", "Sarcomere", "Neuron", "Nephron", "Alveolus"],
+      ["Okazaki fragments are formed on the …", "Lagging strand", "Leading strand", "mRNA", "tRNA"],
+      ["Which vitamin is needed for blood clotting?", "Vitamin K", "Vitamin C", "Vitamin D", "Vitamin A"],
+      ["What is the F₂ phenotypic ratio of Mendel's monohybrid cross?", "3 : 1", "9 : 3 : 3 : 1", "1 : 2 : 1", "1 : 1"]
+    ]
+  },
+  {
+    "id": "PRO-ENG",
+    "questions": [
+      ["Choose the correct sentence.", "She doesn't like coffee.", "She don't like coffee.", "She not like coffee.", "She doesn't likes coffee."],
+      ["Choose the synonym of 'diligent'.", "Hard-working", "Lazy", "Careless", "Slow"],
+      ["Correct this sentence: 'I am working here since 2020.'", "I have been working here since 2020.", "I was working here since 2020.", "I am work here since 2020.", "I worked here since 2020 years."],
+      ["Which is the most suitable closing for a formal email?", "Yours sincerely", "Cheers mate", "Bye!!", "See ya"],
+      ["Choose the antonym of 'transparent'.", "Opaque", "Clear", "Visible", "Obvious"],
+      ["Fill in the blank: Please find the report ___ with this email.", "attached", "attach", "attaching", "attaches"],
+      ["What does 'deadline' mean at work?", "The latest time by which something must be done", "A line on the floor", "A dangerous situation", "The start of a project"],
+      ["Find the error: 'He gave me an useful advice.'", "'an useful advice' should be 'a useful piece of advice'", "'He' should be 'Him'", "'gave' should be 'given'", "There is no error"],
+      ["'The meeting was postponed due to unforeseen circumstances.' What happened to the meeting?", "It was moved to a later time", "It was cancelled forever", "It finished early", "It started on time"],
+      ["Which word is spelt correctly?", "Definitely", "Definately", "Definitly", "Defenitely"],
+      ["What is the best way to start a professional phone call?", "Greet, introduce yourself and state the purpose", "Start with a joke", "Ask personal questions first", "Stay silent until asked"],
+      ["What does 'ASAP' stand for?", "As soon as possible", "As simple as possible", "Always say a phrase", "After some action passes"],
+      ["Fill in the blank: She is responsible ___ the project.", "for", "of", "to", "at"],
+      ["Change into passive voice: 'The manager approved the plan.'", "The plan was approved by the manager.", "The plan is approved by the manager.", "The manager was approved by the plan.", "The plan has approved the manager."],
+      ["One word for 'a group discussion to produce ideas freely':", "Brainstorming", "Interrogation", "Lecture", "Auction"]
+    ]
+  },
+  {
+    "id": "PRO-LOG",
+    "questions": [
+      ["Find the next number: 3, 9, 27, 81, ?", "243", "162", "108", "324"],
+      ["Find the next number: 2, 5, 10, 17, 26, ?", "37", "35", "36", "39"],
+      ["If MANGO is coded as NBOHP, how is APPLE coded?", "BQQMF", "BQQLF", "AQQMF", "BPPMF"],
+      ["A is the father of B. B is the sister of C. How is A related to C?", "Father", "Brother", "Uncle", "Grandfather"],
+      ["Pointing to a photo, Ravi says, 'She is the daughter of my grandfather's only son.' Who is she to Ravi?", "Sister", "Cousin", "Mother", "Aunt"],
+      ["Find the odd one out: 8, 27, 64, 100, 125", "100", "27", "64", "125"],
+      ["All pens are books. All books are tables. Which conclusion follows?", "All pens are tables", "All tables are pens", "No pen is a table", "Some tables are not books"],
+      ["You walk 4 km north and then 3 km east. How far are you from the start?", "5 km", "7 km", "1 km", "12 km"],
+      ["The 1st of a month is a Monday. What day is the 15th?", "Monday", "Sunday", "Tuesday", "Wednesday"],
+      ["What is the angle between the hands of a clock at 3:00?", "90°", "180°", "60°", "45°"],
+      ["In a code, TEA is written as GVZ. How is CUP written?", "XFK", "DVQ", "XEK", "YFK"],
+      ["4 : 16 :: 6 : ?", "36", "24", "12", "18"],
+      ["A is left of B, C is right of B, D is left of A and E is right of C. Who sits in the middle?", "B", "A", "C", "D"],
+      ["Find the odd one out: Triangle, Square, Rectangle, Cylinder", "Cylinder", "Triangle", "Square", "Rectangle"],
+      ["If 2 + 3 = 10 and 3 + 4 = 14, then 4 + 5 = ?", "18", "20", "9", "22"]
+    ]
+  },
+  {
+    "id": "PRO-CMP",
+    "questions": [
+      ["Which part is called the brain of the computer?", "CPU", "Monitor", "Keyboard", "Mouse"],
+      ["1 byte = ?", "8 bits", "4 bits", "16 bits", "1024 bits"],
+      ["Which shortcut copies selected text?", "Ctrl + C", "Ctrl + V", "Ctrl + X", "Ctrl + Z"],
+      ["Which of these is an operating system?", "Linux", "MS Word", "Google Chrome", "Python"],
+      ["Which memory loses its data when power is off?", "RAM", "ROM", "Hard disk", "SSD"],
+      ["HTML stands for …", "HyperText Markup Language", "High Text Machine Language", "HyperTool Multi Language", "Home Text Markup Language"],
+      ["Which Excel function adds up a range of cells?", "SUM", "ADD", "TOTAL", "PLUS"],
+      ["Which protocol shows a padlock for secure websites?", "HTTPS", "FTP", "SMTP", "HTTP"],
+      ["In networking, IP stands for …", "Internet Protocol", "Internal Program", "Internet Provider", "Input Process"],
+      ["Which of these is NOT a programming language?", "Photoshop", "Java", "C++", "Python"],
+      ["Which data structure works First In, First Out?", "Queue", "Stack", "Tree", "Graph"],
+      ["Phishing is …", "Tricking people into revealing sensitive information", "A type of computer hardware", "A programming language", "A way to speed up the internet"],
+      ["What is 5 in binary?", "101", "110", "111", "100"],
+      ["Which software is used to make presentations?", "PowerPoint", "Excel", "Notepad", "Paint"],
+      ["SQL is used to …", "Query and manage databases", "Design images", "Send emails", "Compress files"]
+    ]
+  },
+  {
+    "id": "PRO-GEN",
+    "questions": [
+      ["Who is known as the 'Missile Man of India'?", "Dr A. P. J. Abdul Kalam", "Homi J. Bhabha", "Vikram Sarabhai", "C. V. Raman"],
+      ["Where is the headquarters of the Reserve Bank of India?", "Mumbai", "New Delhi", "Kolkata", "Chennai"],
+      ["Which ISRO mission landed near the Moon's south pole in 2023?", "Chandrayaan-3", "Mangalyaan", "Chandrayaan-1", "Aditya-L1"],
+      ["What is the best first step in solving a problem at work?", "Understand the problem and gather facts", "Blame a colleague", "Ignore it", "Quit the job"],
+      ["Good teamwork means …", "Sharing responsibilities and communicating openly", "Doing everyone's work alone", "Avoiding meetings", "Competing against teammates"],
+      ["SWOT stands for …", "Strengths, Weaknesses, Opportunities, Threats", "Sales, Work, Orders, Targets", "Systems, Workflows, Operations, Tasks", "Skills, Wages, Offers, Tests"],
+      ["Profit = ?", "Revenue − Costs", "Revenue + Costs", "Costs − Revenue", "Revenue × Costs"],
+      ["The Startup India initiative was launched in …", "2016", "2010", "2020", "2005"],
+      ["What is the currency of Japan?", "Yen", "Yuan", "Won", "Ringgit"],
+      ["A good decision is usually based on …", "Facts, options and likely outcomes", "Guesswork only", "What others say", "The mood of the day"],
+      ["UPI stands for …", "Unified Payments Interface", "Universal Payment Index", "United Pay Initiative", "Unique Payment ID"],
+      ["Which ministry presents India's Union Budget?", "Ministry of Finance", "Ministry of Home Affairs", "Ministry of Commerce", "Ministry of External Affairs"],
+      ["Which time-management method uses 25-minute work blocks with short breaks?", "Pomodoro technique", "Six Sigma", "SWOT analysis", "Balance sheet"],
+      ["Which country hosted the G20 Summit in 2023?", "India", "Indonesia", "Brazil", "Japan"],
+      ["A customer-first attitude means …", "Understanding and meeting customer needs", "Selling at any cost", "Ignoring complaints", "Avoiding customers"]
+    ]
+  }
+]

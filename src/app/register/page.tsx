@@ -23,45 +23,44 @@ const perks = [
 export default function RegisterPage() {
   return (
     <div className="min-h-dvh bg-white lg:grid lg:grid-cols-2">
-      {/* Left: photo with the message in a solid card at the bottom (banner on phones) */}
-      <aside className="relative h-72 overflow-hidden bg-forest-900 sm:h-96 lg:sticky lg:top-0 lg:h-dvh">
-        <Image
-          src="/images/trust-student.webp"
-          alt="Learner working on a project with a laptop"
-          fill
-          priority
-          sizes="(min-width: 1024px) 50vw, 100vw"
-          className="object-cover object-[center_30%]"
-        />
-
-        <div className="relative flex h-full flex-col justify-between p-4 sm:p-6 lg:p-10 xl:p-14">
-          <div className="w-fit rounded-2xl bg-forest-950/75 px-3 py-2">
+      {/* Left: the full photo on top, the message in a solid panel below it (nothing covers the photo) */}
+      <aside className="flex flex-col bg-forest-950 lg:sticky lg:top-0 lg:h-dvh">
+        <div className="relative h-64 shrink-0 overflow-hidden sm:h-80 lg:h-auto lg:min-h-0 lg:flex-1">
+          <Image
+            src="/images/trust-student.webp"
+            alt="Learner working on a project with a laptop"
+            fill
+            priority
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            className="object-cover object-[center_35%]"
+          />
+          <div className="absolute left-4 top-4 rounded-2xl bg-forest-950/75 px-3 py-2 sm:left-6 sm:top-6 lg:left-10 lg:top-8">
             <Logo light />
           </div>
-
-          <Reveal immediate delay={100}>
-            <div className="max-w-xl rounded-3xl bg-forest-950/85 p-5 shadow-2xl sm:p-6 xl:p-8">
-              <p className="text-xs font-bold uppercase tracking-wider text-spark-400">Join the Nuel Smart community</p>
-              <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-white sm:text-3xl xl:text-4xl">
-                Start your journey with <span className="text-spark-400">real practitioners</span>
-              </h1>
-              <p className="mt-3 hidden text-sm leading-relaxed text-white/90 sm:block xl:text-base">
-                Register as a learner or share your craft as an industry mentor. Everything is practical, project-based and
-                career-focused.
-              </p>
-              <ul className="mt-5 hidden space-y-2.5 lg:block">
-                {perks.map((perk) => (
-                  <li key={perk} className="flex items-center gap-3 text-sm font-medium text-white">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-spark-500 text-xs font-bold text-forest-950">
-                      ✓
-                    </span>
-                    {perk}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </Reveal>
         </div>
+
+        <Reveal immediate delay={100}>
+          <div className="px-5 py-5 sm:px-8 sm:py-6 lg:px-10 lg:py-7 xl:px-14">
+            <p className="text-xs font-bold uppercase tracking-wider text-spark-400">Join the Nuel Smart community</p>
+            <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-white sm:text-3xl">
+              Start your journey with <span className="text-spark-400">real practitioners</span>
+            </h1>
+            <p className="mt-2 hidden text-sm leading-relaxed text-white/85 sm:block">
+              Register as a learner or share your craft as an industry mentor. Everything is practical, project-based and
+              career-focused.
+            </p>
+            <ul className="mt-4 hidden gap-x-6 gap-y-2 lg:grid xl:grid-cols-2">
+              {perks.map((perk) => (
+                <li key={perk} className="flex items-center gap-2.5 text-sm font-medium text-white">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-spark-500 text-xs font-bold text-forest-950">
+                    ✓
+                  </span>
+                  {perk}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Reveal>
       </aside>
 
       {/* Right: Registration Form */}

@@ -47,8 +47,11 @@ export type Order = {
   screenshotAt?: Timestamp;
   /** UPI transaction / bank reference number the learner typed in. */
   paymentRef?: string;
-  /** Why an admin rejected the screenshot; the learner can upload a new one. */
+  /** Why an admin rejected the payment. A rejected order is closed: the learner can enroll again. */
   rejectReason?: string;
+  rejectedAt?: Timestamp;
+  /** When the learner dismissed the "payment rejected" pop-up. */
+  rejectionSeenAt?: Timestamp;
   createdAt?: Timestamp;
   paidAt?: Timestamp;
 };
@@ -88,10 +91,12 @@ export const totalFor = (slugs: string[]) => coursesFor(slugs).reduce((sum, c) =
 export const orderAmount = (o: Pick<Order, "courses" | "amount">) =>
   coursesFor(o.courses).length === o.courses.length ? totalFor(o.courses) : o.amount;
 
-/** A manual order that isn't settled yet: waiting for a screenshot, under review, or rejected. */
-export const awaitingConfirmation = (o: Order) => o.method === "manual" && (o.status === "pending" || o.status === "rejected");
-/** The learner still has to upload (or re-upload) a payment screenshot. */
-export const needsScreenshot = (o: Order) => awaitingConfirmation(o) && (o.status === "rejected" || !o.screenshot);
+/** A manual order that isn't settled yet: waiting for a screenshot or under review. (Rejected orders are closed.) */
+export const awaitingConfirmation = (o: Order) => o.method === "manual" && o.status === "pending";
+/** The learner still has to upload a payment screenshot. */
+export const needsScreenshot = (o: Order) => awaitingConfirmation(o) && !o.screenshot;
+/** Rejected orders the learner hasn't been told about yet (shown once as a pop-up). */
+export const unseenRejection = (o: Order) => o.status === "rejected" && !o.rejectionSeenAt;
 
 export function addToCart(uid: string, slug: string) {
   return updateDoc(doc(db, "users", uid), { cart: arrayUnion(slug) });
@@ -134,7 +139,7 @@ export async function placeManualOrder(user: AppUser, slugs: string[]) {
   return ref.id;
 }
 
-/** Attaches the learner's payment screenshot; a rejected order goes back to review. */
+/** Attaches (or replaces) the learner's payment screenshot on a pending order. */
 export function submitPaymentProof(orderId: string, screenshot: string, paymentRef: string) {
   return updateDoc(doc(db, "orders", orderId), {
     screenshot,
@@ -145,9 +150,27 @@ export function submitPaymentProof(orderId: string, screenshot: string, paymentR
   });
 }
 
-/** Admin: the screenshot doesn't show a valid payment; the learner can upload another. */
+/**
+ * Admin: the payment couldn't be verified. The order closes; the learner sees why (once, as a pop-up,
+ * and in their payment history) and can enroll in the same courses again with a new order.
+ */
 export function rejectOrder(orderId: string, reason: string) {
-  return updateDoc(doc(db, "orders", orderId), { status: "rejected", rejectReason: reason.trim() || "Payment couldn't be verified." });
+  return updateDoc(doc(db, "orders", orderId), {
+    status: "rejected",
+    rejectReason: reason.trim() || "Payment couldn't be verified.",
+    rejectedAt: serverTimestamp(),
+  });
+}
+
+/** Learner: dismisses the "payment rejected" pop-up for this order. */
+export function markRejectionSeen(orderId: string) {
+  return updateDoc(doc(db, "orders", orderId), { rejectionSeenAt: serverTimestamp() });
+}
+
+/** Learner: puts a rejected order's courses (those not already owned) back in the cart. */
+export function enrollAgain(user: Pick<AppUser, "uid" | "enrolledCourses">, order: Order) {
+  const slugs = order.courses.filter((s) => !user.enrolledCourses.includes(s));
+  return slugs.length ? addManyToCart(user.uid, slugs) : Promise.resolve();
 }
 
 const paymentDetailsRef = () => doc(db, "settings", "payment");

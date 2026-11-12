@@ -2,16 +2,19 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRightIcon, BookIcon, CalendarIcon, CartIcon, CheckIcon, ClipboardIcon, ClockIcon, GraduationIcon, GridIcon, LockIcon, SparkIcon } from "../icons";
+import { ArrowRightIcon, BookIcon, CalendarIcon, CartIcon, CheckIcon, ClipboardIcon, ClockIcon, GraduationIcon, GridIcon, LockIcon, SparkIcon, StarIcon } from "../icons";
+import DailyQuiz, { QuizBanner } from "../quiz/DailyQuiz";
 import DashboardShell, { type Section } from "./DashboardShell";
 import { Card, CardTitle, EmptyState, WelcomeBanner, rupee } from "./ui";
 import { greetingName, type AppUser } from "@/lib/auth";
 import { ChapterMarks } from "../learn/ChapterSyllabus";
 import { chapterName, courseHref, courseTitle, learnHref, subjectGroups, useCatalog } from "@/lib/catalog";
 import { awaitingConfirmation, coursesFor, needsScreenshot, useMyOrders } from "@/lib/orders";
+import { PaymentHistoryList, RejectedPaymentPopup } from "../PaymentHistory";
 
 const sections: Section[] = [
   { id: "overview", label: "Overview", icon: GridIcon },
+  { id: "daily-quiz", label: "Daily Quiz", icon: StarIcon },
   { id: "my-courses", label: "My Courses", icon: BookIcon },
   { id: "schedule", label: "Live Sessions", icon: CalendarIcon },
   { id: "assignments", label: "Assignments", icon: ClipboardIcon },
@@ -52,6 +55,8 @@ function StudentContent({ user, page }: { user: AppUser; page: string }) {
     .map(({ c }) => c);
   const unlocked = enrolled.length > 0;
   const awaiting = (orders ?? []).filter(awaitingConfirmation);
+  // Settled orders (approved / rejected / cancelled); unfinished online checkouts aren't shown.
+  const history = (orders ?? []).filter((o) => !awaitingConfirmation(o) && !(o.method === "razorpay" && o.status !== "paid"));
   // Subject chapters are bought from their subject page, so they aren't suggested one by one.
   const explore = catalog.filter((c) => !c.group && !user.enrolledCourses.includes(c.slug)).slice(0, 3);
 
@@ -75,6 +80,10 @@ function StudentContent({ user, page }: { user: AppUser; page: string }) {
       </WelcomeBanner>
       )}
 
+      {overview && <QuizBanner user={user} />}
+
+      {page === "daily-quiz" && <DailyQuiz user={user} />}
+
       {overview && user.cart.length > 0 && (
         <Link
           href="/cart"
@@ -93,14 +102,14 @@ function StudentContent({ user, page }: { user: AppUser; page: string }) {
         </Link>
       )}
 
+      {orders && <RejectedPaymentPopup user={user} orders={orders} />}
+
       {overview && awaiting.map((o) => {
         const titles = coursesFor(o.courses)
           .map(courseTitle)
           .join(", ");
         const [tone, title, text, action] =
-          o.status === "rejected"
-            ? (["border-red-200 bg-red-50 hover:bg-red-100/70", "Payment screenshot not approved", `${o.rejectReason || "We couldn't verify your payment."} Upload a new screenshot for ${titles}.`, "Upload again →"] as const)
-            : needsScreenshot(o)
+          needsScreenshot(o)
               ? (["border-amber-200 bg-amber-50 hover:bg-amber-100/70", "Complete your payment", `Pay for ${titles} and upload the payment screenshot to unlock your dashboard.`, "Pay now →"] as const)
               : (["border-amber-200 bg-amber-50 hover:bg-amber-100/70", "Payment under review", `We've received your screenshot for ${titles}. Your full dashboard unlocks once it's approved.`, "View order →"] as const);
         return (
@@ -191,6 +200,15 @@ function StudentContent({ user, page }: { user: AppUser; page: string }) {
           ) : (
             <Locked />
           )}
+        </Card>
+      )}
+
+      {overview && history.length > 0 && (
+        <Card id="payment-history">
+          <CardTitle title="Payment history" />
+          <div className="mt-5">
+            <PaymentHistoryList user={user} orders={history} />
+          </div>
         </Card>
       )}
 

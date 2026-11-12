@@ -23,10 +23,11 @@ const statusStyle: Record<Order["status"], string> = {
 const statusLabel = (o: Order) =>
   o.status === "paid" ? "Approved" : o.status === "pending" ? (o.screenshot ? "To review" : "Awaiting payment") : o.status === "rejected" ? "Rejected" : "Cancelled";
 
-type Filter = "review" | "waiting" | "all";
+type Filter = "review" | "waiting" | "rejected" | "all";
 const filters: { id: Filter; label: string; test: (o: Order) => boolean }[] = [
   { id: "review", label: "To review", test: (o) => o.status === "pending" && !!o.screenshot },
-  { id: "waiting", label: "Awaiting payment", test: (o) => (o.status === "pending" && !o.screenshot) || o.status === "rejected" },
+  { id: "waiting", label: "Awaiting payment", test: (o) => o.status === "pending" && !o.screenshot },
+  { id: "rejected", label: "Rejected", test: (o) => o.status === "rejected" },
   { id: "all", label: "All", test: () => true },
 ];
 
@@ -112,7 +113,7 @@ export function OrdersCard({ me, canApprove = true }: { me: AppUser; canApprove?
     run(o, () => markOrderPaid(o, me.uid));
   };
   const reject = (o: Order) => {
-    const reason = window.prompt(`Reject the payment from ${o.name}? Tell them why (they'll see this and can upload again):`, "Payment not received");
+    const reason = window.prompt(`Reject the payment from ${o.name}? Tell them why. The order closes, they're notified, and they can enroll again:`, "Payment not received");
     if (reason === null) return;
     run(o, () => rejectOrder(o.id, reason));
   };
@@ -219,7 +220,7 @@ export function OrdersCard({ me, canApprove = true }: { me: AppUser; canApprove?
                         Reject
                       </button>
                     )}
-                    {(!o.screenshot || o.status === "rejected") && (
+                    {!o.screenshot && o.status === "pending" && (
                       <button
                         type="button"
                         onClick={() => cancel(o)}

@@ -59,7 +59,9 @@ service cloud.firestore {
         && (!('nickname' in data) || (data.nickname is string && data.nickname.size() <= 30))
         && (!('whatsappOptIn' in data) || data.whatsappOptIn is bool)
         && (!('whatsappWelcome' in data) || (resource != null && resource.data.get('whatsappWelcome', null) == data.whatsappWelcome))
-        && (!('cart' in data) || (data.cart is list && data.cart.size() <= 20));
+        && (!('cart' in data) || (data.cart is list && data.cart.size() <= 20))
+        && (!('studyClass' in data) || (data.studyClass is string && data.studyClass.size() <= 20))
+        && (!('quizGroup' in data) || (data.quizGroup is string && data.quizGroup.size() <= 8));
     }
 
     // Course slugs on an order: a non-empty, cart-sized list.
@@ -89,6 +91,7 @@ service cloud.firestore {
           && !('enrolledCourses' in request.resource.data)
           && validProfileFields(request.resource.data)
           && validMemberId(request.resource.data)
+          && (!('quizGroup' in request.resource.data) || validQuizGroup(request.resource.data.quizGroup))
           && (
             (request.resource.data.role == 'student'
               && (!('requestedRole' in request.resource.data) || request.resource.data.requestedRole == 'mentor'))
@@ -110,7 +113,15 @@ service cloud.firestore {
           && request.auth.uid == uid
           && validProfileFields(request.resource.data)
           && (
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'email', 'requestedRole', 'memberId', 'whatsappWelcome', 'enrolledCourses', 'designation', 'employeeNumber', 'permissions', 'status', 'joinDate'])
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'email', 'requestedRole', 'memberId', 'whatsappWelcome', 'enrolledCourses', 'designation', 'employeeNumber', 'permissions', 'status', 'joinDate', 'quizGroup', 'studyClass'])
+            || (
+              // Class (and with it the Daily Quiz group): chosen once by learners who registered
+              // before sign-up asked for it. After that only an admin changes it.
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['studyClass', 'quizGroup'])
+              && !('studyClass' in resource.data)
+              && request.resource.data.studyClass is string
+              && validQuizGroup(request.resource.data.quizGroup)
+            )
             || (
               request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberId'])
               && !('memberId' in resource.data)
@@ -156,27 +167,34 @@ service cloud.firestore {
         && request.resource.data.amount is number
         && request.resource.data.createdAt == request.time;
 
-      // Learners may cancel a pending order, or attach a payment screenshot to an offline
-      // order (which puts a rejected one back into review). Only admins and staff with the
-      // "payments.approve" permission approve or reject.
+      // Learners may cancel a pending order, attach a payment screenshot to a pending offline order,
+      // or dismiss the notice of a rejected one. A rejected order is closed (the learner orders
+      // again). Only admins and staff with the "payments.approve" permission approve or reject.
       allow update: if isAdmin()
         || (
           hasPerm('payments.approve')
           && request.resource.data.status in ['paid', 'rejected', 'cancelled']
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'paidAt', 'confirmedBy', 'rejectReason', 'cancelledAt'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'paidAt', 'confirmedBy', 'rejectReason', 'rejectedAt', 'cancelledAt'])
         )
         || (
           signedIn()
           && resource.data.uid == request.auth.uid
-          && resource.data.status in ['pending', 'rejected']
+          && resource.data.status == 'pending'
           && request.resource.data.status == 'cancelled'
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancelledAt'])
         )
         || (
           signedIn()
           && resource.data.uid == request.auth.uid
+          && resource.data.status == 'rejected'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rejectionSeenAt'])
+          && request.resource.data.rejectionSeenAt == request.time
+        )
+        || (
+          signedIn()
+          && resource.data.uid == request.auth.uid
           && resource.data.method == 'manual'
-          && resource.data.status in ['pending', 'rejected']
+          && resource.data.status == 'pending'
           && request.resource.data.status == 'pending'
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['screenshot', 'screenshotAt', 'paymentRef', 'status', 'rejectReason'])
           && request.resource.data.screenshot is string
@@ -335,6 +353,198 @@ service cloud.firestore {
     // UPI and bank details shown at checkout.
     match /settings/payment {
       allow get: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // ---------------- Contact page enquiries ----------------
+    // Anyone (signed in or not) may send one well-formed message; only admins read and follow them up.
+    match /enquiries/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['name', 'email', 'phone', 'topic', 'message', 'status', 'uid', 'createdAt'])
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100
+        && request.resource.data.email is string && request.resource.data.email.size() <= 200 && request.resource.data.email.matches('^[^@ ]+@[^@ ]+$')
+        && (!('phone' in request.resource.data) || (request.resource.data.phone is string && request.resource.data.phone.size() <= 20))
+        && request.resource.data.topic is string && request.resource.data.topic.size() <= 60
+        && request.resource.data.message is string && request.resource.data.message.size() > 0 && request.resource.data.message.size() <= 2000
+        && request.resource.data.status == 'new'
+        && (!('uid' in request.resource.data) || (signedIn() && request.resource.data.uid == request.auth.uid))
+        && request.resource.data.createdAt == request.time;
+      allow get, list, delete: if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'statusAt', 'statusBy'])
+        && request.resource.data.status in ['new', 'reviewed', 'contacted', 'registered', 'removed'];
+    }
+
+    // ---------------- Daily Quiz ----------------
+    // India-time day number and minute of the day, from the server clock.
+    function istMillis() {
+      return request.time.toMillis() + 19800000;
+    }
+    function istDay() {
+      return int(math.floor(istMillis() / 86400000));
+    }
+    function istMinute() {
+      return int(math.floor((istMillis() % 86400000) / 60000));
+    }
+    // Open 5:00 AM to 7:00 PM India time.
+    function quizWindowOpen() {
+      return istMinute() >= 300 && istMinute() < 1140;
+    }
+    // Groups a learner can be placed in (src/data/quizPatterns.json, non-legacy). Each group's
+    // sections and questions per section live in quizPaperKeys/{group}, written by the upload script.
+    function validQuizGroup(g) {
+      return g is string && g in ['K1', 'K2', 'K3', 'A', 'B', 'C', 'X', 'NAV', 'IMPC', 'IBPC', 'IDIP', 'IIIT', 'IOTH', 'NEET', 'EAM', 'PRO'];
+    }
+
+    // Questions (no answers): any signed-in user. Answer keys: admins only, except one answer at a
+    // time for a question on the learner's own submitted paper from today or yesterday.
+    match /quizBanks/{bankId} {
+      allow get, list: if signedIn();
+      allow write: if isAdmin() || hasPerm('courses.manage');
+    }
+    // Answer keys per group paper, used only by these rules to check scores.
+    match /quizPaperKeys/{group} {
+      allow get, list, write: if isAdmin() || hasPerm('courses.manage');
+    }
+    match /quizKeys/{bankId} {
+      allow get, list: if isAdmin() || hasPerm('courses.manage');
+      allow write: if isAdmin() || hasPerm('courses.manage');
+
+      function revealable(day, n) {
+        let path = /databases/$(database)/documents/dailyQuiz/$(request.auth.uid + '_' + string(day));
+        return exists(path)
+          && get(path).data.get('submittedAt', null) != null
+          && int(n) in get(path).data.picks.get(bankId, []);
+      }
+      match /items/{n} {
+        allow get: if isAdmin() || hasPerm('courses.manage')
+          || (signedIn() && n.matches('^[0-9]{1,4}$') && (revealable(istDay(), n) || revealable(istDay() - 1, n)));
+        allow list: if isAdmin() || hasPerm('courses.manage');
+        allow write: if isAdmin() || hasPerm('courses.manage');
+      }
+    }
+
+    // One paper per learner per India-time day: dailyQuiz/{uid}_{day}.
+    match /dailyQuiz/{id} {
+      function myPaper() {
+        return signedIn() && id.matches(request.auth.uid + '_[0-9]+');
+      }
+      // Papers have up to 10 sections of 3 or 5 questions; rules can't loop, so each check is
+      // written out per section and skipped past the last one. Sections are the paper's own picks.
+      function pickList(p, ids, i, n) {
+        return ids.size() <= i || (p[ids[i]] is list && p[ids[i]].size() == n);
+      }
+      // A new paper: exactly the group's sections, each with the group's number of questions.
+      function validPicks(p, group) {
+        let spec = get(/databases/$(database)/documents/quizPaperKeys/$(group)).data;
+        let ids = spec.banks;
+        let n = spec.perSection;
+        return p.keys().hasOnly(ids) && p.keys().hasAll(ids)
+          && pickList(p, ids, 0, n) && pickList(p, ids, 1, n) && pickList(p, ids, 2, n) && pickList(p, ids, 3, n) && pickList(p, ids, 4, n)
+          && pickList(p, ids, 5, n) && pickList(p, ids, 6, n) && pickList(p, ids, 7, n) && pickList(p, ids, 8, n) && pickList(p, ids, 9, n);
+      }
+      // Every answer is 0-3, or null (unanswered); one per question on the paper.
+      function answerList(a, p, ids, i) {
+        return ids.size() <= i || (a[ids[i]] is list && a[ids[i]].size() == p[ids[i]].size() && a[ids[i]].hasOnly([0, 1, 2, 3, null]));
+      }
+      function validAnswers(a, p) {
+        let ids = p.keys();
+        return a.keys().hasOnly(ids) && a.keys().hasAll(ids)
+          && answerList(a, p, ids, 0) && answerList(a, p, ids, 1) && answerList(a, p, ids, 2) && answerList(a, p, ids, 3) && answerList(a, p, ids, 4)
+          && answerList(a, p, ids, 5) && answerList(a, p, ids, 6) && answerList(a, p, ids, 7) && answerList(a, p, ids, 8) && answerList(a, p, ids, 9);
+      }
+      function blank(a, ids, i) {
+        return ids.size() <= i || a[ids[i]].hasOnly([null]);
+      }
+      function allBlank(a) {
+        let ids = a.keys();
+        return blank(a, ids, 0) && blank(a, ids, 1) && blank(a, ids, 2) && blank(a, ids, 3) && blank(a, ids, 4)
+          && blank(a, ids, 5) && blank(a, ids, 6) && blank(a, ids, 7) && blank(a, ids, 8) && blank(a, ids, 9);
+      }
+      // The correct options for one section's picks, straight from the hidden key (k = that bank's answers).
+      function keyFor(k, p) {
+        return p.size() == 3 ? [k[p[0]], k[p[1]], k[p[2]]] : [k[p[0]], k[p[1]], k[p[2]], k[p[3]], k[p[4]]];
+      }
+      function pts(a, c) {
+        return (a[0] == c[0] ? 1 : 0) + (a[1] == c[1] ? 1 : 0) + (a[2] == c[2] ? 1 : 0)
+          + (a.size() == 5 ? (a[3] == c[3] ? 1 : 0) + (a[4] == c[4] ? 1 : 0) : 0);
+      }
+      function keyOk(d, c, k, ids, i) {
+        return ids.size() <= i || c[ids[i]] == keyFor(k[ids[i]], d.picks[ids[i]]);
+      }
+      function secPts(d, c, ids, i) {
+        return ids.size() <= i ? 0 : pts(d.answers[ids[i]], c[ids[i]]);
+      }
+      // Scoring is two writes (one check would exceed the rules' 1000-expression limit on a 30-question paper):
+      // 2a) the correct options, matched against quizPaperKeys/{group} (one read for every bank on the paper);
+      function checkedKey(d, c) {
+        let ids = d.picks.keys();
+        let k = get(/databases/$(database)/documents/quizPaperKeys/$(d.group)).data.answers;
+        return c.keys().hasOnly(ids) && c.keys().hasAll(ids)
+          && keyOk(d, c, k, ids, 0) && keyOk(d, c, k, ids, 1) && keyOk(d, c, k, ids, 2) && keyOk(d, c, k, ids, 3) && keyOk(d, c, k, ids, 4)
+          && keyOk(d, c, k, ids, 5) && keyOk(d, c, k, ids, 6) && keyOk(d, c, k, ids, 7) && keyOk(d, c, k, ids, 8) && keyOk(d, c, k, ids, 9);
+      }
+      // 2b) the score, counted from the answers and the checked correct options.
+      function checkedScore(d, score) {
+        let ids = d.picks.keys();
+        let c = d.correct;
+        return score == secPts(d, c, ids, 0) + secPts(d, c, ids, 1) + secPts(d, c, ids, 2) + secPts(d, c, ids, 3) + secPts(d, c, ids, 4)
+             + secPts(d, c, ids, 5) + secPts(d, c, ids, 6) + secPts(d, c, ids, 7) + secPts(d, c, ids, 8) + secPts(d, c, ids, 9);
+      }
+
+      allow get: if isAdmin() || hasPerm('learners.manage') || myPaper();
+      allow list: if isAdmin() || hasPerm('learners.manage') || (signedIn() && resource.data.uid == request.auth.uid);
+
+      // Start: today's id, inside the window, for the learner's own group, server-clock start.
+      allow create: if signedIn()
+        && quizWindowOpen()
+        && id == request.auth.uid + '_' + string(istDay())
+        && request.resource.data.keys().hasOnly(['uid', 'name', 'memberId', 'institution', 'day', 'group', 'code', 'picks', 'startedAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.day == istDay()
+        && request.resource.data.group == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('quizGroup', '')
+        && request.resource.data.startedAt == request.time
+        && request.resource.data.code is string && request.resource.data.code.size() <= 40
+        && request.resource.data.name is string && request.resource.data.name.size() <= 100
+        && validQuizGroup(request.resource.data.group)
+        && validPicks(request.resource.data.picks, request.resource.data.group);
+
+      // 1) Hand in once, within 15 minutes (+60 s grace for slow networks); after that only a blank paper.
+      // 2) Then, once each, the correct options (must match the hidden answer key) and the score.
+      allow update: if signedIn()
+        && resource.data.uid == request.auth.uid
+        && (
+          (
+            resource.data.get('submittedAt', null) == null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answers', 'submittedAt', 'timeTaken'])
+            && request.resource.data.submittedAt == request.time
+            && request.resource.data.timeTaken is int && request.resource.data.timeTaken >= 0 && request.resource.data.timeTaken <= 1200
+            && validAnswers(request.resource.data.answers, resource.data.picks)
+            && (
+              request.time <= resource.data.startedAt + duration.value(960, 's')
+              || allBlank(request.resource.data.answers)
+            )
+          )
+          || (
+            resource.data.get('submittedAt', null) != null
+            && !('correct' in resource.data)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['correct'])
+            && checkedKey(resource.data, request.resource.data.correct)
+          )
+          || (
+            'correct' in resource.data
+            && !('score' in resource.data)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['score'])
+            && checkedScore(resource.data, request.resource.data.score)
+          )
+        );
+
+      // Admins can clear a paper so the learner can take today's quiz again.
+      allow delete: if isAdmin();
+    }
+
+    // Best performer of each month, recorded by an admin: quizRewards/{YYYY-MM}.
+    match /quizRewards/{month} {
+      allow get, list: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
       allow write: if isAdmin();
     }
   }

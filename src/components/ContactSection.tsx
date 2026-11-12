@@ -23,12 +23,29 @@ const field =
 
 export default function ContactSection() {
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
 
-  // No backend yet — acknowledge the message locally.
-  const submit = (e: FormEvent<HTMLFormElement>) => {
+  // Saved to Firestore (enquiries) for the admin Enquiries page. Firebase loads only when sending.
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSent(true);
-    e.currentTarget.reset();
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    const value = (k: string) => String(data.get(k) ?? "");
+    setSending(true);
+    setSent(false);
+    setError("");
+    try {
+      const { sendEnquiry } = await import("@/lib/enquiries");
+      await sendEnquiry({ name: value("name"), email: value("email"), phone: value("phone"), topic: value("topic"), message: value("message") });
+      setSent(true);
+      form.reset();
+    } catch (err) {
+      console.error("Could not send enquiry", err);
+      setError(`We couldn't send your message. Please try again, or email us at ${contactInfo.email}.`);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -62,7 +79,7 @@ export default function ContactSection() {
 
           <Reveal variant="left" delay={360} className="md:col-span-3 lg:col-span-1">
             <div className="rounded-3xl bg-forest-700 p-6">
-              <p className="font-semibold text-white">Want to teach on Nuels?</p>
+              <p className="font-semibold text-white">Want to teach on Nuel Smart?</p>
               <p className="mt-1 text-sm leading-relaxed text-forest-100">
                 If you have 8+ years of industry experience, we&apos;d love to hear from you. Pick &ldquo;Become a
                 mentor&rdquo; in the form.
@@ -82,19 +99,24 @@ export default function ContactSection() {
                 Our team will reach out shortly.
               </div>
             )}
+            {error && (
+              <p role="alert" className="mt-6 rounded-2xl bg-red-50 px-5 py-4 text-sm text-red-700">
+                {error}
+              </p>
+            )}
 
             <form onSubmit={submit} className="mt-6 grid gap-4 sm:grid-cols-2">
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium text-forest-900">Full name</span>
-                <input required name="name" placeholder="Your name" className={field} />
+                <input required name="name" maxLength={100} placeholder="Your name" className={field} />
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium text-forest-900">Email</span>
-                <input required type="email" name="email" placeholder="you@example.com" className={field} />
+                <input required type="email" name="email" maxLength={200} placeholder="you@example.com" className={field} />
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium text-forest-900">Phone (optional)</span>
-                <input type="tel" name="phone" placeholder="+91" className={field} />
+                <input type="tel" name="phone" maxLength={20} placeholder="+91" className={field} />
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium text-forest-900">Topic</span>
@@ -106,14 +128,15 @@ export default function ContactSection() {
               </label>
               <label className="block sm:col-span-2">
                 <span className="mb-1.5 block text-sm font-medium text-forest-900">Message</span>
-                <textarea required name="message" rows={5} placeholder="How can we help?" className={`${field} resize-none`} />
+                <textarea required name="message" rows={5} maxLength={2000} placeholder="How can we help?" className={`${field} resize-none`} />
               </label>
               <div className="sm:col-span-2">
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 rounded-full bg-forest-700 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-forest-700/20 transition hover:bg-forest-600"
+                  disabled={sending}
+                  className="inline-flex items-center gap-2 rounded-full bg-forest-700 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-forest-700/20 transition hover:bg-forest-600 disabled:opacity-60"
                 >
-                  Send Message
+                  {sending ? "Sending…" : "Send Message"}
                   <ArrowRightIcon className="h-4 w-4" />
                 </button>
               </div>

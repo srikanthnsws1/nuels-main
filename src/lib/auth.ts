@@ -18,6 +18,7 @@ import {
 import { deleteField, doc, getDoc, onSnapshot, runTransaction, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { useSyncExternalStore } from "react";
 import { auth, db } from "./firebase";
+import { groupForClass } from "@/data/dailyQuiz";
 
 /**
  * Firebase Auth session plus the user's role, read from Firestore `users/{uid}`.
@@ -45,6 +46,12 @@ export type AppUser = {
   employeeNumber?: string;
   permissions: string[];
   phone?: string;
+  /** Class / standard / course from registration (e.g. "C10", "INT-MPC"); sets the Daily Quiz pattern. */
+  studyClass?: string;
+  /** Daily Quiz group derived from studyClass (see src/data/quizPatterns.json). */
+  quizGroup?: string;
+  /** School or college name from registration. */
+  institution?: string;
   /** Slugs of courses waiting in the cart. */
   cart: string[];
   /** Slugs of paid-for courses. Only payment confirmation (Cloud Function or admin) adds to this. */
@@ -112,6 +119,8 @@ let started = false;
 // Details from the registration form, written into the profile when the new account first signs in.
 /** Education and location details collected at registration. */
 export type ProfileDetails = {
+  /** Class / standard / course id from src/data/dailyQuiz.ts (learners only). */
+  studyClass?: string;
   institution?: string;
   syllabus?: string;
   country?: string;
@@ -187,9 +196,12 @@ async function loadProfileOnce(user: User): Promise<AppUser> {
     const details = Object.fromEntries(
       detailKeys.map((k) => [k, pendingProfile?.[k]?.trim()]).filter(([, v]) => v),
     ) as Partial<Record<(typeof detailKeys)[number], string>>;
+    const studyClass = pendingProfile?.studyClass;
+    const quizGroup = groupForClass(studyClass);
     const profile = {
       name,
       email,
+      ...(quizGroup ? { studyClass, quizGroup } : {}),
       ...(pendingProfile?.phone ? { phone: pendingProfile.phone } : {}),
       // Only store the fields the learner actually filled in.
       ...details,
@@ -219,6 +231,7 @@ async function loadProfileOnce(user: User): Promise<AppUser> {
       memberId,
       nickname: details.nickname,
       photo,
+      ...(quizGroup ? { studyClass, quizGroup } : {}),
       permissions: [],
       cart: [],
       enrolledCourses: [],
@@ -264,8 +277,17 @@ async function loadProfileOnce(user: User): Promise<AppUser> {
     nickname: data.nickname,
     photo: data.photo,
     ...staffFields(data),
+    ...quizFields(data),
     cart: slugList(data.cart),
     enrolledCourses: slugList(data.enrolledCourses),
+  };
+}
+
+function quizFields(data: Record<string, unknown>) {
+  return {
+    studyClass: typeof data.studyClass === "string" ? data.studyClass : undefined,
+    quizGroup: typeof data.quizGroup === "string" ? data.quizGroup : undefined,
+    institution: typeof data.institution === "string" && data.institution ? data.institution : undefined,
   };
 }
 
@@ -302,6 +324,7 @@ function watchProfile(uid: string) {
           nickname: data.nickname,
           photo: data.photo,
           ...staffFields(data),
+          ...quizFields(data),
           cart: slugList(data.cart),
           enrolledCourses: slugList(data.enrolledCourses),
         },

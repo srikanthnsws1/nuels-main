@@ -2,7 +2,9 @@
 
 import { collection, doc, onSnapshot, serverTimestamp, updateDoc, type Timestamp } from "firebase/firestore";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { BookIcon, BriefcaseIcon, CartIcon, GraduationIcon, GridIcon, PlayIcon, SearchIcon, ShieldIcon, UsersIcon } from "../icons";
+import { BookIcon, BriefcaseIcon, CartIcon, GraduationIcon, GridIcon, MailIcon, PlayIcon, SearchIcon, ShieldIcon, StarIcon, UsersIcon } from "../icons";
+import AdminEnquiries from "./AdminEnquiries";
+import AdminQuizReports from "./AdminQuizReports";
 import { CoursesCard } from "./AdminCourses";
 import { CourseContentCard, LearnersCard } from "./AdminLearning";
 import { OrdersCard, PaymentDetailsCard } from "./AdminPayments";
@@ -22,6 +24,8 @@ const sections: Section[] = [
   { id: "employees", label: "Employees", icon: BriefcaseIcon },
   { id: "payment-details", label: "Payment Details", icon: ShieldIcon },
   { id: "learners", label: "Learners", icon: GraduationIcon },
+  { id: "daily-quiz", label: "Daily Quiz", icon: StarIcon },
+  { id: "enquiries", label: "Enquiries", icon: MailIcon },
   { id: "courses", label: "Courses", icon: BookIcon },
   { id: "course-content", label: "Course Videos", icon: PlayIcon },
 ];
@@ -567,6 +571,10 @@ function AdminContent({ me, page }: { me: AppUser; page: string }) {
       {page === "payment-details" && <PaymentDetailsCard />}
 
       {page === "learners" && <LearnersCard users={current} />}
+
+      {page === "daily-quiz" && <AdminQuizReports me={me} />}
+
+      {page === "enquiries" && <AdminEnquiries me={me} />}
 
       {page === "courses" && <CoursesCard extraMentors={(current ?? []).filter((u) => u.role === "mentor").map((u) => u.name)} />}
 

@@ -6,6 +6,19 @@ import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRightIcon, EyeIcon, EyeOffIcon, MailIcon } from "./icons";
 import Reveal from "./motion/Reveal";
 import { authErrorMessage, homeFor, resetPassword, signIn, useAuth } from "@/lib/auth";
+import { QUIZ_LANDING_KEY } from "@/data/dailyQuiz";
+
+/** Students land on today's Daily Quiz after logging in; everyone else on their dashboard. */
+/** Students open on the daily quiz; DailyQuiz moves them to the overview if today's is done or closed. */
+function landingFor(role: keyof typeof homeFor) {
+  if (role !== "student") return homeFor[role];
+  try {
+    sessionStorage.setItem(QUIZ_LANDING_KEY, "1");
+  } catch {
+    /* private mode */
+  }
+  return "/dashboard#daily-quiz";
+}
 
 const field =
   "w-full rounded-2xl border bg-white px-4 py-3.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:shadow-lg focus:shadow-forest-900/5";
@@ -24,7 +37,7 @@ export default function LoginForm() {
 
   // Already signed in: go straight to the right dashboard.
   useEffect(() => {
-    if (ready && user && !loading) router.replace(homeFor[user.role]);
+    if (ready && user && !loading) router.replace(landingFor(user.role));
   }, [ready, user, loading, router]);
 
   const forgot = async () => {
@@ -53,7 +66,7 @@ export default function LoginForm() {
     setLoading(true);
     try {
       const user = await signIn(email.trim(), password, remember);
-      router.push(homeFor[user.role]);
+      router.push(landingFor(user.role));
     } catch (err) {
       setAuthError(authErrorMessage(err));
       setLoading(false);

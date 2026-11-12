@@ -1,0 +1,362 @@
+[
+  {
+    "id": "K1-A",
+    "questions": [
+      ["How many apples? 🍎🍎🍎", "3", "2", "4", "5"],
+      ["How many stars? ⭐⭐⭐⭐⭐", "5", "4", "6", "3"],
+      ["🐥🐥 + 🐥 = ? How many chicks in all?", "3", "2", "4", "1"],
+      ["Which number comes after 7?", "8", "6", "9", "5"],
+      ["Which shape is this? ⚪", "Circle", "Square", "Triangle", "Star"],
+      ["Which shape is this? 🔺", "Triangle", "Circle", "Square", "Rectangle"],
+      ["Which is the biggest number?", "9", "5", "2", "7"],
+      ["🍌🍌🍌🍌 − 🍌 = ? How many bananas are left?", "3", "4", "5", "2"],
+      ["Which number is missing? 1, 2, __, 4", "3", "5", "6", "0"],
+      ["Count the balloons: 🎈🎈🎈🎈🎈🎈", "6", "5", "7", "8"],
+      ["Which plate has more sweets?", "🍬🍬🍬🍬 (4 sweets)", "🍬🍬 (2 sweets)", "Both have the same", "Neither has sweets"],
+      ["How many sides does a square ⬜ have?", "4", "3", "5", "2"],
+      ["5 + 2 = ?", "7", "6", "8", "3"],
+      ["Which is the smallest number?", "1", "6", "4", "9"],
+      ["🐟🐟🐟 and 🐟🐟🐟: how many fish in all?", "6", "3", "5", "7"]
+    ]
+  },
+  {
+    "id": "K1-B",
+    "questions": [
+      ["Which one is a fruit?", "🍎 Apple", "🥕 Carrot", "🥔 Potato", "🧅 Onion"],
+      ["Which animal says 'Moo'?", "🐄 Cow", "🐶 Dog", "🐱 Cat", "🐓 Hen"],
+      ["Which of these can fly?", "🐦 Bird", "🐘 Elephant", "🐟 Fish", "🐄 Cow"],
+      ["What do we use to see?", "👀 Eyes", "👂 Ears", "👃 Nose", "👅 Tongue"],
+      ["What do we wear on our feet?", "👟 Shoes", "🧢 Cap", "🧤 Gloves", "👓 Glasses"],
+      ["What shines in the sky at night?", "🌙 Moon", "🌈 Rainbow", "☁️ Cloud", "🪁 Kite"],
+      ["Which animal lives in water?", "🐟 Fish", "🐈 Cat", "🐒 Monkey", "🐐 Goat"],
+      ["What colour is a ripe banana 🍌?", "Yellow", "Blue", "Black", "Purple"],
+      ["Which one runs on rails (tracks)?", "🚂 Train", "🚗 Car", "🚲 Bicycle", "🛵 Scooter"],
+      ["What do we use to brush our teeth?", "🪥 Toothbrush", "🥄 Spoon", "✏️ Pencil", "🧹 Broom"],
+      ["Where do bees 🐝 make honey?", "In a beehive", "In a nest", "In a burrow", "In a stable"],
+      ["Which one is a vegetable?", "🥕 Carrot", "🍇 Grapes", "🍊 Orange", "🍓 Strawberry"],
+      ["What colour is fresh grass 🌱?", "Green", "Red", "White", "Pink"],
+      ["When do we use an umbrella ☂️ the most?", "Rainy season", "Winter", "Night time", "Festival time"],
+      ["How many legs does a hen 🐔 have?", "2", "4", "6", "8"]
+    ]
+  },
+  {
+    "id": "K2-A",
+    "questions": [
+      ["Count by tens: 10, 20, 30, __", "40", "35", "31", "50"],
+      ["🍎🍎🍎🍎🍎 + 🍎🍎🍎🍎 = ?", "9", "8", "10", "7"],
+      ["What is 15 − 6?", "9", "8", "11", "7"],
+      ["Which number has 4 tens and 3 ones?", "43", "34", "7", "403"],
+      ["How many corners does a triangle 🔺 have?", "3", "4", "2", "5"],
+      ["Which coin or note is worth the most?", "₹10", "₹5", "₹2", "₹1"],
+      ["What time does this clock show? 🕒", "3 o'clock", "12 o'clock", "6 o'clock", "9 o'clock"],
+      ["2 plates with 🍪🍪🍪 on each. How many cookies?", "6", "5", "3", "9"],
+      ["What comes next? 🔴🔵🔴🔵🔴 __", "🔵", "🔴", "🟢", "🟡"],
+      ["Which is the largest number?", "98", "89", "79", "97"],
+      ["How many days are there in a week?", "7", "5", "10", "12"],
+      ["A ball ⚽ has the shape of a …", "Sphere", "Cube", "Cone", "Cylinder"],
+      ["What is half of 10? 🍫🍫🍫🍫🍫🍫🍫🍫🍫🍫", "5", "2", "10", "4"],
+      ["Which number is even?", "8", "3", "7", "5"],
+      ["25 + 10 = ?", "35", "26", "15", "45"]
+    ]
+  },
+  {
+    "id": "K2-B",
+    "questions": [
+      ["Which animal gives us wool?", "🐑 Sheep", "🐄 Cow", "🐔 Hen", "🐕 Dog"],
+      ["Which of these is a wild animal?", "🐅 Tiger", "🐄 Cow", "🐐 Goat", "🐕 Dog"],
+      ["Which part of a plant 🌱 grows under the soil?", "Roots", "Leaves", "Flowers", "Fruits"],
+      ["Which one helps us talk to people far away?", "📱 Mobile phone", "🪑 Chair", "🧺 Basket", "🪣 Bucket"],
+      ["Who puts out fires 🔥?", "👩‍🚒 Firefighter", "👨‍🍳 Cook", "👨‍🌾 Farmer", "💇 Barber"],
+      ["Which of these is a bird?", "🦜 Parrot", "🐍 Snake", "🐸 Frog", "🐢 Tortoise"],
+      ["What should you do before eating 🍽️?", "🧼 Wash your hands", "Play in the mud", "Watch TV", "Go to sleep"],
+      ["Which of these melts in the sun ☀️?", "🧊 Ice", "🪨 Stone", "🪵 Wood", "🧱 Brick"],
+      ["Which traffic light 🚦 means STOP?", "Red", "Green", "Yellow", "Blue"],
+      ["Where does a fish 🐠 live?", "In water", "In a tree", "In the sand", "In a nest"],
+      ["Which animal is called the 'ship of the desert'?", "🐪 Camel", "🐘 Elephant", "🐎 Horse", "🐃 Buffalo"],
+      ["Which is the national bird of India? 🦚", "Peacock", "Crow", "Sparrow", "Pigeon"],
+      ["What do we need to breathe?", "🌬️ Air", "Sand", "Stones", "Paper"],
+      ["Which one is a musical instrument?", "🥁 Drum", "🍳 Pan", "🧸 Teddy", "📚 Books"],
+      ["How many colours are there in a rainbow 🌈?", "7", "5", "3", "10"]
+    ]
+  },
+  {
+    "id": "K3-A",
+    "questions": [
+      ["What is 6 × 4?", "24", "20", "10", "28"],
+      ["4 baskets have 🍎🍎🍎🍎🍎 (5 apples) each. How many apples in all?", "20", "9", "25", "15"],
+      ["12 sweets 🍬 are shared equally by 3 children. How many does each get?", "4", "3", "6", "9"],
+      ["Which number has 3 hundreds, 5 tens and 2 ones?", "352", "235", "532", "325"],
+      ["How many centimetres make 1 metre? 📏", "100", "10", "1000", "50"],
+      ["What is the place value of 7 in 472?", "70", "7", "700", "4"],
+      ["What part of this circle is shaded? ◐", "1/2", "1/3", "1/4", "2/3"],
+      ["Round 47 to the nearest ten.", "50", "40", "45", "60"],
+      ["How many minutes are there in 1 hour? ⏰", "60", "100", "30", "24"],
+      ["Which shape has 6 square faces, like a dice 🎲?", "Cube", "Cone", "Sphere", "Cylinder"],
+      ["What is 500 + 250?", "750", "725", "705", "850"],
+      ["What comes next? 5, 10, 15, 20, __", "25", "21", "30", "22"],
+      ["Rani has ₹50 and buys a pencil box ✏️ for ₹35. How much is left?", "₹15", "₹25", "₹85", "₹10"],
+      ["How many sides does a hexagon ⬡ have?", "6", "5", "8", "4"],
+      ["Which is the greatest number?", "990", "909", "899", "900"]
+    ]
+  },
+  {
+    "id": "K3-B",
+    "questions": [
+      ["Which planet do we live on? 🌍", "Earth", "Mars", "Jupiter", "Venus"],
+      ["Which gas do plants 🌳 give out that we breathe in?", "Oxygen", "Smoke", "Carbon dioxide", "Steam"],
+      ["Which sense organ helps us smell? 👃", "Nose", "Ears", "Eyes", "Skin"],
+      ["Which animal lays eggs 🥚?", "Hen", "Cow", "Dog", "Goat"],
+      ["Water turns into ice 🧊 when it is …", "Frozen", "Boiled", "Stirred", "Coloured"],
+      ["Which of these gives us light?", "☀️ Sun", "🌳 Tree", "🪨 Rock", "🪑 Chair"],
+      ["What is the capital of India? 🇮🇳", "New Delhi", "Mumbai", "Hyderabad", "Kolkata"],
+      ["Which food gives us protein for strong muscles? 💪", "🫘 Dal (pulses)", "🍬 Candy", "🥤 Soft drink", "🍟 Chips"],
+      ["How many legs does a spider 🕷️ have?", "8", "6", "4", "10"],
+      ["Which festival is called the festival of lights? 🪔", "Diwali", "Holi", "Sankranti", "Raksha Bandhan"],
+      ["Which bin should a banana peel go in?", "Green bin (wet waste)", "Blue bin (dry waste)", "On the road", "In the river"],
+      ["Which is the largest animal on land?", "🐘 Elephant", "🦁 Lion", "🐎 Horse", "🦒 Giraffe"],
+      ["Which one travels in the air?", "✈️ Aeroplane", "🚢 Ship", "🚌 Bus", "🚂 Train"],
+      ["Which part of our body pumps blood? ❤️", "Heart", "Lungs", "Stomach", "Brain"],
+      ["What is the home of a lion 🦁 called?", "Den", "Kennel", "Stable", "Nest"]
+    ]
+  },
+  {
+    "id": "X-TEL",
+    "questions": [
+      ["“విద్యాలయం” – ఇది ఏ సంధి?", "సవర్ణదీర్ఘ సంధి", "గుణ సంధి", "వృద్ధి సంధి", "యణాదేశ సంధి"],
+      ["“సూర్యోదయం” – ఇది ఏ సంధి?", "గుణ సంధి", "సవర్ణదీర్ఘ సంధి", "వృద్ధి సంధి", "యణాదేశ సంధి"],
+      ["“అత్యంత” పదాన్ని విడదీయగా వచ్చేది?", "అతి + అంత", "అత్య + అంత", "అతి + యంత", "అత్ + యంత"],
+      ["“ఏకైక” – ఇది ఏ సంధి?", "వృద్ధి సంధి", "గుణ సంధి", "సవర్ణదీర్ఘ సంధి", "యణాదేశ సంధి"],
+      ["“తల్లిదండ్రులు” – ఇది ఏ సమాసం?", "ద్వంద్వ సమాసం", "ద్విగు సమాసం", "బహువ్రీహి సమాసం", "కర్మధారయ సమాసం"],
+      ["“ముక్కంటి” (మూడు కన్నులు కలవాడు) – ఇది ఏ సమాసం?", "బహువ్రీహి సమాసం", "ద్విగు సమాసం", "ద్వంద్వ సమాసం", "షష్ఠీ తత్పురుష సమాసం"],
+      ["“నాలుగు వేదాలు” – ఇది ఏ సమాసం?", "ద్విగు సమాసం", "ద్వంద్వ సమాసం", "బహువ్రీహి సమాసం", "అవ్యయీభావ సమాసం"],
+      ["“ఆమె ముఖం చంద్రబింబం వలె ఉంది” – ఇందులోని అలంకారం?", "ఉపమాలంకారం", "రూపకాలంకారం", "ఉత్ప్రేక్షాలంకారం", "అతిశయోక్తి అలంకారం"],
+      ["ఉత్పలమాల పద్యంలోని గణాలు ఏవి?", "భ ర న భ భ ర వ", "న జ భ జ జ జ ర", "స భ ర న మ య వ", "మ స జ స త త గ"],
+      ["చంపకమాల పద్యంలో యతి స్థానం ఎన్నవ అక్షరం?", "11వ అక్షరం", "10వ అక్షరం", "13వ అక్షరం", "14వ అక్షరం"],
+      ["“చేత, చే, తోడ, తో” – ఇవి ఏ విభక్తి ప్రత్యయాలు?", "తృతీయా విభక్తి", "ద్వితీయా విభక్తి", "చతుర్థీ విభక్తి", "పంచమీ విభక్తి"],
+      ["ఆంధ్ర మహాభారతాన్ని రచించిన కవిత్రయంలో లేనివారు ఎవరు?", "బమ్మెర పోతన", "నన్నయ", "తిక్కన", "ఎఱ్ఱన"],
+      ["“మహాప్రస్థానం” రచయిత ఎవరు?", "శ్రీశ్రీ", "గురజాడ అప్పారావు", "విశ్వనాథ సత్యనారాయణ", "సి. నారాయణరెడ్డి"],
+      ["“సుఖం” అనే పదానికి వ్యతిరేక పదం ఏది?", "దుఃఖం", "సంతోషం", "ఆనందం", "హాయి"],
+      ["“సూర్యుడు” అనే పదానికి పర్యాయపదం ఏది?", "భానుడు", "శశి", "జలధి", "గిరి"]
+    ]
+  },
+  {
+    "id": "X-ENG",
+    "questions": [
+      ["Choose the passive voice: 'She writes a letter.'", "A letter is written by her.", "A letter was written by her.", "A letter has been written by her.", "A letter is being written by her."],
+      ["Fill in the blank: He has been living here ___ 2015.", "since", "for", "from", "by"],
+      ["Choose the reported speech: He said, 'I am tired.'", "He said that he was tired.", "He said that I am tired.", "He says that he was tired.", "He said that he is being tired."],
+      ["Choose the synonym of 'courageous'.", "Brave", "Timid", "Lazy", "Careless"],
+      ["Choose the antonym of 'ancient'.", "Modern", "Old", "Historic", "Antique"],
+      ["Fill in the article: She is ___ honest girl.", "an", "a", "the", "no article"],
+      ["Which word is spelt correctly?", "Accommodation", "Acommodation", "Accomodation", "Acomodation"],
+      ["If I ___ a bird, I would fly to the mountains.", "were", "am", "will be", "have been"],
+      ["Choose the correct question tag: They are playing, ___?", "aren't they", "isn't it", "don't they", "are they"],
+      ["Which sentence is in the present perfect tense?", "I have finished my homework.", "I finished my homework.", "I am finishing my homework.", "I will finish my homework."],
+      ["What does the idiom 'a piece of cake' mean?", "Something very easy", "A tasty dessert", "A small share", "A difficult task"],
+      ["Ravi is ___ boy in the class.", "the tallest", "taller", "tallest", "more tall"],
+      ["Join using 'who': I met a man. He is a doctor.", "I met a man who is a doctor.", "I met a man which is a doctor.", "I met a man whom is a doctor.", "I met who a man is a doctor."],
+      ["Neither the teacher nor the students ___ present.", "were", "was", "is", "has"],
+      ["Choose the correct preposition: The book is ___ the table.", "on", "in", "into", "of"]
+    ]
+  },
+  {
+    "id": "X-HIN",
+    "questions": [
+      ["'दिन' का विलोम शब्द क्या है?", "रात", "सुबह", "शाम", "दोपहर"],
+      ["'सूर्य' का पर्यायवाची शब्द कौन-सा है?", "रवि", "चंद्र", "नभ", "जल"],
+      ["'विद्यालय' में कौन-सी संधि है?", "दीर्घ संधि", "गुण संधि", "वृद्धि संधि", "यण संधि"],
+      ["'सूर्योदय' का संधि-विच्छेद क्या है?", "सूर्य + उदय", "सूर्यो + दय", "सूर + उदय", "सूर्य + ओदय"],
+      ["'माता-पिता' में कौन-सा समास है?", "द्वंद्व समास", "द्विगु समास", "तत्पुरुष समास", "अव्ययीभाव समास"],
+      ["'त्रिलोक' में कौन-सा समास है?", "द्विगु समास", "द्वंद्व समास", "बहुव्रीहि समास", "कर्मधारय समास"],
+      ["'यथाशक्ति' में कौन-सा समास है?", "अव्ययीभाव समास", "द्विगु समास", "द्वंद्व समास", "तत्पुरुष समास"],
+      ["'लड़का' का स्त्रीलिंग रूप क्या है?", "लड़की", "लड़के", "लड़कियाँ", "लड़कपन"],
+      ["'किताब' का बहुवचन रूप क्या है?", "किताबें", "किताबा", "किताबी", "किताबन"],
+      ["'गोदान' उपन्यास के लेखक कौन हैं?", "प्रेमचंद", "तुलसीदास", "कबीर", "सूरदास"],
+      ["'रामचरितमानस' की रचना किसने की?", "तुलसीदास", "सूरदास", "कबीरदास", "मीराबाई"],
+      ["'मैं कल दिल्ली जाऊँगा।' – यह वाक्य किस काल में है?", "भविष्यत् काल", "भूतकाल", "वर्तमान काल", "पूर्ण भूतकाल"],
+      ["करण कारक का चिह्न क्या है?", "से (के द्वारा)", "को", "में", "का"],
+      ["'मीठा' का विलोम शब्द क्या है?", "कड़वा", "खट्टा", "नमकीन", "ताज़ा"],
+      ["'जल' का पर्यायवाची शब्द कौन-सा है?", "नीर", "अग्नि", "पवन", "धरती"]
+    ]
+  },
+  {
+    "id": "X-PHY",
+    "questions": [
+      ["What is the SI unit of electric current?", "Ampere", "Volt", "Ohm", "Watt"],
+      ["According to Ohm's law, V = ?", "IR", "I/R", "R/I", "I²R"],
+      ["Which mirror is used as a rear-view mirror in vehicles?", "Convex mirror", "Concave mirror", "Plane mirror", "Cylindrical mirror"],
+      ["Myopia (short-sightedness) is corrected using a …", "Concave lens", "Convex lens", "Plane glass", "Bifocal prism"],
+      ["What is the power of a convex lens of focal length 0.5 m?", "+2 D", "−2 D", "+0.5 D", "+5 D"],
+      ["The splitting of white light into seven colours is called …", "Dispersion", "Reflection", "Diffraction", "Polarisation"],
+      ["The sky looks blue because of …", "Scattering of light", "Reflection of light", "Refraction of light", "Absorption of red light by clouds"],
+      ["Resistors of 2 Ω and 3 Ω are joined in series. The total resistance is …", "5 Ω", "1.2 Ω", "6 Ω", "1 Ω"],
+      ["Resistors of 6 Ω and 3 Ω are joined in parallel. The total resistance is …", "2 Ω", "9 Ω", "4.5 Ω", "18 Ω"],
+      ["1 kWh is equal to …", "3.6 × 10⁶ J", "3.6 × 10³ J", "1000 J", "36 J"],
+      ["Which rule gives the direction of force on a current-carrying conductor in a magnetic field?", "Fleming's left-hand rule", "Fleming's right-hand rule", "Right-hand thumb rule", "Snell's law"],
+      ["Refractive index of a medium = speed of light in vacuum ÷ …", "Speed of light in the medium", "Frequency of light", "Wavelength of light", "Angle of refraction"],
+      ["The specific heat of water is about …", "1 cal/g°C", "4 cal/g°C", "0.5 cal/g°C", "10 cal/g°C"],
+      ["Which device converts mechanical energy into electrical energy?", "Electric generator", "Electric motor", "Transformer", "Galvanometer"],
+      ["The focal length of a plane mirror is …", "Infinity", "Zero", "1 m", "Equal to its height"]
+    ]
+  },
+  {
+    "id": "X-CHE",
+    "questions": [
+      ["What is the pH of pure water at 25 °C?", "7", "0", "14", "1"],
+      ["What is the chemical formula of baking soda?", "NaHCO₃", "Na₂CO₃", "NaOH", "CaCO₃"],
+      ["Which gas is given off when zinc reacts with dilute HCl?", "Hydrogen", "Oxygen", "Chlorine", "Carbon dioxide"],
+      ["Rusting of iron is an example of …", "Oxidation", "Reduction", "Neutralisation", "Sublimation"],
+      ["CaCO₃ → CaO + CO₂ is a …", "Decomposition reaction", "Combination reaction", "Displacement reaction", "Double displacement reaction"],
+      ["Which acid is present in vinegar?", "Acetic acid", "Citric acid", "Lactic acid", "Tartaric acid"],
+      ["What is the functional group of alcohols?", "−OH", "−COOH", "−CHO", "−CO−"],
+      ["What is the formula of Plaster of Paris?", "CaSO₄·½H₂O", "CaSO₄·2H₂O", "CaCO₃", "Ca(OH)₂"],
+      ["Which metal is stored in kerosene?", "Sodium", "Iron", "Copper", "Gold"],
+      ["What is the electronic configuration of sodium (Z = 11)?", "2, 8, 1", "2, 8, 2", "2, 9", "2, 7, 2"],
+      ["The modern periodic table is arranged by increasing …", "Atomic number", "Atomic mass", "Number of neutrons", "Density"],
+      ["What is the general formula of alkanes?", "CₙH₂ₙ₊₂", "CₙH₂ₙ", "CₙH₂ₙ₋₂", "CₙHₙ"],
+      ["Bauxite is an ore of …", "Aluminium", "Iron", "Lead", "Mercury"],
+      ["Which of these metals is the most reactive?", "Potassium", "Copper", "Silver", "Gold"],
+      ["What kind of bonds hold the atoms of methane (CH₄) together?", "Covalent bonds", "Ionic bonds", "Metallic bonds", "Hydrogen bonds"]
+    ]
+  },
+  {
+    "id": "X-BIO",
+    "questions": [
+      ["Where does photosynthesis take place in a plant cell?", "Chloroplast", "Mitochondria", "Nucleus", "Ribosome"],
+      ["What is the functional unit of the kidney?", "Nephron", "Neuron", "Alveolus", "Villus"],
+      ["Which organelle is called the powerhouse of the cell?", "Mitochondria", "Golgi body", "Lysosome", "Vacuole"],
+      ["Which enzyme is present in saliva?", "Salivary amylase", "Pepsin", "Trypsin", "Lipase"],
+      ["How many chambers does the human heart have?", "4", "2", "3", "5"],
+      ["Which hormone controls the blood sugar level?", "Insulin", "Thyroxine", "Adrenaline", "Oestrogen"],
+      ["Who is known as the father of genetics?", "Gregor Mendel", "Charles Darwin", "Robert Hooke", "Louis Pasteur"],
+      ["What are the sex chromosomes of a human male?", "XY", "XX", "YY", "XO"],
+      ["Xylem carries …", "Water and minerals", "Food", "Hormones only", "Oxygen only"],
+      ["The gap between two neurons is called a …", "Synapse", "Axon", "Dendrite", "Nephron"],
+      ["Budding is a type of asexual reproduction seen in …", "Hydra", "Humans", "Frogs", "Mango"],
+      ["Which plant hormone promotes cell division?", "Cytokinin", "Abscisic acid", "Ethylene", "Florigen"],
+      ["Which is the largest gland in the human body?", "Liver", "Pancreas", "Thyroid", "Pituitary"],
+      ["In the lungs, exchange of gases takes place in the …", "Alveoli", "Bronchi", "Trachea", "Larynx"],
+      ["In a food chain, green plants are …", "Producers", "Primary consumers", "Decomposers", "Secondary consumers"]
+    ]
+  },
+  {
+    "id": "X-SOC",
+    "questions": [
+      ["Which is the largest state of India by area?", "Rajasthan", "Madhya Pradesh", "Maharashtra", "Uttar Pradesh"],
+      ["What is the longitude of India's Standard Meridian?", "82½° E", "68° E", "90° E", "77° E"],
+      ["The Constitution of India came into force on …", "26 January 1950", "15 August 1947", "26 November 1949", "2 October 1950"],
+      ["Who is known as the father of the Indian Constitution?", "Dr B. R. Ambedkar", "Jawaharlal Nehru", "Mahatma Gandhi", "Sardar Vallabhbhai Patel"],
+      ["In which year did the Jallianwala Bagh massacre take place?", "1919", "1920", "1942", "1905"],
+      ["The Quit India Movement was launched in …", "1942", "1930", "1920", "1947"],
+      ["The Dandi March (Salt Satyagraha) took place in …", "1930", "1919", "1942", "1922"],
+      ["GDP stands for …", "Gross Domestic Product", "General Domestic Price", "Gross Development Plan", "Government Debt Payment"],
+      ["Which river is known as 'Dakshina Ganga'?", "Godavari", "Krishna", "Kaveri", "Narmada"],
+      ["Black soil is best suited for growing …", "Cotton", "Tea", "Coffee", "Jute"],
+      ["The First World War began in …", "1914", "1918", "1939", "1905"],
+      ["The Right to Information Act was passed in …", "2005", "2000", "2010", "1995"],
+      ["What is the minimum voting age in India?", "18 years", "21 years", "16 years", "25 years"],
+      ["Which of these is a Kharif crop?", "Rice", "Wheat", "Mustard", "Barley"],
+      ["Which organisation was founded in 1885?", "Indian National Congress", "Muslim League", "Swaraj Party", "Forward Bloc"]
+    ]
+  },
+  {
+    "id": "NAV-MA1",
+    "questions": [
+      ["Find the next number: 2, 4, 8, 16, ?", "32", "24", "20", "18"],
+      ["Find the next letter: A, C, E, G, ?", "I", "H", "J", "K"],
+      ["Find the next number: 1, 4, 9, 16, ?", "25", "20", "24", "36"],
+      ["Bird : Fly :: Fish : ?", "Swim", "Walk", "Crawl", "Run"],
+      ["Doctor : Hospital :: Teacher : ?", "School", "Court", "Shop", "Farm"],
+      ["Find the next number: 3, 6, 9, 12, ?", "15", "14", "16", "18"],
+      ["Find the next letter: Z, Y, X, W, ?", "V", "U", "T", "A"],
+      ["Which figure comes next? ▲ ■ ▲ ■ ▲ ?", "■", "▲", "●", "◆"],
+      ["Find the next pair: AB, CD, EF, ?", "GH", "FG", "HI", "GI"],
+      ["Pen : Write :: Knife : ?", "Cut", "Draw", "Cook", "Eat"],
+      ["Find the next number: 5, 10, 20, 40, ?", "80", "60", "50", "45"],
+      ["Find the next number: 1, 1, 2, 3, 5, 8, ?", "13", "11", "12", "10"],
+      ["Puppy : Dog :: Calf : ?", "Cow", "Goat", "Horse", "Sheep"],
+      ["Find the next number: 100, 90, 80, 70, ?", "60", "50", "65", "75"],
+      ["Find the next number: 2, 6, 12, 20, 30, ?", "42", "40", "36", "44"]
+    ]
+  },
+  {
+    "id": "NAV-MA2",
+    "questions": [
+      ["Find the odd one out: Apple, Mango, Potato, Banana", "Potato", "Apple", "Mango", "Banana"],
+      ["Find the odd one out: 3, 5, 7, 9", "9", "3", "5", "7"],
+      ["Find the odd one out: Circle, Square, Triangle, Cube", "Cube", "Circle", "Square", "Triangle"],
+      ["Find the odd one out: Dog, Cat, Parrot, Cow", "Parrot", "Dog", "Cat", "Cow"],
+      ["If CAT is written as DBU, how is DOG written?", "EPH", "EPG", "DPH", "FQI"],
+      ["Ravi faces north and turns right. Which direction does he face now?", "East", "West", "South", "North"],
+      ["A is B's brother. B is C's sister. How is A related to C?", "Brother", "Sister", "Father", "Uncle"],
+      ["Find the odd one out: Delhi, Mumbai, India, Chennai", "India", "Delhi", "Mumbai", "Chennai"],
+      ["If 1 = A, 2 = B and 3 = C, what word is 3-1-2?", "CAB", "BAC", "ABC", "CBA"],
+      ["A triangle is cut by one straight line from its top corner to its base. How many triangles are there in all?", "3", "2", "4", "1"],
+      ["Which word comes first in a dictionary?", "Ant", "Apple", "Arm", "Axe"],
+      ["Find the odd one out: January, March, June, July", "June", "January", "March", "July"],
+      ["If today is Monday, what day will it be after 3 days?", "Thursday", "Wednesday", "Friday", "Tuesday"],
+      ["What is the mirror image of the letter 'b'?", "d", "p", "q", "b"],
+      ["Ravi is 5th from the left and 6th from the right in a row. How many children are in the row?", "10", "11", "12", "9"]
+    ]
+  },
+  {
+    "id": "NAV-EVS",
+    "questions": [
+      ["Which gas do we breathe out?", "Carbon dioxide", "Oxygen", "Nitrogen", "Hydrogen"],
+      ["What is the national animal of India?", "Tiger", "Lion", "Elephant", "Peacock"],
+      ["At what temperature does water boil at sea level?", "100 °C", "0 °C", "50 °C", "212 °C"],
+      ["Which organ helps us breathe?", "Lungs", "Kidneys", "Liver", "Stomach"],
+      ["Which is the largest planet in our solar system?", "Jupiter", "Earth", "Mars", "Saturn"],
+      ["Our skin makes which vitamin in sunlight?", "Vitamin D", "Vitamin A", "Vitamin B", "Vitamin C"],
+      ["Which of these is a renewable source of energy?", "Solar energy", "Coal", "Petrol", "Natural gas"],
+      ["Which part of a plant makes its food?", "Leaf", "Root", "Stem", "Flower"],
+      ["Which of these animals eats only plants?", "Cow", "Lion", "Tiger", "Wolf"],
+      ["Which is the longest river in India?", "Ganga", "Godavari", "Krishna", "Yamuna"],
+      ["We get honey from …", "Bees", "Butterflies", "Ants", "Wasps"],
+      ["Which disease is spread by mosquitoes?", "Malaria", "Typhoid", "Cholera", "Tuberculosis"],
+      ["How long does the Earth take to go once around the Sun?", "About 365 days", "24 hours", "30 days", "7 days"],
+      ["Which of these is a natural resource?", "Water", "Plastic", "Glass", "Cement"],
+      ["Which layer of air protects us from the Sun's harmful UV rays?", "Ozone layer", "Cloud layer", "Dust layer", "Smoke layer"]
+    ]
+  },
+  {
+    "id": "NAV-ARI",
+    "questions": [
+      ["What is the LCM of 4 and 6?", "12", "24", "2", "10"],
+      ["What is the HCF of 12 and 18?", "6", "3", "12", "36"],
+      ["What is 25% of 200?", "50", "25", "75", "100"],
+      ["0.5 + 0.25 = ?", "0.75", "0.30", "0.7", "1.25"],
+      ["What is the perimeter of a square of side 5 cm?", "20 cm", "25 cm", "10 cm", "15 cm"],
+      ["What is the area of a rectangle 8 m long and 3 m wide?", "24 sq m", "22 sq m", "11 sq m", "48 sq m"],
+      ["A pen costs ₹12. What do 15 pens cost?", "₹180", "₹170", "₹150", "₹120"],
+      ["What is 3/4 of 48?", "36", "32", "12", "24"],
+      ["Which of these is a prime number?", "29", "21", "27", "33"],
+      ["What is the smallest 4-digit number?", "1000", "1111", "9999", "1001"],
+      ["What is the average of 10, 20 and 30?", "20", "30", "60", "15"],
+      ["1 kg = ? g", "1000 g", "100 g", "10 g", "10,000 g"],
+      ["5 notebooks cost ₹100. What do 8 notebooks cost?", "₹160", "₹180", "₹140", "₹800"],
+      ["Simplify: 48 ÷ 6 × 2", "16", "4", "24", "8"],
+      ["What is 50 in Roman numerals?", "L", "C", "X", "D"]
+    ]
+  },
+  {
+    "id": "NAV-ENG",
+    "questions": [
+      ["What is the plural of 'child'?", "Children", "Childs", "Childrens", "Childes"],
+      ["What is the opposite of 'happy'?", "Sad", "Glad", "Joyful", "Cheerful"],
+      ["Fill in the blank: She ___ to school every day.", "goes", "go", "going", "gone"],
+      ["Which word is spelt correctly?", "Beautiful", "Beautifull", "Beutiful", "Beatiful"],
+      ["Fill in the blank: ___ apple a day keeps the doctor away.", "An", "A", "The", "Some"],
+      ["What is a word with the same meaning as 'big'?", "Large", "Small", "Thin", "Short"],
+      ["What is the past tense of 'run'?", "Ran", "Runned", "Running", "Runs"],
+      ["Which word is a noun? 'The dog barked loudly.'", "dog", "barked", "loudly", "the"],
+      ["Fill in the blank: The cat is hiding ___ the bed.", "under", "of", "at", "with"],
+      ["What is the feminine of 'king'?", "Queen", "Princess", "Lady", "Madam"],
+      ["Which word is an adjective? 'She wore a red dress.'", "red", "wore", "dress", "she"],
+      ["Rearrange to make a sentence: is / my / this / book", "This is my book.", "My this is book.", "Book is this my.", "Is book my this."],
+      ["What is the opposite of 'early'?", "Late", "Soon", "Fast", "Quick"],
+      ["Which of these letters is a vowel?", "E", "B", "K", "T"],
+      ["Fill in the blank: Birds ___ in the sky.", "fly", "flies", "flying", "flown"]
+    ]
+  }
+]
