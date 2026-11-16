@@ -4,7 +4,7 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { CartIcon, CheckIcon, CloseIcon } from "../icons";
-import { Card, CardTitle, EmptyState, rupee } from "./ui";
+import { Card, CardTitle, EmptyState, rupee, SearchBox, matchesSearch } from "./ui";
 import type { AppUser } from "@/lib/auth";
 import { courseTitle, useCatalog } from "@/lib/catalog";
 import { db } from "@/lib/firebase";
@@ -70,6 +70,7 @@ export function OrdersCard({ me, canApprove = true }: { me: AppUser; canApprove?
   useCatalog(true); // re-render with live course names and prices
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [filter, setFilter] = useState<Filter>("review");
+  const [query, setQuery] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [viewing, setViewing] = useState<Order | null>(null);
@@ -90,7 +91,11 @@ export function OrdersCard({ me, canApprove = true }: { me: AppUser; canApprove?
   );
 
   const current = filters.find((f) => f.id === filter)!;
-  const visible = (orders ?? []).filter(current.test);
+  // A search looks through every order, whatever the filter.
+  const searching = !!query.trim();
+  const visible = (orders ?? []).filter(
+    (o) => (searching || current.test(o)) && matchesSearch(query, o.id, o.name, o.email, o.memberId, o.paymentRef, o.status, coursesFor(o.courses).map(courseTitle).join(" ")),
+  );
   const count = (f: (typeof filters)[number]) => (orders ?? []).filter(f.test).length;
 
   const run = async (order: Order, job: () => Promise<void>) => {
@@ -147,6 +152,13 @@ export function OrdersCard({ me, canApprove = true }: { me: AppUser; canApprove?
           </button>
         ))}
       </div>
+
+      <SearchBox value={query} onChange={setQuery} placeholder="Search name, email, ID, order no., UPI ref or course" className="mt-4 sm:w-96" />
+      {searching && orders && (
+        <p className="mt-2 text-sm text-slate-500">
+          {visible.length} {visible.length === 1 ? "order" : "orders"} found across all statuses
+        </p>
+      )}
 
       {error && <p className="mt-4 text-sm font-medium text-red-600">{error}</p>}
 

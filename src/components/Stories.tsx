@@ -5,9 +5,13 @@ import { useRef } from "react";
 import SectionHeading from "./SectionHeading";
 import { ArrowLeftIcon, ArrowRightIcon, PlayIcon, StarIcon } from "./icons";
 import Reveal from "./motion/Reveal";
-import { stories } from "@/data/site";
+import Link from "next/link";
+import { HOME_LIMIT, useHomeItems } from "@/lib/homeContent";
 
+/** Success stories: three on the home page, all of them on /stories. Admins manage them in Website content. */
 export default function Stories({ standalone = false }: { standalone?: boolean }) {
+  const all = useHomeItems("stories");
+  const stories = standalone ? all : all.slice(0, HOME_LIMIT);
   const track = useRef<HTMLDivElement>(null);
 
   const scroll = (dir: 1 | -1) => {
@@ -40,7 +44,7 @@ export default function Stories({ standalone = false }: { standalone?: boolean }
               key={s.name}
               variant={standalone ? "up" : "right"}
               delay={i * 120}
-              className={standalone ? "" : "w-[78%] shrink-0 snap-start sm:w-[46%] lg:w-[calc(25%-1.125rem)]"}
+              className={standalone ? "" : "w-[78%] shrink-0 snap-start sm:w-[46%] lg:w-[calc(33.333%-1rem)]"}
             >
             <article className="group relative aspect-[3/4] overflow-hidden rounded-3xl">
               <Image
@@ -74,6 +78,17 @@ export default function Stories({ standalone = false }: { standalone?: boolean }
           ))}
         </div>
 
+        {!standalone && all.length > HOME_LIMIT && (
+          <div className="mt-8 hidden text-center lg:block">
+            <Link
+              href="/stories"
+              className="inline-flex items-center gap-2 rounded-full border-2 border-forest-700 px-6 py-3 text-sm font-semibold text-forest-700 transition hover:bg-forest-700 hover:text-white"
+            >
+              View all success stories
+            </Link>
+          </div>
+        )}
+
         <div className={`mt-6 justify-center gap-3 lg:hidden ${standalone ? "hidden" : "flex"}`}>
           <button
             type="button"
@@ -91,6 +106,11 @@ export default function Stories({ standalone = false }: { standalone?: boolean }
           >
             <ArrowRightIcon className="h-5 w-5" />
           </button>
+          {all.length > HOME_LIMIT && (
+            <Link href="/stories" className="flex h-11 items-center rounded-full border border-forest-200 px-4 text-sm font-semibold text-forest-700 hover:bg-forest-50">
+              View all
+            </Link>
+          )}
         </div>
       </div>
     </section>

@@ -151,7 +151,7 @@ export default function RegisterForm({ defaultRole }: { defaultRole?: Role }) {
           <div className="mt-6 rounded-2xl bg-forest-700 p-5 text-center">
             <p className="text-xs font-semibold uppercase tracking-wider text-spark-400">{tutor ? "Your Tutor ID" : "Your Student ID"}</p>
             <p className="mt-1 font-mono text-4xl font-bold tracking-[0.2em] text-white">{created.memberId}</p>
-            <p className="mt-2 text-xs text-forest-100">Keep this ID handy: it identifies you across Nuel Smart.</p>
+            <p className="mt-2 text-xs text-forest-100">Log in with this ID or your email, plus your password. Keep it handy.</p>
           </div>
         )}
 

@@ -363,10 +363,37 @@ export function useAuth(): State {
   return useSyncExternalStore(subscribe, () => state, () => serverState);
 }
 
-export async function signIn(email: string, password: string, remember: boolean): Promise<AppUser> {
+/** "S1234", "T1234" or "E1234": a member ID typed instead of an email. */
+export const isMemberId = (value: string) => /^[STE]\d{4}$/i.test(value.trim());
+
+/** The login email behind a member ID (`loginIds/{id}`), or null if it isn't registered. */
+export async function emailForMemberId(id: string): Promise<string | null> {
+  const snap = await getDoc(doc(db, "loginIds", id.trim().toUpperCase()));
+  const email = snap.data()?.email;
+  return typeof email === "string" && email ? email : null;
+}
+
+/** Keeps `loginIds/{memberId}` pointing at this account's email, so the member ID works as a username. */
+export function syncLoginId(user: Pick<AppUser, "uid" | "email" | "memberId">) {
+  if (!user.memberId || !user.email) return Promise.resolve();
+  return setDoc(doc(db, "loginIds", user.memberId), { email: user.email, uid: user.uid, updatedAt: serverTimestamp() }).catch((err) =>
+    console.warn("Could not save the login ID", err),
+  );
+}
+
+/** Signs in with an email address or a member ID (S/T/E + 4 digits). */
+export async function signIn(identifier: string, password: string, remember: boolean): Promise<AppUser> {
   await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
+  let email = identifier.trim();
+  if (isMemberId(email)) {
+    const found = await emailForMemberId(email);
+    if (!found) throw Object.assign(new Error("Unknown member ID"), { code: "nuels/unknown-id" });
+    email = found;
+  }
   const { user } = await signInWithEmailAndPassword(auth, email, password);
-  return loadProfile(user);
+  const profile = await loadProfile(user);
+  void syncLoginId(profile);
+  return profile;
 }
 
 export async function register(details: {
@@ -387,7 +414,9 @@ export async function register(details: {
     const { user } = await createUserWithEmailAndPassword(auth, details.email, details.password);
     // Verification proves the address belongs to them (required for admin access).
     sendEmailVerification(user).catch((err) => console.warn("Could not send verification email", err));
-    return loadProfile(user);
+    const profile = await loadProfile(user);
+    void syncLoginId(profile);
+    return profile;
   } catch (err) {
     pendingProfile = null;
     throw err;
@@ -423,7 +452,7 @@ export function authErrorMessage(err: unknown) {
     case "auth/invalid-credential":
     case "auth/wrong-password":
     case "auth/user-not-found":
-      return "Incorrect email or password.";
+      return "Incorrect email / ID or password.";
     case "auth/email-already-in-use":
       return "An account with this email already exists. Try logging in instead.";
     case "auth/weak-password":
@@ -433,6 +462,8 @@ export function authErrorMessage(err: unknown) {
       return "Please enter a valid email address.";
     case "auth/user-disabled":
       return "This account has been deactivated. Contact your administrator or info@nuelsmart.com.";
+    case "nuels/unknown-id":
+      return "We couldn't find that ID. Check it, or log in with your email address.";
     case "nuels/account-removed":
       return "This account has been removed. Contact info@nuelsmart.com if you think this is a mistake.";
     case "auth/too-many-requests":

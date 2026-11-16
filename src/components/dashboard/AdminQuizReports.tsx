@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ArrowLeftIcon, ArrowRightIcon, CheckIcon, ClipboardIcon, GraduationIcon, StarIcon, UsersIcon } from "../icons";
-import { Card, CardTitle, EmptyState, StatTiles } from "./ui";
+import { Card, CardTitle, EmptyState, StatTiles, SearchBox, matchesSearch } from "./ui";
 import type { AppUser } from "@/lib/auth";
 import { allQuizGroups, bankTitle, dayLabel, groupById, istDay, quizGroups, sectionColors, sectionLetter } from "@/data/dailyQuiz";
 import { formatDuration, paperTotal, saveReward, sectionScores, useQuizAttempts, useQuizRewards, type DailyAttempt } from "@/lib/dailyQuiz";
@@ -107,6 +107,7 @@ export default function AdminQuizReports({ me }: { me: AppUser }) {
   const [offset, setOffset] = useState(0);
   const [group, setGroup] = useState<string>("all");
   const [showAll, setShowAll] = useState(false);
+  const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const range = rangeFor(period, offset);
@@ -166,7 +167,10 @@ export default function AdminQuizReports({ me }: { me: AppUser }) {
     }
   };
 
-  const visibleBoard = showAll ? board : board.slice(0, 10);
+  // Search keeps each student's real rank; while searching, every match is shown.
+  const ranked = board.map((r, i) => ({ ...r, rank: i + 1 }));
+  const found = ranked.filter((r) => matchesSearch(query, r.name, r.memberId, r.institution, groupById(r.group)?.label));
+  const visibleBoard = query.trim() || showAll ? found : found.slice(0, 10);
 
   return (
     <div className="space-y-6">
@@ -292,6 +296,15 @@ export default function AdminQuizReports({ me }: { me: AppUser }) {
 
           <Card>
             <CardTitle title={`Leaderboard · ${range.label}`} action={<span className="text-sm text-slate-500">{board.length} students</span>} />
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <SearchBox value={query} onChange={setQuery} placeholder="Search student, ID, school or class" className="w-full sm:w-80" />
+              {query.trim() && (
+                <p className="text-sm text-slate-500">
+                  {found.length} of {board.length} {board.length === 1 ? "student" : "students"}
+                </p>
+              )}
+            </div>
+            {query.trim() && found.length === 0 && <p className="mt-5 text-sm text-slate-500">No student in this leaderboard matches &ldquo;{query.trim()}&rdquo;.</p>}
             <div className="mt-5 overflow-x-auto">
               <table className="w-full min-w-[760px] text-left text-sm">
                 <thead className="text-[11px] uppercase tracking-wider text-slate-400">
@@ -304,15 +317,15 @@ export default function AdminQuizReports({ me }: { me: AppUser }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-forest-100">
-                  {visibleBoard.map((r, i) => (
+                  {visibleBoard.map((r) => (
                     <tr key={r.uid}>
                       <td className="py-3 pr-4">
                         <span
                           className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
-                            i === 0 ? "bg-spark-500 text-forest-900" : i < 3 ? "bg-forest-100 text-forest-800" : "text-slate-500"
+                            r.rank === 1 ? "bg-spark-500 text-forest-900" : r.rank <= 3 ? "bg-forest-100 text-forest-800" : "text-slate-500"
                           }`}
                         >
-                          {i + 1}
+                          {r.rank}
                         </span>
                       </td>
                       <td className="py-3 pr-4">
@@ -333,7 +346,7 @@ export default function AdminQuizReports({ me }: { me: AppUser }) {
                 </tbody>
               </table>
             </div>
-            {board.length > 10 && (
+            {board.length > 10 && !query.trim() && (
               <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-4 text-sm font-semibold text-forest-700 hover:text-forest-500">
                 {showAll ? "Show top 10" : `Show all ${board.length} students`}
               </button>

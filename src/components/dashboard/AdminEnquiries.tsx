@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CheckIcon, ClockIcon, MailIcon, PhoneIcon, UsersIcon } from "../icons";
-import { Card, CardTitle, EmptyState, StatTiles } from "./ui";
+import { Card, CardTitle, EmptyState, StatTiles, SearchBox, matchesSearch } from "./ui";
 import type { AppUser } from "@/lib/auth";
 import { deleteEnquiry, enquiryStatuses, setEnquiryStatus, useEnquiries, type Enquiry, type EnquiryStatus } from "@/lib/enquiries";
 
@@ -15,12 +15,13 @@ type Filter = "open" | EnquiryStatus;
 export default function AdminEnquiries({ me }: { me: AppUser }) {
   const { rows, error } = useEnquiries();
   const [filter, setFilter] = useState<Filter>("open");
+  const [query, setQuery] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
 
   const all = rows ?? [];
   const count = (s: EnquiryStatus) => all.filter((e) => e.status === s).length;
-  const shown = all.filter((e) => (filter === "open" ? e.status !== "removed" : e.status === filter));
+  const shown = all.filter((e) => (filter === "open" ? e.status !== "removed" : e.status === filter) && matchesSearch(query, e.name, e.email, e.phone, e.topic, e.message));
   const chips: { id: Filter; label: string }[] = [
     { id: "open", label: `All (${all.length - count("removed")})` },
     ...enquiryStatuses.map((s) => ({ id: s.id, label: `${s.label} (${count(s.id)})` })),
@@ -78,6 +79,7 @@ export default function AdminEnquiries({ me }: { me: AppUser }) {
           ))}
         </div>
 
+        <SearchBox value={query} onChange={setQuery} placeholder="Search name, email, phone or message" className="mt-4 sm:w-80" />
         {(error || actionError) && <p className="mt-4 text-sm font-medium text-red-600">{error || actionError}</p>}
 
         {rows === null ? (

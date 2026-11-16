@@ -1,10 +1,16 @@
+"use client";
+
 import Image from "next/image";
 import SectionHeading from "./SectionHeading";
 import { BriefcaseIcon, SocialIcon } from "./icons";
 import Reveal from "./motion/Reveal";
-import { mentors } from "@/data/site";
+import Link from "next/link";
+import { HOME_LIMIT, useHomeItems } from "@/lib/homeContent";
 
+/** Mentors: three on the home page, all of them on /mentors. Admins manage them in Website content. */
 export default function Mentors({ standalone = false }: { standalone?: boolean }) {
+  const all = useHomeItems("mentors");
+  const mentors = standalone ? all : all.slice(0, HOME_LIMIT);
   return (
     <section id="mentors" className="relative overflow-hidden bg-forest-800 py-20 sm:py-24">
       <div className="pointer-events-none absolute -right-40 -top-40 h-96 w-96 rounded-full bg-[radial-gradient(closest-side,var(--color-forest-600),transparent)] opacity-40" />
@@ -20,7 +26,7 @@ export default function Mentors({ standalone = false }: { standalone?: boolean }
           />
         )}
 
-        <div className={`grid ${standalone ? "" : "mt-10 sm:mt-14"} gap-6 sm:grid-cols-2 lg:grid-cols-4`}>
+        <div className={`grid ${standalone ? "lg:grid-cols-4" : "mt-10 sm:mt-14 lg:grid-cols-3"} gap-6 sm:grid-cols-2`}>
           {mentors.map((m, i) => (
             <Reveal key={m.name} delay={i * 120}>
             <article
@@ -48,10 +54,12 @@ export default function Mentors({ standalone = false }: { standalone?: boolean }
                   </p>
                 </div>
                 <div className="mt-4 flex gap-2">
-                  {(["linkedin", "instagram"] as const).map((s) => (
+                  {(["linkedin", "instagram"] as const).filter((s) => m[s]).map((s) => (
                     <a
                       key={s}
-                      href="#"
+                      href={m[s]}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       aria-label={`${m.name} on ${s}`}
                       className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-spark-500 hover:text-forest-900"
                     >
@@ -65,6 +73,17 @@ export default function Mentors({ standalone = false }: { standalone?: boolean }
             </Reveal>
           ))}
         </div>
+
+        {!standalone && all.length > HOME_LIMIT && (
+          <div className="mt-10 text-center">
+            <Link
+              href="/mentors"
+              className="inline-flex items-center gap-2 rounded-full border-2 border-spark-500 px-6 py-3 text-sm font-semibold text-spark-400 transition hover:bg-spark-500 hover:text-forest-900"
+            >
+              View all mentors
+            </Link>
+          </div>
+        )}
 
         <div className="mt-10 grid grid-cols-2 gap-6 rounded-3xl border border-white/10 bg-white/5 p-5 text-center sm:mt-14 sm:p-8 lg:grid-cols-4">
           {[

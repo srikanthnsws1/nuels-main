@@ -1,9 +1,12 @@
 "use client";
 
-import { collection, doc, onSnapshot, serverTimestamp, updateDoc, type Timestamp } from "firebase/firestore";
+import { collection, doc, getDocs, onSnapshot, serverTimestamp, updateDoc, type Timestamp } from "firebase/firestore";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { BookIcon, BriefcaseIcon, CartIcon, GraduationIcon, GridIcon, MailIcon, PlayIcon, SearchIcon, ShieldIcon, StarIcon, UsersIcon } from "../icons";
+import { AwardIcon, BookIcon, BriefcaseIcon, CartIcon, GraduationIcon, GridIcon, ImageIcon, LayoutIcon, MailIcon, PlayIcon, SearchIcon, ShieldIcon, StarIcon, TicketIcon, UsersIcon } from "../icons";
+import { AdminCertificates, AdminGallery, AdminJobs } from "./AdminCompany";
 import AdminEnquiries from "./AdminEnquiries";
+import AdminHomeContent from "./AdminHomeContent";
+import AdminTickets from "./AdminTickets";
 import AdminQuizReports from "./AdminQuizReports";
 import { CoursesCard } from "./AdminCourses";
 import { CourseContentCard, LearnersCard } from "./AdminLearning";
@@ -11,8 +14,9 @@ import { OrdersCard, PaymentDetailsCard } from "./AdminPayments";
 import { EmployeesCard } from "./AdminStaff";
 import DashboardShell, { type Section } from "./DashboardShell";
 import Dialog from "./Dialog";
-import { Card, CardTitle, EmptyState, StatTiles, WelcomeBanner } from "./ui";
-import { authErrorMessage, greetingName, roleLabel, roles, type AppUser, type Role } from "@/lib/auth";
+import { Card, CardTitle, EmptyState, SearchBox, StatTiles, WelcomeBanner, matchesSearch } from "./ui";
+import { studyClassById, studyClassGroups } from "@/data/dailyQuiz";
+import { authErrorMessage, greetingName, roleLabel, roles, syncLoginId, type AppUser, type Role } from "@/lib/auth";
 import { db } from "@/lib/firebase";
 import { passwordRules } from "@/lib/password";
 import { createAccount } from "@/lib/staff";
@@ -24,13 +28,18 @@ const sections: Section[] = [
   { id: "employees", label: "Employees", icon: BriefcaseIcon },
   { id: "payment-details", label: "Payment Details", icon: ShieldIcon },
   { id: "learners", label: "Learners", icon: GraduationIcon },
+  { id: "certificates", label: "Completions & Certificates", icon: AwardIcon },
   { id: "daily-quiz", label: "Daily Quiz", icon: StarIcon },
+  { id: "tickets", label: "Tickets", icon: TicketIcon },
   { id: "enquiries", label: "Enquiries", icon: MailIcon },
   { id: "courses", label: "Courses", icon: BookIcon },
   { id: "course-content", label: "Course Videos", icon: PlayIcon },
+  { id: "website", label: "Website content", icon: LayoutIcon },
+  { id: "jobs", label: "Job openings", icon: BriefcaseIcon },
+  { id: "gallery", label: "Gallery", icon: ImageIcon },
 ];
 
-type UserRow = { uid: string; name: string; email: string; phone?: string; role: Role; designation?: string; status?: AccountStatus; requestedRole?: string; memberId?: string; institution?: string; city?: string; district?: string; state?: string; createdAt?: Timestamp };
+type UserRow = { uid: string; name: string; email: string; phone?: string; role: Role; designation?: string; status?: AccountStatus; requestedRole?: string; memberId?: string; institution?: string; city?: string; district?: string; state?: string; studyClass?: string; createdAt?: Timestamp };
 
 type AccountStatus = "active" | "inactive" | "removed";
 type AccountAction = "activate" | "deactivate" | "reactivate" | "remove";
@@ -187,19 +196,23 @@ function UsersCard({
 }) {
   const [filter, setFilter] = useState<Role | "all" | "removed">("all");
   const [query, setQuery] = useState("");
+  const [studyClass, setStudyClass] = useState("all");
   const [saving, setSaving] = useState<string | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
   const [saveError, setSaveError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const q = query.trim().toLowerCase();
   // Removed accounts only show under their own filter.
   const removedCount = (users ?? []).filter((u) => statusOf(u) === "removed").length;
+  const byClass = filter === "all" || filter === "student";
   const visible = (users ?? []).filter(
     (u) =>
       (filter === "removed" ? statusOf(u) === "removed" : statusOf(u) !== "removed" && (filter === "all" || u.role === filter)) &&
-      (!q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.memberId ?? "").toLowerCase().includes(q)),
+      (!byClass || studyClass === "all" || (studyClass === "none" ? u.role === "student" && !u.studyClass : u.studyClass === studyClass)) &&
+      matchesSearch(query, u.name, u.email, u.memberId, u.phone, u.institution, u.city, u.district, u.state, studyClassById(u.studyClass)?.label),
   );
+  // How many students are in each class, for the class drop-down.
+  const classCount = (id: string) => (users ?? []).filter((u) => statusOf(u) !== "removed" && u.role === "student" && (id === "none" ? !u.studyClass : u.studyClass === id)).length;
 
   const change = async (uid: string, role: Role) => {
     setSaving(uid);
@@ -270,18 +283,35 @@ function UsersCard({
               </button>
             )}
           </div>
-          <div className="flex items-center gap-3 rounded-full border border-forest-100 bg-white px-4 py-2 transition focus-within:border-forest-300 sm:w-72">
-            <SearchIcon className="h-4 w-4 shrink-0 text-slate-400" />
-            <input
-              type="search"
-              placeholder="Search name, email or ID"
-              aria-label="Search users"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full min-w-0 bg-transparent py-1 text-sm text-slate-700 outline-none placeholder:text-slate-400"
-            />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {byClass && (
+              <select
+                value={studyClass}
+                onChange={(e) => setStudyClass(e.target.value)}
+                aria-label="Filter students by class"
+                className="rounded-full border border-forest-100 bg-white px-4 py-2.5 text-sm font-medium text-forest-900 outline-none focus:border-forest-300"
+              >
+                <option value="all">All classes / courses</option>
+                {studyClassGroups.map((g) => (
+                  <optgroup key={g.label} label={g.label}>
+                    {g.options.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.label} ({classCount(o.id)})
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+                <option value="none">Class not set ({classCount("none")})</option>
+              </select>
+            )}
+            <SearchBox value={query} onChange={setQuery} placeholder="Search name, email, ID, phone, school" className="sm:w-72" />
           </div>
         </div>
+        {(query.trim() || (byClass && studyClass !== "all")) && users && (
+          <p className="mt-3 text-sm text-slate-500">
+            {visible.length} {visible.length === 1 ? "user" : "users"} found
+          </p>
+        )}
 
         {(error || saveError) && <p className="mt-4 text-sm font-medium text-red-600">{error || saveError}</p>}
 
@@ -316,10 +346,13 @@ function UsersCard({
                           {statusLabel[statusOf(u)]}
                         </span>
                       )}
-                      {(u.memberId || u.institution) && (
+                      {(u.memberId || u.institution || u.studyClass) && (
                         <span className="block text-xs font-normal text-slate-500">
                           {u.memberId && <span className="font-mono font-semibold text-forest-700">{u.memberId}</span>}
-                          {u.memberId && u.institution && " · "}
+                          {u.studyClass && (
+                            <span className="ml-1.5 rounded-full bg-violet-50 px-2 py-0.5 font-semibold text-violet-700">{studyClassById(u.studyClass)?.label ?? u.studyClass}</span>
+                          )}
+                          {(u.memberId || u.studyClass) && u.institution && " · "}
                           {[u.institution, u.city, u.district, u.state].filter(Boolean).join(", ")}
                         </span>
                       )}
@@ -511,6 +544,20 @@ function AdminContent({ me, page }: { me: AppUser; page: string }) {
     [],
   );
 
+  // Accounts made before ID login existed: give each one its member-ID -> email record, once.
+  const backfilled = useRef(false);
+  useEffect(() => {
+    if (!users || backfilled.current) return;
+    backfilled.current = true;
+    getDocs(collection(db, "loginIds"))
+      .then((snap) => {
+        const have = new Map(snap.docs.map((d) => [d.id, d.data().email as string]));
+        const missing = users.filter((u) => u.memberId && u.email && statusOf(u) !== "removed" && have.get(u.memberId) !== u.email);
+        return Promise.all(missing.map((u) => syncLoginId({ uid: u.uid, email: u.email, memberId: u.memberId })));
+      })
+      .catch((err) => console.warn("Couldn't backfill login IDs", err));
+  }, [users]);
+
   const setRole = (uid: string, role: Role) => updateDoc(doc(db, "users", uid), { role });
   const setStatus = (uid: string, status: AccountStatus) => updateDoc(doc(db, "users", uid), { status, statusChangedAt: serverTimestamp() });
 
@@ -575,6 +622,16 @@ function AdminContent({ me, page }: { me: AppUser; page: string }) {
       {page === "daily-quiz" && <AdminQuizReports me={me} />}
 
       {page === "enquiries" && <AdminEnquiries me={me} />}
+
+      {page === "tickets" && <AdminTickets me={me} users={users} />}
+
+      {page === "certificates" && <AdminCertificates me={me} users={current} />}
+
+      {page === "website" && <AdminHomeContent />}
+
+      {page === "jobs" && <AdminJobs />}
+
+      {page === "gallery" && <AdminGallery me={me} />}
 
       {page === "courses" && <CoursesCard extraMentors={(current ?? []).filter((u) => u.role === "mentor").map((u) => u.name)} />}
 

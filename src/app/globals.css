@@ -87,3 +87,26 @@ body {
 .no-scrollbar {
   scrollbar-width: none;
 }
+
+/* Printing a certificate (Certificates page): only the certificate, on one landscape A4 page. */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+  body:has(.print-cert) * {
+    visibility: hidden;
+  }
+  body:has(.print-cert) .print-cert,
+  body:has(.print-cert) .print-cert * {
+    visibility: visible;
+  }
+  body:has(.print-cert) .print-cert {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}

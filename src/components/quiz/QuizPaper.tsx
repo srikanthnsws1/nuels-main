@@ -34,6 +34,9 @@ function Legend() {
       <li className="flex items-center gap-2">
         <span className="h-3 w-3 rounded-full bg-emerald-600" /> Correct option
       </li>
+      <li className="flex items-center gap-2">
+        <span className="h-3 w-3 rounded-full bg-orange-500" /> Not answered (time ran out)
+      </li>
     </ul>
   );
 }
@@ -133,10 +136,16 @@ function QuestionRow({
 }) {
   const answered = chosen !== null && chosen !== undefined;
   const right = review && answered && chosen === correct;
+  const missed = review && !answered;
   return (
-    <li className="grid gap-3 border-b border-forest-100 px-3 py-4 last:border-0 sm:px-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,2.6fr)_auto] xl:items-center">
+    <li
+      id={`q-${no}`}
+      className={`grid scroll-mt-28 gap-3 border-b border-forest-100 px-3 py-4 last:border-0 sm:px-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,2.6fr)_auto] xl:items-center ${
+        missed ? "border-l-4 border-l-orange-500 bg-orange-50/70" : ""
+      }`}
+    >
       <p className={`flex items-start gap-2.5 font-semibold ${pictures ? "text-lg leading-relaxed sm:text-xl" : "text-sm"} ${sectionText}`}>
-        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs text-white ${sectionColor}`}>{no}</span>
+        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs text-white ${missed ? "bg-orange-500" : sectionColor}`}>{no}</span>
         <span className="pt-0.5">
           {text}
           {figure && <QuizFigure svg={figure} alt={`Figure for question ${no}`} />}
@@ -191,7 +200,7 @@ function QuestionRow({
               ) : answered ? (
                 <CloseIcon className="h-5 w-5 text-red-600" aria-label="Wrong" />
               ) : (
-                <span className="text-slate-400">Skipped</span>
+                <span className="rounded-full bg-orange-100 px-2 py-0.5 font-semibold text-orange-700">Not answered</span>
               )}
             </span>
             {correct !== undefined && (

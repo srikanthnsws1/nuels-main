@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useId, useRef, useState, type FormEvent } from "react";
 import { BookIcon, PlusIcon } from "../icons";
 import Dialog from "./Dialog";
-import { Card, CardTitle, rupee } from "./ui";
+import { Card, CardTitle, rupee, SearchBox, matchesSearch } from "./ui";
 import { categories, courseFilters, courses as builtIn, mentors } from "@/data/site";
 import { builtInSlugs, levels, saveCourse, setCourseHidden, slugify, syllabusFor, useCatalog, type CatalogCourse } from "@/lib/catalog";
 import { compressImage } from "@/lib/image";
@@ -311,6 +311,8 @@ export function CoursesCard({ extraMentors = [] }: { extraMentors?: string[] }) 
   const catalog = useCatalog(true);
   const [editing, setEditing] = useState<CatalogCourse | "new" | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const shownCourses = catalog.filter((c) => matchesSearch(query, c.title, c.slug, c.mentor, c.category, c.level, c.unit, c.chapterNo && `chapter ${c.chapterNo}`));
   const mentorNames = [...new Set([...mentors.map((m) => m.name), ...extraMentors])].sort();
 
   const toggle = async (c: CatalogCourse) => {
@@ -338,6 +340,8 @@ export function CoursesCard({ extraMentors = [] }: { extraMentors?: string[] }) 
           </button>
         }
       />
+      <SearchBox value={query} onChange={setQuery} placeholder="Search courses, chapters, mentors, categories" className="mt-4 sm:w-96" />
+      {query.trim() && <p className="mt-2 text-sm text-slate-500">{shownCourses.length} of {catalog.length} courses</p>}
       <div className="mt-5 overflow-x-auto">
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="text-xs uppercase tracking-wider text-slate-400">
@@ -352,7 +356,7 @@ export function CoursesCard({ extraMentors = [] }: { extraMentors?: string[] }) 
             </tr>
           </thead>
           <tbody className="divide-y divide-forest-100">
-            {catalog.map((c) => (
+            {shownCourses.map((c) => (
               <tr key={c.slug} className={c.hidden ? "opacity-60" : ""}>
                 <td className="py-3 pr-4">
                   <div className="flex items-center gap-3">

@@ -136,3 +136,35 @@ export function Avatar({ name, photo, className = "h-10 w-10 text-sm" }: { name:
     </span>
   );
 }
+
+/** True when every word of the query appears in at least one of the fields (case-insensitive). */
+export function matchesSearch(query: string, ...fields: unknown[]) {
+  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return true;
+  const text = fields
+    .filter((f) => f !== undefined && f !== null && f !== "")
+    .map(String)
+    .join(" ")
+    .toLowerCase();
+  return words.every((w) => text.includes(w));
+}
+
+/** The admin pages' search box. */
+export function SearchBox({ value, onChange, placeholder, className = "" }: { value: string; onChange: (v: string) => void; placeholder: string; className?: string }) {
+  return (
+    <label className={`flex items-center gap-3 rounded-full border border-forest-100 bg-white px-4 py-2 transition focus-within:border-forest-300 ${className}`}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-4 w-4 shrink-0 text-slate-400" aria-hidden>
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" />
+      </svg>
+      <input
+        type="search"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        aria-label={placeholder}
+        className="w-full min-w-0 bg-transparent py-1 text-sm text-slate-700 outline-none placeholder:text-slate-400"
+      />
+    </label>
+  );
+}

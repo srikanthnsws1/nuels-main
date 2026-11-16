@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRightIcon, BookIcon, CalendarIcon, CartIcon, CheckIcon, ClipboardIcon, ClockIcon, GraduationIcon, GridIcon, LockIcon, SparkIcon, StarIcon } from "../icons";
+import { ArrowRightIcon, AwardIcon, BookIcon, BriefcaseIcon, CalendarIcon, CartIcon, CheckIcon, ClipboardIcon, ClockIcon, GraduationIcon, GridIcon, HelpIcon, ImageIcon, LockIcon, SparkIcon, StarIcon } from "../icons";
+import { CertificatesPage, GalleryPage, JobsPage, SupportPage } from "./StudentExtras";
 import DailyQuiz, { QuizBanner } from "../quiz/DailyQuiz";
 import DashboardShell, { type Section } from "./DashboardShell";
 import { Card, CardTitle, EmptyState, WelcomeBanner, rupee } from "./ui";
@@ -18,7 +19,10 @@ const sections: Section[] = [
   { id: "my-courses", label: "My Courses", icon: BookIcon },
   { id: "schedule", label: "Live Sessions", icon: CalendarIcon },
   { id: "assignments", label: "Assignments", icon: ClipboardIcon },
-  { id: "certificates", label: "Certificates", icon: GraduationIcon },
+  { id: "certificates", label: "Certificates", icon: AwardIcon },
+  { id: "jobs", label: "Jobs at Nuel Smart", icon: BriefcaseIcon },
+  { id: "gallery", label: "Gallery", icon: ImageIcon },
+  { id: "support", label: "Help & Support", icon: HelpIcon },
 ];
 
 const sidebarCard = (
@@ -190,18 +194,10 @@ function StudentContent({ user, page }: { user: AppUser; page: string }) {
           {unlocked ? <EmptyState icon={ClipboardIcon} title="No assignments yet" /> : <Locked />}
         </Card>
       )}
-      {page === "certificates" && (
-        <Card id="certificates">
-          <CardTitle title="Certificates" />
-          {unlocked ? (
-            <EmptyState icon={GraduationIcon} title="No certificates yet">
-              Finish a course to earn its certificate.
-            </EmptyState>
-          ) : (
-            <Locked />
-          )}
-        </Card>
-      )}
+      {page === "certificates" && <CertificatesPage user={user} />}
+      {page === "jobs" && <JobsPage />}
+      {page === "gallery" && <GalleryPage />}
+      {page === "support" && <SupportPage user={user} />}
 
       {overview && history.length > 0 && (
         <Card id="payment-history">

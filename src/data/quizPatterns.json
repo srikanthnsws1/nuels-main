@@ -26,6 +26,7 @@
     "X-CHE": "Chemistry",
     "X-BIO": "Biology",
     "X-SOC": "Social Studies",
+    "XC-SCI": "Science (Physics, Chemistry, Biology)",
 
     "NAV-MA1": "Mental Ability – Series & Analogies",
     "NAV-MA2": "Mental Ability – Odd One Out & Reasoning",
@@ -72,10 +73,11 @@
     "B": { "label": "Classes 6 – 8", "perSection": 5, "banks": ["ALL-A", "ALL-B", "ALL-C", "ALL-D", "B-E"] },
     "C": { "label": "Class 9", "perSection": 5, "banks": ["ALL-A", "ALL-B", "ALL-C", "ALL-D", "C-E"] },
     "X": {
-      "label": "Class 10",
+      "label": "Class 10 (State Board)",
       "perSection": 3,
       "banks": ["X-TEL", "X-ENG", "C-E", "X-HIN", "X-PHY", "X-CHE", "X-BIO", "X-SOC", "ALL-C", "ALL-A"]
     },
+    "XC": { "label": "Class 10 (CBSE)", "perSection": 5, "banks": ["X-ENG", "X-TEL", "C-E", "XC-SCI", "X-SOC"] },
     "NAV": { "label": "Navodaya (JNVST)", "perSection": 5, "banks": ["NAV-MAT1", "NAV-MAT2", "NAV-EVS2", "NAV-ARI2", "NAV-ENG2"] },
     "IMPC": { "label": "Intermediate – MPC", "perSection": 5, "banks": ["INT-ENG", "INT-M1A", "INT-M1B", "INT-PHY", "INT-CHE"] },
     "IBPC": { "label": "Intermediate – BiPC", "perSection": 5, "banks": ["INT-ENG", "INT-BOT", "INT-ZOO", "INT-PHY", "INT-CHE"] },

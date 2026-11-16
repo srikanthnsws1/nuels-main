@@ -1,11 +1,15 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import SectionHeading from "./SectionHeading";
 import { ArrowUpRightIcon } from "./icons";
 import Reveal from "./motion/Reveal";
-import { categories } from "@/data/site";
+import { HOME_LIMIT, useHomeItems } from "@/lib/homeContent";
 
+/** Home page: the first three categories (admins choose them in Website content). */
 export default function Categories() {
+  const categories = useHomeItems("categories").slice(0, HOME_LIMIT);
   return (
     <section className="py-20 sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -39,6 +43,15 @@ export default function Categories() {
             </Link>
             </Reveal>
           ))}
+        </div>
+
+        <div className="mt-12 text-center">
+          <Link
+            href="/courses"
+            className="inline-flex items-center gap-2 rounded-full border-2 border-forest-700 text-forest-700 hover:bg-forest-700 hover:text-white px-6 py-3 text-sm font-semibold transition"
+          >
+            View all courses
+          </Link>
         </div>
       </div>
     </section>

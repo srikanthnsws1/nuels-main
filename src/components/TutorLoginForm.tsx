@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ArrowRightIcon, BookIcon, EyeIcon, EyeOffIcon, MailIcon } from "./icons";
 import Reveal from "./motion/Reveal";
-import { authErrorMessage, homeFor, signIn, signOut } from "@/lib/auth";
+import { authErrorMessage, homeFor, signIn, signOut, isMemberId } from "@/lib/auth";
 
 const field =
   "w-full rounded-2xl border bg-white px-4 py-3.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:shadow-lg focus:shadow-forest-900/10";
@@ -20,7 +20,7 @@ export default function TutorLoginForm() {
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
 
-  const emailError = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? "Please enter a valid email address." : "";
+  const emailError = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && !isMemberId(email) ? "Enter your email address or your ID (like S1234)." : "";
   const passwordError = !password ? "Please enter your password." : "";
 
   const submit = async (e: FormEvent) => {
@@ -73,14 +73,16 @@ export default function TutorLoginForm() {
       <form onSubmit={submit} noValidate className="mt-8 space-y-5">
         <div>
           <label htmlFor="tutor-email" className="mb-1.5 block text-sm font-medium text-forest-900">
-            Instructor Email
+            Instructor Email or Tutor ID
           </label>
           <div className="relative">
             <input
               id="tutor-email"
-              type="email"
-              autoComplete="email"
-              placeholder="mentor@example.com"
+              type="text"
+              inputMode="email"
+              autoCapitalize="none"
+              autoComplete="username"
+              placeholder="you@example.com or T1234"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               aria-invalid={submitted && !!emailError}

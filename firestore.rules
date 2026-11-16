@@ -133,6 +133,24 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Member ID -> login email, so learners can sign in with "S1234" instead of their email.
+    // Readable one at a time without signing in (that's the point); never listable except by admins.
+    match /loginIds/{id} {
+      allow get: if id.matches('^[STE][0-9]{4}$');
+      allow list, delete: if isAdmin();
+      allow create, update: if request.resource.data.keys().hasOnly(['email', 'uid', 'updatedAt'])
+        && request.resource.data.updatedAt == request.time
+        && (
+          isAdmin()
+          || (
+            signedIn()
+            && request.resource.data.uid == request.auth.uid
+            && request.resource.data.email == request.auth.token.email
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('memberId', '') == id
+          )
+        );
+    }
+
     match /memberIds/{id} {
       // Needed to check whether an ID is free; reveals only which account holds it.
       allow get: if signedIn();
@@ -374,6 +392,67 @@ service cloud.firestore {
         && request.resource.data.status in ['new', 'reviewed', 'contacted', 'registered', 'removed'];
     }
 
+    // ---------------- Company content ----------------
+    // Home page categories, mentors and success stories: public, edited by admins.
+    match /homeCategories/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /homeMentors/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /homeStories/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    // Job openings and the photo gallery: for signed-in users, posted by admins.
+    match /jobs/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+    match /gallery/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+    match /galleryImages/{id} {
+      allow get: if signedIn();
+      allow list: if isAdmin();
+      allow write: if isAdmin();
+    }
+    // Course certificates: issued by admins, read by the learner they belong to.
+    match /certificates/{id} {
+      allow get, list: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    // ---------------- Support tickets ----------------
+    // Anyone may raise one (people who lost their password can't sign in); admins assign, update
+    // and close them. Signed-in learners read the tickets they raised.
+    function ticketBase(d) {
+      return d.name is string && d.name.size() > 0 && d.name.size() <= 100
+        && d.email is string && d.email.size() <= 200 && d.email.matches('^[^@ ]+@[^@ ]+$')
+        && (!('phone' in d) || (d.phone is string && d.phone.size() <= 20))
+        && (!('memberId' in d) || (d.memberId is string && d.memberId.size() <= 10))
+        && d.category in ['forgot-password', 'forgot-id', 'login', 'payment', 'course', 'quiz', 'other']
+        && d.message is string && d.message.size() > 0 && d.message.size() <= 2000;
+    }
+    match /tickets/{id} {
+      allow create: if ticketBase(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && (
+          (
+            request.resource.data.keys().hasOnly(['name', 'email', 'phone', 'memberId', 'category', 'message', 'status', 'source', 'uid', 'createdAt'])
+            && request.resource.data.status == 'open'
+            && request.resource.data.source == 'user'
+            && (!('uid' in request.resource.data) || (signedIn() && request.resource.data.uid == request.auth.uid))
+          )
+          || (isAdmin() && request.resource.data.source == 'admin')
+        );
+      allow get, list: if isAdmin() || (signedIn() && resource.data.get('uid', '') == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
     // ---------------- Daily Quiz ----------------
     // India-time day number and minute of the day, from the server clock.
     function istMillis() {
@@ -392,7 +471,7 @@ service cloud.firestore {
     // Groups a learner can be placed in (src/data/quizPatterns.json, non-legacy). Each group's
     // sections and questions per section live in quizPaperKeys/{group}, written by the upload script.
     function validQuizGroup(g) {
-      return g is string && g in ['K1', 'K2', 'K3', 'A', 'B', 'C', 'X', 'NAV', 'IMPC', 'IBPC', 'IDIP', 'IIIT', 'IOTH', 'NEET', 'EAM', 'PRO'];
+      return g is string && g in ['K1', 'K2', 'K3', 'A', 'B', 'C', 'X', 'XC', 'NAV', 'IMPC', 'IBPC', 'IDIP', 'IIIT', 'IOTH', 'NEET', 'EAM', 'PRO'];
     }
 
     // Questions (no answers): any signed-in user. Answer keys: admins only, except one answer at a

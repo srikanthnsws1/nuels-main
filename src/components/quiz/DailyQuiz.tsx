@@ -31,6 +31,7 @@ import {
   startQuiz,
   submitQuiz,
   tally,
+  unansweredNumbers,
   useMyQuizzes,
   type Answers,
   type DailyAttempt,
@@ -211,17 +212,19 @@ function Closed({ now }: { now: number }) {
 /** "Quiz Submitted!" card with the summary, then View result or Go to dashboard. */
 function ResultCard({ attempt, onView }: { attempt: DailyAttempt; onView: () => void }) {
   const t = tally(attempt);
+  const missed = unansweredNumbers(attempt);
   const rows: [string, string | number][] = [
     ["Total questions", t.total],
     ["Attempted", t.attempted],
     ["Correct answers", t.correct],
     ["Wrong answers", t.wrong],
+    ["Not answered", t.total - t.attempted],
     ["Score", `${t.score} / ${t.total}`],
     ["Percentage", `${t.pct}%`],
   ];
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-forest-950/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="quiz-done">
-      <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl">
+      <div className="max-h-[92vh] w-full max-w-sm overflow-y-auto rounded-3xl bg-white p-6 text-center shadow-2xl">
         <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/30">
           <CheckIcon className="h-8 w-8" />
         </span>
@@ -239,6 +242,19 @@ function ResultCard({ attempt, onView }: { attempt: DailyAttempt; onView: () => 
             </div>
           ))}
         </dl>
+        {missed.length > 0 && (
+          <div className="mt-3 rounded-2xl border border-orange-200 bg-orange-50 p-3 text-left text-sm">
+            <p className="font-semibold text-orange-800">Time ran out before these were answered:</p>
+            <p className="mt-1.5 flex flex-wrap gap-1.5">
+              {missed.map((n) => (
+                <span key={n} className="rounded-full bg-orange-500 px-2.5 py-0.5 text-xs font-bold text-white">
+                  Q{n}
+                </span>
+              ))}
+            </p>
+            <p className="mt-1.5 text-xs text-orange-700">They&apos;re marked in orange when you view the result.</p>
+          </div>
+        )}
         <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-slate-500">
           <ClockIcon className="h-3.5 w-3.5" /> Quiz ID {attempt.code}
         </p>

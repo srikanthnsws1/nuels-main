@@ -26,6 +26,18 @@ BASE = f"https://firestore.googleapis.com/v1/projects/{PROJECT}/databases/(defau
 def access_token() -> str:
     subprocess.run("npx --yes firebase-tools projects:list", shell=True, capture_output=True, timeout=120)
     cfg = json.load(open(os.path.expanduser("~/.config/configstore/firebase-tools.json"), encoding="utf-8"))
+    cwd = os.getcwd()
+    email = None
+    for p, e in cfg.get("activeAccounts", {}).items():
+        if os.path.normcase(p) == os.path.normcase(cwd):
+            email = e
+            break
+    if email:
+        if cfg.get("user", {}).get("email") == email:
+            return cfg.get("tokens", {}).get("access_token")
+        for acc in cfg.get("additionalAccounts", []):
+            if acc.get("user", {}).get("email") == email:
+                return acc.get("tokens", {}).get("access_token")
     return cfg["tokens"]["access_token"]
 
 

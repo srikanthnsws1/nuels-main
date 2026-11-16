@@ -330,3 +330,40 @@ export function ChevronDownIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function TicketIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4Z" />
+      <path d="M13 6v2M13 11v2M13 16v2" />
+    </svg>
+  );
+}
+
+export function ImageIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="9" cy="9" r="2" />
+      <path d="m21 15-5-5L5 21" />
+    </svg>
+  );
+}
+
+export function AwardIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="9" r="6" />
+      <path d="M8.2 13.6 7 22l5-3 5 3-1.2-8.4" />
+    </svg>
+  );
+}
+
+export function LayoutIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M3 9h18M9 21V9" />
+    </svg>
+  );
+}

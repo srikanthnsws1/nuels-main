@@ -3,7 +3,7 @@
 import { getApps, initializeApp } from "firebase/app";
 import { connectAuthEmulator, createUserWithEmailAndPassword, deleteUser, getAuth, sendPasswordResetEmail, signOut } from "firebase/auth";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
-import { withMemberId } from "./auth";
+import { withMemberId, syncLoginId } from "./auth";
 import { auth, db, firebaseConfig } from "./firebase";
 
 /**
@@ -86,6 +86,7 @@ export async function createAccount(email: string, password: string, profile: Re
   const { user } = await createUserWithEmailAndPassword(creator, email.trim(), password);
   try {
     const memberId = await withMemberId(user.uid, prefix, { ...profile, email: user.email ?? email.trim(), createdAt: serverTimestamp() });
+    await syncLoginId({ uid: user.uid, email: user.email ?? email.trim(), memberId });
     return { uid: user.uid, memberId };
   } catch (err) {
     await deleteUser(user).catch((e) => console.error("Could not roll back the new login", e));

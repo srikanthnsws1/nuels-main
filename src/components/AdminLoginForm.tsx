@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ArrowRightIcon, EyeIcon, EyeOffIcon, MailIcon, ShieldIcon } from "./icons";
 import Reveal from "./motion/Reveal";
-import { authErrorMessage, signIn, signOut } from "@/lib/auth";
+import { authErrorMessage, signIn, signOut, isMemberId } from "@/lib/auth";
 
 const field =
   "w-full rounded-2xl border bg-white px-4 py-3.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:shadow-lg focus:shadow-forest-900/10";
@@ -20,7 +20,7 @@ export default function AdminLoginForm() {
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
 
-  const emailError = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? "Please enter a valid administrator email." : "";
+  const emailError = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && !isMemberId(email) ? "Enter your email address or your ID (like S1234)." : "";
   const passwordError = !password ? "Please enter your password." : "";
 
   const submit = async (e: FormEvent) => {
@@ -73,14 +73,16 @@ export default function AdminLoginForm() {
       <form onSubmit={submit} noValidate className="mt-8 space-y-5">
         <div>
           <label htmlFor="admin-email" className="mb-1.5 block text-sm font-medium text-forest-900">
-            Admin Email Address
+            Admin Email or ID
           </label>
           <div className="relative">
             <input
               id="admin-email"
-              type="email"
-              autoComplete="email"
-              placeholder="admin@nuelsmart.com"
+              type="text"
+              inputMode="email"
+              autoCapitalize="none"
+              autoComplete="username"
+              placeholder="admin@nuelsmart.com or S1234"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               aria-invalid={submitted && !!emailError}

@@ -3,7 +3,7 @@
 import { collection, onSnapshot } from "firebase/firestore";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { BookIcon, CheckIcon, UsersIcon } from "../icons";
-import { Card, CardTitle, EmptyState } from "./ui";
+import { Card, CardTitle, EmptyState, SearchBox, matchesSearch } from "./ui";
 import { assignmentsFor, modulesFor } from "@/data/learning";
 import { courseTitle, syllabusFor, useCatalog } from "@/lib/catalog";
 import { db } from "@/lib/firebase";
@@ -91,7 +91,10 @@ export function CourseContentCard() {
   const catalog = useCatalog(true);
   const [slug, setSlug] = useState(catalog[0].slug);
   const videos = useCourseVideos(slug, true);
-  const modules = modulesFor(syllabusFor(catalog.find((c) => c.slug === slug)));
+  const [lessonQuery, setLessonQuery] = useState("");
+  const modules = modulesFor(syllabusFor(catalog.find((c) => c.slug === slug)))
+    .map((m) => ({ ...m, lessons: m.lessons.filter((l) => matchesSearch(lessonQuery, l.title, m.title)) }))
+    .filter((m) => m.lessons.length);
 
   return (
     <Card id="course-content">
@@ -108,10 +111,11 @@ export function CourseContentCard() {
       >
         {catalog.map((c) => (
           <option key={c.slug} value={c.slug}>
-            {c.title}
+            {courseTitle(c)}
           </option>
         ))}
       </select>
+      <SearchBox value={lessonQuery} onChange={setLessonQuery} placeholder="Search lessons in this course" className="mt-3 sm:w-80" />
 
       {!videos ? (
         <p className="mt-6 text-sm text-slate-500">Loading…</p>
@@ -313,6 +317,7 @@ export function LearnersCard({ users }: { users: Learner[] | null }) {
   const [records, setRecords] = useState<Record_[] | null>(null);
   const [error, setError] = useState("");
   const [open, setOpen] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   useEffect(
     () =>
@@ -337,6 +342,7 @@ export function LearnersCard({ users }: { users: Learner[] | null }) {
     <Card id="learners">
       <CardTitle title="Learners" />
       <p className="mt-1 text-sm text-slate-500">Record live-session attendance and mock interview results, and grade assignments.</p>
+      <SearchBox value={query} onChange={setQuery} placeholder="Search learner, ID, email or course" className="mt-4 sm:w-80" />
       {error && <p className="mt-4 text-sm font-medium text-red-600">{error}</p>}
       {records === null && !error ? (
         <p className="mt-6 text-sm text-slate-500">Loading…</p>
@@ -346,7 +352,9 @@ export function LearnersCard({ users }: { users: Learner[] | null }) {
         </EmptyState>
       ) : (
         <ul className="mt-5 space-y-3">
-          {records.map((r) => {
+          {records
+            .filter((r) => matchesSearch(query, learner(r.uid)?.name, learner(r.uid)?.memberId, learner(r.uid)?.email, courseTitle(course(r.slug) ?? { title: r.slug })))
+            .map((r) => {
             const u = learner(r.uid);
             const total = modulesFor(syllabusFor(course(r.slug))).flatMap((m) => m.lessons).length;
             const pendingGrades = Object.keys(r.assignments).filter((a) => !r.grades[a]).length;

@@ -229,7 +229,7 @@ export default function PopularCourses({ standalone = false }: { standalone?: bo
         )}
 
         <div className="mt-8 grid gap-5 sm:mt-10 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
-          {visible.map((item, i) => (
+          {(standalone || words.length ? visible : visible.slice(0, 3)).map((item, i) => (
             <Reveal key={`${active}-${query}-${item.kind === "course" ? item.course.slug : item.group}`} delay={(i % 3) * 120} className="h-full">
               {item.kind === "course" ? <CourseCard course={item.course} /> : <SubjectCard group={item.group} chapters={item.chapters} />}
             </Reveal>

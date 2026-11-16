@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRightIcon, EyeIcon, EyeOffIcon, MailIcon } from "./icons";
 import Reveal from "./motion/Reveal";
-import { authErrorMessage, homeFor, resetPassword, signIn, useAuth } from "@/lib/auth";
+import { authErrorMessage, homeFor, resetPassword, signIn, useAuth, emailForMemberId, isMemberId } from "@/lib/auth";
 import { QUIZ_LANDING_KEY } from "@/data/dailyQuiz";
 
 /** Students land on today's Daily Quiz after logging in; everyone else on their dashboard. */
@@ -43,19 +43,25 @@ export default function LoginForm() {
   const forgot = async () => {
     setAuthError("");
     setResetMsg("");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setAuthError("Enter your email above, then click “Forgot password?” to get a reset link.");
+    const typed = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(typed) && !isMemberId(typed)) {
+      setAuthError("Enter your email or ID above, then click “Forgot password?” to get a reset link.");
       return;
     }
     try {
-      await resetPassword(email.trim());
-      setResetMsg(`If an account exists for ${email.trim()}, we've emailed a link to reset your password. Check your inbox and spam folder.`);
+      const target = isMemberId(typed) ? await emailForMemberId(typed) : typed;
+      if (target) await resetPassword(target);
+      setResetMsg(
+        isMemberId(typed)
+          ? `If ${typed.toUpperCase()} is registered, we've emailed a reset link to its email address. Check your inbox and spam folder.`
+          : `If an account exists for ${typed}, we've emailed a link to reset your password. Check your inbox and spam folder.`,
+      );
     } catch (err) {
       setAuthError(authErrorMessage(err));
     }
   };
 
-  const emailError = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? "Please enter a valid email address." : "";
+  const emailError = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && !isMemberId(email) ? "Enter your email address or your ID (like S1234)." : "";
   const passwordError = !password ? "Please enter your password." : "";
 
   const submit = async (e: FormEvent) => {
@@ -84,14 +90,16 @@ export default function LoginForm() {
       <form onSubmit={submit} noValidate className="mt-8 space-y-5">
         <div>
           <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-forest-900">
-            Email
+            Email or Student ID
           </label>
           <div className="relative">
             <input
               id="login-email"
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
+              type="text"
+              inputMode="email"
+              autoCapitalize="none"
+              autoComplete="username"
+              placeholder="you@example.com or S1234"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               aria-invalid={submitted && !!emailError}
@@ -165,6 +173,13 @@ export default function LoginForm() {
           {!loading && <ArrowRightIcon className="h-4 w-4" />}
         </button>
       </form>
+
+      <p className="mt-5 rounded-2xl bg-amber-50 px-4 py-3 text-center text-sm text-amber-900">
+        Lost your password or ID, or no longer have that email?{" "}
+        <Link href="/support" className="font-semibold text-forest-700 underline hover:text-forest-600">
+          Raise a support ticket
+        </Link>
+      </p>
 
       <div className="my-8 flex items-center gap-4 text-xs font-medium uppercase tracking-wider text-slate-400">
         <span className="h-px flex-1 bg-forest-100" />

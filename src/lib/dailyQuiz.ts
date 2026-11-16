@@ -3,7 +3,7 @@
 import { collection, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, updateDoc, where, type Timestamp } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { db } from "./firebase";
-import { bankIdsFor, groupForClass, perSectionFor, quizCode } from "@/data/dailyQuiz";
+import { bankIdsFor, groupForClass, paperSections, perSectionFor, quizCode } from "@/data/dailyQuiz";
 
 /**
  * Daily Quiz on stored question banks (no server code needed):
@@ -238,4 +238,18 @@ export function useQuizRewards(): QuizReward[] | null {
 export function saveReward(reward: Omit<QuizReward, "rewardedAt">, adminUid: string) {
   const { month, ...rest } = reward;
   return setDoc(doc(db, "quizRewards", month), { ...rest, rewardedBy: adminUid, rewardedAt: serverTimestamp() });
+}
+
+/** Question numbers (as shown on the paper) left unanswered when the paper was handed in. */
+export function unansweredNumbers(a: DailyAttempt) {
+  const out: number[] = [];
+  let no = 0;
+  for (const { bankId } of paperSections(a.group, Object.keys(a.picks))) {
+    a.picks[bankId].forEach((_, i) => {
+      no++;
+      const ans = a.answers?.[bankId]?.[i];
+      if (ans === null || ans === undefined) out.push(no);
+    });
+  }
+  return out;
 }
