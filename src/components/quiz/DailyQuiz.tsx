@@ -154,7 +154,7 @@ function ClassPicker({ user }: { user: AppUser }) {
       {group && (
         <p className="mt-4 rounded-2xl bg-forest-50 px-4 py-3 text-sm text-forest-900">
           Your paper: <strong>{questionsFor(group.id)} questions</strong> on {group.banks.map(bankTitle).join(", ")}, in {QUIZ_MINUTES} minutes.
-          Only an admin can change your class later.
+          You can change your class later from your profile menu.
         </p>
       )}
       {error && <p className="mt-4 text-sm font-medium text-red-600">{error}</p>}

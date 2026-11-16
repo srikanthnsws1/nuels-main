@@ -11,6 +11,7 @@ import {
   ChevronDownIcon,
   EyeIcon,
   EyeOffIcon,
+  GraduationIcon,
   GridIcon,
   HelpIcon,
   LockIcon,
@@ -18,6 +19,7 @@ import {
   type IconProps,
 } from "../icons";
 import Dialog from "./Dialog";
+import ClassDialog from "../quiz/ClassDialog";
 import { Avatar } from "./ui";
 import { authErrorMessage, changePassword, displayRole, greetingName, homeFor, updateProfilePhoto, type AppUser } from "@/lib/auth";
 import { passwordRules, strengthLabels, strengthStyles } from "@/lib/password";
@@ -30,7 +32,7 @@ type MenuLink = { label: string; href: string; icon: ComponentType<IconProps>; b
  */
 export default function ProfileMenu({ user, onLogout }: { user: AppUser; onLogout: () => void }) {
   const [open, setOpen] = useState(false);
-  const [dialog, setDialog] = useState<"photo" | "password" | null>(null);
+  const [dialog, setDialog] = useState<"photo" | "password" | "class" | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const menuId = useId();
   const closeDialog = useCallback(() => setDialog(null), []);
@@ -48,7 +50,7 @@ export default function ProfileMenu({ user, onLogout }: { user: AppUser; onLogou
     };
   }, [open]);
 
-  const show = (d: "photo" | "password") => {
+  const show = (d: "photo" | "password" | "class") => {
     setOpen(false);
     setDialog(d);
   };
@@ -60,7 +62,7 @@ export default function ProfileMenu({ user, onLogout }: { user: AppUser; onLogou
           { label: "My courses", href: `${home}#my-courses`, icon: BookIcon, badge: user.enrolledCourses.length || undefined },
           { label: "My cart", href: "/cart", icon: CartIcon, badge: user.cart.length || undefined },
           { label: "Browse courses", href: "/courses", icon: GridIcon },
-          { label: "Help & support", href: "/contact", icon: HelpIcon },
+          { label: "Help & support", href: `${home}#support`, icon: HelpIcon },
         ]
       : [
           { label: "Dashboard", href: home, icon: GridIcon },
@@ -122,6 +124,11 @@ export default function ProfileMenu({ user, onLogout }: { user: AppUser; onLogou
             <button type="button" onClick={() => show("password")} className={item}>
               <LockIcon className="h-[18px] w-[18px] text-forest-600" /> Change password
             </button>
+            {user.role === "student" && (
+              <button type="button" onClick={() => show("class")} className={item}>
+                <GraduationIcon className="h-[18px] w-[18px] text-forest-600" /> Change class
+              </button>
+            )}
           </div>
           <div className="my-2 border-t border-forest-100" />
           <div className="space-y-0.5">
@@ -144,6 +151,7 @@ export default function ProfileMenu({ user, onLogout }: { user: AppUser; onLogou
 
       {dialog === "photo" && <PhotoDialog user={user} onClose={closeDialog} />}
       {dialog === "password" && <PasswordDialog onClose={closeDialog} />}
+      {dialog === "class" && <ClassDialog user={user} onClose={closeDialog} />}
     </div>
   );
 }

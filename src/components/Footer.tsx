@@ -10,6 +10,9 @@ const quickLinks = [
   { label: "Success Stories", href: "/stories" },
   { label: "FAQ", href: "/faq" },
   { label: "Contact", href: "/contact" },
+  { label: "Jobs at Nuel Smart", href: "/jobs" },
+  { label: "Gallery", href: "/gallery" },
+  { label: "Help & Support", href: "/support" },
   { label: "Compare Course Formats", href: "/compare/mentor-led-vs-self-paced-courses" },
 ];
 const popularCourses = [

@@ -50,6 +50,14 @@ export const navLinks = [
   { label: "Stories", href: "/stories" },
   { label: "FAQ", href: "/faq" },
   { label: "Contact", href: "/contact" },
+  { label: "Jobs", href: "/jobs" },
+  { label: "Gallery", href: "/gallery" },
+];
+
+/** The "More" drop-down at the end of the top menu. */
+export const moreLinks = [
+  { label: "Help & Support", href: "/support" },
+  { label: "Compare course formats", href: "/compare/mentor-led-vs-self-paced-courses" },
 ];
 
 export const categories: Category[] = [

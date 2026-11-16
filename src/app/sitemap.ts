@@ -15,6 +15,8 @@ const routes: { path: string; priority: number; changeFrequency: "weekly" | "mon
   { path: "/stories", priority: 0.7, changeFrequency: "monthly" },
   { path: "/faq", priority: 0.7, changeFrequency: "monthly" },
   { path: "/contact", priority: 0.6, changeFrequency: "monthly" },
+  { path: "/jobs", priority: 0.6, changeFrequency: "weekly" },
+  { path: "/gallery", priority: 0.5, changeFrequency: "monthly" },
   { path: "/compare/mentor-led-vs-self-paced-courses", priority: 0.6, changeFrequency: "monthly" },
   ...courses.map((c) => ({ path: `/courses/${c.slug}`, priority: 0.9, changeFrequency: "monthly" as const })),
 ];

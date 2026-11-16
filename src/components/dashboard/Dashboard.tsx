@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRightIcon, AwardIcon, BookIcon, BriefcaseIcon, CalendarIcon, CartIcon, CheckIcon, ClipboardIcon, ClockIcon, GraduationIcon, GridIcon, HelpIcon, ImageIcon, LockIcon, SparkIcon, StarIcon } from "../icons";
-import { CertificatesPage, GalleryPage, JobsPage, SupportPage } from "./StudentExtras";
+import { ArrowRightIcon, AwardIcon, BookIcon, CalendarIcon, CartIcon, CheckIcon, ClipboardIcon, ClockIcon, GraduationIcon, GridIcon, HelpIcon, LockIcon, SparkIcon, StarIcon } from "../icons";
+import { CertificatesPage, SupportPage } from "./StudentExtras";
 import DailyQuiz, { QuizBanner } from "../quiz/DailyQuiz";
 import DashboardShell, { type Section } from "./DashboardShell";
 import { Card, CardTitle, EmptyState, WelcomeBanner, rupee } from "./ui";
@@ -20,8 +20,6 @@ const sections: Section[] = [
   { id: "schedule", label: "Live Sessions", icon: CalendarIcon },
   { id: "assignments", label: "Assignments", icon: ClipboardIcon },
   { id: "certificates", label: "Certificates", icon: AwardIcon },
-  { id: "jobs", label: "Jobs at Nuel Smart", icon: BriefcaseIcon },
-  { id: "gallery", label: "Gallery", icon: ImageIcon },
   { id: "support", label: "Help & Support", icon: HelpIcon },
 ];
 
@@ -195,8 +193,6 @@ function StudentContent({ user, page }: { user: AppUser; page: string }) {
         </Card>
       )}
       {page === "certificates" && <CertificatesPage user={user} />}
-      {page === "jobs" && <JobsPage />}
-      {page === "gallery" && <GalleryPage />}
       {page === "support" && <SupportPage user={user} />}
 
       {overview && history.length > 0 && (
