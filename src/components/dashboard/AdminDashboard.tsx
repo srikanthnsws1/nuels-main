@@ -2,7 +2,7 @@
 
 import { collection, doc, getDocs, onSnapshot, serverTimestamp, updateDoc, type Timestamp } from "firebase/firestore";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { AwardIcon, BookIcon, BriefcaseIcon, CartIcon, GraduationIcon, GridIcon, ImageIcon, LayoutIcon, MailIcon, PlayIcon, SearchIcon, ShieldIcon, StarIcon, TicketIcon, UsersIcon } from "../icons";
+import { AwardIcon, BookIcon, BriefcaseIcon, CartIcon, GraduationIcon, GridIcon, ImageIcon, InboxIcon, LayoutIcon, MailIcon, PlayIcon, SearchIcon, ShieldIcon, StarIcon, TicketIcon, UsersIcon } from "../icons";
 import { AdminCertificates, AdminGallery, AdminJobs } from "./AdminCompany";
 import AdminEnquiries from "./AdminEnquiries";
 import AdminHomeContent from "./AdminHomeContent";
@@ -14,15 +14,20 @@ import { OrdersCard, PaymentDetailsCard } from "./AdminPayments";
 import { EmployeesCard } from "./AdminStaff";
 import DashboardShell, { type Section } from "./DashboardShell";
 import Dialog from "./Dialog";
+import InboxPage from "./Inbox";
+import SetPasswordDialog, { PASSWORD_SERVICE_ON } from "./SetPasswordDialog";
 import { Card, CardTitle, EmptyState, SearchBox, StatTiles, WelcomeBanner, matchesSearch } from "./ui";
 import { studyClassById, studyClassGroups } from "@/data/dailyQuiz";
-import { authErrorMessage, greetingName, roleLabel, roles, syncLoginId, type AppUser, type Role } from "@/lib/auth";
+import { authErrorMessage, greetingName, roleLabel, roles, syncLoginId, useAuth, type AppUser, type Role } from "@/lib/auth";
+import { useAdminBadges } from "@/lib/badges";
 import { db } from "@/lib/firebase";
 import { passwordRules } from "@/lib/password";
 import { createAccount } from "@/lib/staff";
+import { claimIfFree, releaseClaims, syncClaims } from "@/lib/unique";
 
 const sections: Section[] = [
   { id: "overview", label: "Overview", icon: GridIcon },
+  { id: "inbox", label: "Inbox", icon: InboxIcon },
   { id: "orders", label: "Payments", icon: CartIcon },
   { id: "users", label: "Users", icon: UsersIcon },
   { id: "employees", label: "Employees", icon: BriefcaseIcon },
@@ -226,6 +231,7 @@ function UsersCard({
     }
   };
 
+  const [passwordFor, setPasswordFor] = useState<UserRow | null>(null);
   const runAction = async (u: UserRow, action: AccountAction) => {
     if (!window.confirm(confirmText(action, u.name))) return;
     setToggling(u.uid);
@@ -383,7 +389,11 @@ function UsersCard({
                       {u.uid !== me.uid && (
                         <select
                           value=""
-                          onChange={(e) => e.target.value && runAction(u, e.target.value as AccountAction)}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "password") setPasswordFor(u);
+                            else if (v) runAction(u, v as AccountAction);
+                          }}
                           disabled={toggling === u.uid}
                           aria-label={`Account actions for ${u.name}`}
                           className={`rounded-full border bg-white px-3 py-1.5 text-sm font-medium outline-none transition focus:border-forest-300 disabled:opacity-60 ${
@@ -397,6 +407,7 @@ function UsersCard({
                           <option value="" hidden>
                             {toggling === u.uid ? "Saving…" : `${statusLabel[statusOf(u)]} · Actions`}
                           </option>
+                          {PASSWORD_SERVICE_ON && statusOf(u) !== "removed" && <option value="password">Set new password</option>}
                           {actionsFor[statusOf(u)].map((a) => (
                             <option key={a} value={a}>
                               {actionLabel[a]}
@@ -414,6 +425,7 @@ function UsersCard({
       </Card>
 
       {showAddModal && <AddUserModal onClose={() => setShowAddModal(false)} />}
+      {passwordFor && <SetPasswordDialog user={passwordFor} onClose={() => setPasswordFor(null)} />}
     </>
   );
 }
@@ -556,10 +568,18 @@ function AdminContent({ me, page }: { me: AppUser; page: string }) {
         return Promise.all(missing.map((u) => syncLoginId({ uid: u.uid, email: u.email, memberId: u.memberId })));
       })
       .catch((err) => console.warn("Couldn't backfill login IDs", err));
+    // Names and phone numbers of older accounts, so new sign-ups can't reuse them.
+    syncClaims(users).catch((err) => console.warn("Couldn't backfill name / phone checks", err));
   }, [users]);
 
   const setRole = (uid: string, role: Role) => updateDoc(doc(db, "users", uid), { role });
-  const setStatus = (uid: string, status: AccountStatus) => updateDoc(doc(db, "users", uid), { status, statusChangedAt: serverTimestamp() });
+  const setStatus = async (uid: string, status: AccountStatus) => {
+    await updateDoc(doc(db, "users", uid), { status, statusChangedAt: serverTimestamp() });
+    // A removed account no longer holds its name and phone number; restoring it claims them again if still free.
+    const u = users?.find((x) => x.uid === uid);
+    if (u && status === "removed") await releaseClaims(uid, u).catch((err) => console.warn("Couldn't free name / phone", err));
+    if (u && status === "active") await claimIfFree(uid, u).catch((err) => console.warn("Couldn't claim name / phone", err));
+  };
 
   // Removed accounts are left out of counts and lists everywhere except the Users page's "Removed" filter.
   const current = users?.filter((u) => statusOf(u) !== "removed") ?? null;
@@ -601,6 +621,8 @@ function AdminContent({ me, page }: { me: AppUser; page: string }) {
         </>
       )}
 
+      {page === "inbox" && <InboxPage user={me} />}
+
       {page === "orders" && <OrdersCard me={me} />}
 
       {page === "users" && (
@@ -641,8 +663,10 @@ function AdminContent({ me, page }: { me: AppUser; page: string }) {
 }
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
+  const badges = useAdminBadges(user);
   return (
-    <DashboardShell role="admin" sections={sections} paged>
+    <DashboardShell role="admin" sections={sections} paged badges={badges}>
       {(user, page) => <AdminContent me={user} page={page} />}
     </DashboardShell>
   );

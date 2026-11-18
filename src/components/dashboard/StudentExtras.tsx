@@ -3,21 +3,101 @@
 
 import { useEffect, useState } from "react";
 import Logo from "../Logo";
-import { ArrowLeftIcon, ArrowRightIcon, AwardIcon, BriefcaseIcon, CloseIcon, HelpIcon, ImageIcon, PinIcon } from "../icons";
+import { ArrowLeftIcon, ArrowRightIcon, AwardIcon, BriefcaseIcon, CheckIcon, CloseIcon, ImageIcon, PinIcon } from "../icons";
+import Link from "next/link";
 import SupportForm from "../SupportForm";
+import Dialog from "./Dialog";
+import { ResumeBox } from "./Resume";
+import { MyTickets } from "./Requests";
 import { Card, CardTitle, EmptyState } from "./ui";
-import type { AppUser } from "@/lib/auth";
-import { applyHref, galleryCategories, isNewJob, loadGalleryImage, useGallery, useJobs, useMyCertificates, type Certificate, type GalleryItem } from "@/lib/company";
-import { categoryLabel, statusInfo, ticketRef, useMyTickets } from "@/lib/tickets";
+import { useAuth, type AppUser } from "@/lib/auth";
+import { applicationStatus, applyToJob, useMyApplications, useResume } from "@/lib/careers";
+import { applyHref, galleryCategories, isNewJob, loadGalleryImage, useGallery, useJobs, useMyCertificates, type Certificate, type GalleryItem, type Job } from "@/lib/company";
 
 const dateFmt = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "long", year: "numeric" });
 
 // ---------------- Jobs at Nuel Smart ----------------
 
+function ApplyDialog({ user, job, onClose }: { user: AppUser; job: Job; onClose: () => void }) {
+  const resume = useResume(user.uid);
+  const [note, setNote] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const [done, setDone] = useState(false);
+  const submit = async () => {
+    if (!resume) return setError("Upload your resume first.");
+    setSending(true);
+    setError("");
+    try {
+      await applyToJob(user, job, resume, note);
+      setDone(true);
+    } catch (err) {
+      console.error("Could not apply", err);
+      setError("Couldn't send your application. Check your connection and try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+  if (done)
+    return (
+      <Dialog title="Application sent" onClose={onClose}>
+        <div className="py-4 text-center">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-spark-500 text-forest-900">
+            <CheckIcon className="h-7 w-7" />
+          </span>
+          <p className="mt-4 font-semibold text-forest-950">You applied for {job.title}</p>
+          <p className="mt-1 text-sm text-slate-600">Our team will review your resume and contact you by email or phone.</p>
+          <button type="button" onClick={onClose} className="mt-6 rounded-full bg-forest-700 px-7 py-3 text-sm font-semibold text-white hover:bg-forest-600">
+            Done
+          </button>
+        </div>
+      </Dialog>
+    );
+  return (
+    <Dialog title={`Apply: ${job.title}`} onClose={onClose}>
+      <p className="mt-1 text-sm text-slate-600">
+        {job.department} · {job.location} · {job.type}
+      </p>
+      <p className="mt-5 mb-2 text-sm font-medium text-forest-900">Your resume</p>
+      <ResumeBox uid={user.uid} compact />
+      <label className="mt-5 block">
+        <span className="mb-1.5 block text-sm font-medium text-forest-900">
+          Note to the team <span className="font-normal text-slate-400">(optional)</span>
+        </span>
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          rows={3}
+          maxLength={1000}
+          placeholder="Why you're a good fit, notice period, preferred timings…"
+          className="w-full resize-none rounded-2xl border border-forest-100 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-forest-300"
+        />
+      </label>
+      {error && (
+        <p role="alert" className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          {error}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={submit}
+        disabled={sending || !resume}
+        className="mt-6 w-full rounded-full bg-forest-700 py-3.5 text-sm font-semibold text-white shadow-lg shadow-forest-700/20 hover:bg-forest-600 disabled:opacity-50"
+      >
+        {sending ? "Sending…" : resume ? "Send application" : "Upload your resume to apply"}
+      </button>
+    </Dialog>
+  );
+}
+
 export function JobsPage() {
   const { rows, error } = useJobs();
+  const { user } = useAuth();
+  const mine = useMyApplications(user?.uid);
   const jobs = (rows ?? []).filter((j) => j.open && (!j.lastDate || j.lastDate >= new Date().toISOString().slice(0, 10)));
   const [open, setOpen] = useState<string | null>(null);
+  const [applying, setApplying] = useState<Job | null>(null);
+  const applied = (id: string) => (mine.rows ?? []).find((a) => a.jobId === id);
   return (
     <Card id="jobs">
       <CardTitle title="Jobs at Nuel Smart" />
@@ -50,18 +130,50 @@ export function JobsPage() {
                   </p>
                   {j.lastDate && <p className="mt-1 text-xs font-medium text-amber-700">Apply by {dateFmt.format(new Date(j.lastDate))}</p>}
                 </div>
-                <a href={applyHref(j)} target={applyHref(j).startsWith("https:") ? "_blank" : undefined} rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-forest-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-forest-600">
-                  Apply <ArrowRightIcon className="h-4 w-4" />
-                </a>
+                {applied(j.id) ? (
+                  <span className="inline-flex items-center gap-2 rounded-full bg-spark-500/25 px-4 py-2 text-sm font-semibold text-forest-800">
+                    <CheckIcon className="h-4 w-4" /> Applied · {applicationStatus(applied(j.id)!.status).label}
+                  </span>
+                ) : user ? (
+                  <button type="button" onClick={() => setApplying(j)} className="inline-flex items-center gap-2 rounded-full bg-forest-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-forest-600">
+                    Apply <ArrowRightIcon className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <Link href="/login?next=/jobs" className="inline-flex items-center gap-2 rounded-full bg-forest-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-forest-600">
+                    Log in to apply <ArrowRightIcon className="h-4 w-4" />
+                  </Link>
+                )}
               </div>
               <button type="button" onClick={() => setOpen(open === j.id ? null : j.id)} className="mt-2 text-sm font-semibold text-forest-700 hover:text-forest-500">
                 {open === j.id ? "Hide details" : "View details"}
               </button>
-              {open === j.id && <p className="mt-2 whitespace-pre-line rounded-xl bg-forest-50/60 p-4 text-sm leading-relaxed text-slate-700">{j.description}</p>}
+              {open === j.id && (
+                <div className="mt-2 rounded-xl bg-forest-50/60 p-4 text-sm leading-relaxed text-slate-700">
+                  <p className="whitespace-pre-line">{j.description}</p>
+                  {j.apply?.trim() && (
+                    <p className="mt-3 text-xs text-slate-500">
+                      You can also apply at{" "}
+                      <a href={applyHref(j)} target={applyHref(j).startsWith("https:") ? "_blank" : undefined} rel="noopener noreferrer" className="font-semibold text-forest-700">
+                        {j.apply.trim()}
+                      </a>
+                    </p>
+                  )}
+                </div>
+              )}
             </li>
           ))}
         </ul>
       )}
+      {!user && jobs.length > 0 && (
+        <p className="mt-4 text-sm text-slate-500">
+          New here?{" "}
+          <Link href="/register" className="font-semibold text-forest-700">
+            Create a free account
+          </Link>{" "}
+          to upload your resume and apply.
+        </p>
+      )}
+      {applying && user && <ApplyDialog user={user} job={applying} onClose={() => setApplying(null)} />}
     </Card>
   );
 }
@@ -252,8 +364,6 @@ export function CertificatesPage({ user }: { user: AppUser }) {
 // ---------------- Help & Support ----------------
 
 export function SupportPage({ user }: { user: AppUser }) {
-  const { rows } = useMyTickets(user.uid);
-  const [open, setOpen] = useState<string | null>(null);
   return (
     <>
       <Card id="support">
@@ -261,39 +371,7 @@ export function SupportPage({ user }: { user: AppUser }) {
         <p className="mt-1 mb-5 text-sm text-slate-500">Raise a ticket and our team will reply here and on your email.</p>
         <SupportForm user={user} />
       </Card>
-      <Card>
-        <CardTitle title="My tickets" />
-        {rows === null ? (
-          <p className="mt-4 text-sm text-slate-500">Loading…</p>
-        ) : rows.length === 0 ? (
-          <EmptyState icon={HelpIcon} title="No tickets yet" />
-        ) : (
-          <ul className="mt-4 space-y-3">
-            {rows.map((t) => {
-              const s = statusInfo(t.status);
-              return (
-                <li key={t.id} className="rounded-2xl border border-forest-100 p-4">
-                  <button type="button" onClick={() => setOpen(open === t.id ? null : t.id)} className="flex w-full flex-wrap items-center gap-3 text-left">
-                    <span className="font-mono text-xs font-bold text-forest-700">{ticketRef(t.id)}</span>
-                    <span className="min-w-0 flex-1 font-semibold text-forest-950">{categoryLabel(t.category)}</span>
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${s.tone}`}>{s.label}</span>
-                  </button>
-                  {open === t.id && (
-                    <div className="mt-3 space-y-2 text-sm">
-                      <p className="whitespace-pre-line rounded-xl bg-forest-50/60 px-4 py-3 text-slate-700">{t.message}</p>
-                      {t.updates?.map((u, i) => (
-                        <p key={i} className="border-l-2 border-spark-500 pl-3 text-slate-700">
-                          {u.text} <span className="text-xs text-slate-400">· {u.byName}</span>
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Card>
+      <MyTickets user={user} />
     </>
   );
 }

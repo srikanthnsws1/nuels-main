@@ -3,11 +3,15 @@
 import { useState, type FormEvent } from "react";
 import { CheckIcon, ClockIcon, TicketIcon, UsersIcon } from "../icons";
 import Dialog from "./Dialog";
+import SetPasswordDialog, { PASSWORD_SERVICE_ON } from "./SetPasswordDialog";
 import { Card, CardTitle, EmptyState, SearchBox, StatTiles, matchesSearch } from "./ui";
 import { resetPassword, type AppUser } from "@/lib/auth";
 import {
   categoryLabel,
   createTicket,
+  datedCategory,
+  isActive,
+  staffCategories,
   statusInfo,
   ticketCategories,
   ticketRef,
@@ -19,7 +23,41 @@ import {
   type TicketStatus,
 } from "@/lib/tickets";
 
-export type TicketUser = { uid: string; name: string; email: string; phone?: string; memberId?: string; role: string; status?: string };
+export type TicketUser = { uid: string; name: string; email: string; phone?: string; memberId?: string; role: string; status?: string; designation?: string };
+
+/** Who tickets can be assigned to, grouped for the drop-down. */
+const assigneeGroups = [
+  { role: "admin", label: "Admin team" },
+  { role: "employee", label: "Employees / office staff" },
+  { role: "mentor", label: "Tutors / instructors" },
+];
+export const assignable = (people: TicketUser[]) => people.filter((u) => assigneeGroups.some((g) => g.role === u.role) && (u.status ?? "active") === "active");
+
+function AssigneeOptions({ people, me }: { people: TicketUser[]; me: AppUser }) {
+  return (
+    <>
+      {assigneeGroups.map((g) => {
+        const list = people.filter((u) => u.role === g.role).sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+        return list.length ? (
+          <optgroup key={g.role} label={g.label}>
+            {list.map((a) => (
+              <option key={a.uid} value={a.uid}>
+                {a.name}
+                {a.designation ? ` · ${a.designation}` : ""}
+                {a.uid === me.uid ? " (me)" : ""}
+              </option>
+            ))}
+          </optgroup>
+        ) : null;
+      })}
+    </>
+  );
+}
+
+const roleName: Record<string, string> = { student: "Student", mentor: "Tutor", employee: "Employee" };
+const dateFmt = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" });
+export const dateRange = (t: Pick<Ticket, "fromDate" | "toDate">) =>
+  t.fromDate ? `${dateFmt.format(new Date(t.fromDate))}${t.toDate && t.toDate !== t.fromDate ? ` – ${dateFmt.format(new Date(t.toDate))}` : ""}` : "";
 
 const when = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
 const input = "w-full rounded-2xl border border-forest-100 bg-white px-3.5 py-2.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-forest-300";
@@ -29,7 +67,7 @@ const digits = (s?: string) => (s ?? "").replace(/\D/g, "").slice(-10);
 function matchingAccounts(t: Pick<Ticket, "email" | "memberId" | "phone">, users: TicketUser[]) {
   return users.filter(
     (u) =>
-      (t.email && u.email.toLowerCase() === t.email.toLowerCase()) ||
+      (t.email && (u.email ?? "").toLowerCase() === t.email.toLowerCase()) ||
       (t.memberId && u.memberId === t.memberId.toUpperCase()) ||
       (digits(t.phone).length === 10 && digits(u.phone) === digits(t.phone)),
   );
@@ -58,7 +96,7 @@ function NewTicketDialog({ me, admins, users, onClose }: { me: AppUser; admins: 
     setSaving(true);
     setError("");
     try {
-      const account = users.find((u) => u.email.toLowerCase() === f.email.trim().toLowerCase());
+      const account = users.find((u) => (u.email ?? "").toLowerCase() === f.email.trim().toLowerCase());
       const assignee = admins.find((a) => a.uid === f.assignee);
       setDone(
         await createTicket(
@@ -121,21 +159,25 @@ function NewTicketDialog({ me, admins, users, onClose }: { me: AppUser; admins: 
           <input value={f.memberId} onChange={(e) => set("memberId", e.target.value)} placeholder="Student / Tutor ID (optional)" aria-label="Member ID" className={input} />
         </div>
         <select value={f.category} onChange={(e) => set("category", e.target.value as TicketCategory)} aria-label="Category" className={input}>
-          {ticketCategories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.label}
-            </option>
-          ))}
+          <optgroup label="Learners">
+            {ticketCategories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="Tutors & staff">
+            {staffCategories.slice(0, -1).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </optgroup>
         </select>
         <textarea value={f.message} onChange={(e) => set("message", e.target.value)} rows={3} placeholder="What's needed?" aria-label="Details" className={`${input} resize-none`} />
         <select value={f.assignee} onChange={(e) => set("assignee", e.target.value)} aria-label="Assign to" className={input}>
           <option value="">Assign later</option>
-          {admins.map((a) => (
-            <option key={a.uid} value={a.uid}>
-              Assign to {a.name}
-              {a.uid === me.uid ? " (me)" : ""}
-            </option>
-          ))}
+          <AssigneeOptions people={admins} me={me} />
         </select>
         {error && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p>}
         <div className="flex gap-3 pt-1">
@@ -151,8 +193,26 @@ function NewTicketDialog({ me, admins, users, onClose }: { me: AppUser; admins: 
   );
 }
 
-function TicketDetail({ t, me, admins, users }: { t: Ticket; me: AppUser; admins: TicketUser[]; users: TicketUser[] }) {
+/**
+ * One ticket, opened. "manage" (admins, ticket handlers): assign, status, updates, account help.
+ * "assignee" (the tutor / employee it was assigned to): status and updates only.
+ */
+export function TicketDetail({
+  t,
+  me,
+  admins = [],
+  users = [],
+  mode = "manage",
+}: {
+  t: Ticket;
+  me: AppUser;
+  admins?: TicketUser[];
+  users?: TicketUser[];
+  mode?: "manage" | "assignee";
+}) {
+  const manage = mode === "manage";
   const [status, setStatus] = useState<TicketStatus>(t.status);
+  const [settingFor, setSettingFor] = useState<TicketUser | null>(null);
   const [assignee, setAssignee] = useState(t.assignedTo ?? "");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -161,7 +221,7 @@ function TicketDetail({ t, me, admins, users }: { t: Ticket; me: AppUser; admins
   const meRef = { uid: me.uid, name: me.name };
 
   const save = async () => {
-    const assigneeChanged = assignee !== (t.assignedTo ?? "");
+    const assigneeChanged = manage && assignee !== (t.assignedTo ?? "");
     if (!assigneeChanged && status === t.status && !note.trim()) return setMsg("Change the status or assignee, or write an update.");
     setBusy(true);
     setMsg("");
@@ -236,11 +296,19 @@ function TicketDetail({ t, me, admins, users }: { t: Ticket; me: AppUser; admins
           )}
           <dt className="text-slate-500">Raised</dt>
           <dd className="text-forest-950">
-            {t.createdAt ? when.format(t.createdAt.toDate()) : "Just now"} · {t.source === "admin" ? `by ${t.createdByName ?? "an admin"}` : "by the user"}
+            {t.createdAt ? when.format(t.createdAt.toDate()) : "Just now"} ·{" "}
+            {t.source === "admin" ? `by ${t.createdByName ?? "an admin"}` : t.raiserRole ? `by the ${(roleName[t.raiserRole] ?? "user").toLowerCase()}` : "by the user"}
           </dd>
+          {t.fromDate && (
+            <>
+              <dt className="text-slate-500">{datedCategory(t.category) ? "Dates" : "Date"}</dt>
+              <dd className="font-semibold text-forest-950">{dateRange(t)}</dd>
+            </>
+          )}
         </dl>
         <p className="whitespace-pre-line rounded-xl bg-white px-4 py-3 text-sm leading-relaxed text-slate-700">{t.message}</p>
 
+        {manage && (
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-forest-600">Matching accounts</p>
           {accounts.length === 0 ? (
@@ -258,6 +326,11 @@ function TicketDetail({ t, me, admins, users }: { t: Ticket; me: AppUser; admins
                     {u.phone && ` · ${u.phone}`}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
+                    {me.role === "admin" && PASSWORD_SERVICE_ON && (
+                      <button type="button" disabled={busy} onClick={() => setSettingFor(u)} className="rounded-full bg-spark-500 px-3 py-1.5 text-xs font-bold text-forest-900 hover:bg-spark-400 disabled:opacity-60">
+                        Set new password
+                      </button>
+                    )}
                     <button type="button" disabled={busy} onClick={() => sendReset(u)} className="rounded-full bg-forest-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-forest-600 disabled:opacity-60">
                       Send password reset email
                     </button>
@@ -272,26 +345,28 @@ function TicketDetail({ t, me, admins, users }: { t: Ticket; me: AppUser; admins
             </ul>
           )}
           <p className="mt-2 text-xs text-slate-500">
-            For security, Firebase doesn&apos;t let anyone else set a learner&apos;s password: the reset email lets them choose a new one. If they no longer use that
-            email, verify them by phone first.
+            Confirm it&apos;s really them (for example by phone) before setting a password or sharing an ID. A reset email lets them choose the password themselves.
           </p>
         </div>
+        )}
       </div>
 
       <div className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm">
-            <span className="mb-1 block font-medium text-forest-900">Assigned to</span>
-            <select value={assignee} onChange={(e) => setAssignee(e.target.value)} className={input}>
-              <option value="">Not assigned</option>
-              {admins.map((a) => (
-                <option key={a.uid} value={a.uid}>
-                  {a.name}
-                  {a.uid === me.uid ? " (me)" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
+          {manage ? (
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium text-forest-900">Assigned to</span>
+              <select value={assignee} onChange={(e) => setAssignee(e.target.value)} className={input}>
+                <option value="">Not assigned</option>
+                <AssigneeOptions people={admins} me={me} />
+              </select>
+            </label>
+          ) : (
+            <p className="text-sm">
+              <span className="mb-1 block font-medium text-forest-900">Assigned to</span>
+              <span className="block rounded-2xl bg-white px-3.5 py-2.5 text-slate-700">You</span>
+            </p>
+          )}
           <label className="block text-sm">
             <span className="mb-1 block font-medium text-forest-900">Status</span>
             <select value={status} onChange={(e) => setStatus(e.target.value as TicketStatus)} className={input}>
@@ -303,7 +378,13 @@ function TicketDetail({ t, me, admins, users }: { t: Ticket; me: AppUser; admins
             </select>
           </label>
         </div>
-        <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Write an update (the learner sees updates on their Help page)" className={`${input} resize-none`} />
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          rows={3}
+          placeholder="Write an update (the person who raised it sees updates on their Help / Requests page)"
+          className={`${input} resize-none`}
+        />
         <div className="flex flex-wrap items-center gap-3">
           <button type="button" onClick={save} disabled={busy} className="rounded-full bg-forest-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-forest-600 disabled:opacity-60">
             {busy ? "Saving…" : "Save update"}
@@ -336,7 +417,10 @@ function TicketDetail({ t, me, admins, users }: { t: Ticket; me: AppUser; admins
             <ol className="mt-2 space-y-2 border-l-2 border-forest-100 pl-4">
               {[...t.updates].reverse().map((u, i) => (
                 <li key={i} className="text-sm">
-                  <p className="text-slate-700">{u.text}</p>
+                  <p className={u.fromRaiser ? "rounded-xl bg-blue-50 px-3 py-2 text-blue-900" : "text-slate-700"}>
+                    {u.fromRaiser && <span className="mr-1 text-xs font-bold uppercase tracking-wider text-blue-700">Reply ·</span>}
+                    {u.text}
+                  </p>
                   <p className="text-xs text-slate-400">
                     {u.byName} · {u.at?.toDate ? when.format(u.at.toDate()) : ""}
                   </p>
@@ -346,6 +430,13 @@ function TicketDetail({ t, me, admins, users }: { t: Ticket; me: AppUser; admins
           )}
         </div>
       </div>
+      {settingFor && (
+        <SetPasswordDialog
+          user={settingFor}
+          onClose={() => setSettingFor(null)}
+          onDone={() => updateTicket(t.id, meRef, { text: `New password set for ${settingFor.name} by ${me.name}.` })}
+        />
+      )}
     </div>
   );
 }
@@ -361,9 +452,9 @@ export default function AdminTickets({ me, users }: { me: AppUser; users: Ticket
   const [creating, setCreating] = useState(false);
   const all = rows ?? [];
   const people = users ?? [];
-  const admins = people.filter((u) => u.role === "admin" && (u.status ?? "active") === "active");
+  const admins = assignable(people);
   const count = (s: TicketStatus) => all.filter((t) => t.status === s).length;
-  const mine = all.filter((t) => t.assignedTo === me.uid && (t.status === "open" || t.status === "in-progress"));
+  const mine = all.filter((t) => t.assignedTo === me.uid && isActive(t));
   const shown = all.filter(
     (t) =>
       (filter === "all" ||
@@ -396,7 +487,10 @@ export default function AdminTickets({ me, users }: { me: AppUser; users: Ticket
             </button>
           }
         />
-        <p className="mt-1 text-sm text-slate-500">Requests from learners (lost password or ID, payments, courses). Assign each one, post updates and close it when done.</p>
+        <p className="mt-1 text-sm text-slate-500">
+          Requests from learners (lost password or ID, payments, courses) and from tutors and staff (leave, classes, transfers, suggestions, reports). Assign each one
+          to an admin, employee or tutor, post updates and close it when done.
+        </p>
         <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="no-scrollbar flex gap-2 overflow-x-auto">
             {chips.map((c) => (
@@ -431,7 +525,9 @@ export default function AdminTickets({ me, users }: { me: AppUser; users: Ticket
                       {t.name} {t.memberId && <span className="font-mono text-xs text-forest-600">{t.memberId}</span>}
                     </span>
                     <span className="block text-xs text-slate-500">
-                      {categoryLabel(t.category)} · {t.createdAt ? when.format(t.createdAt.toDate()) : "Just now"}
+                      {t.raiserRole && t.raiserRole !== "student" && <span className="mr-1 rounded-full bg-forest-100 px-2 py-0.5 font-semibold text-forest-800">{roleName[t.raiserRole]}</span>}
+                      {categoryLabel(t.category)}
+                      {t.fromDate && ` (${dateRange(t)})`} · {t.createdAt ? when.format(t.createdAt.toDate()) : "Just now"}
                     </span>
                   </span>
                   <span className="text-xs text-slate-500">{t.assignedName ? `→ ${t.assignedName}` : <span className="font-semibold text-blue-700">Unassigned</span>}</span>

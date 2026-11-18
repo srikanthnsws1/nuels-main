@@ -10,9 +10,21 @@ import { auth, db } from "./firebase";
  * Signed-in learners see the tickets they raised, with the updates.
  */
 export type TicketStatus = "open" | "in-progress" | "resolved" | "closed";
-export type TicketCategory = "forgot-password" | "forgot-id" | "login" | "payment" | "course" | "quiz" | "other";
+export type TicketCategory =
+  | "forgot-password"
+  | "forgot-id"
+  | "login"
+  | "payment"
+  | "course"
+  | "quiz"
+  | "leave"
+  | "absence"
+  | "transfer"
+  | "suggestion"
+  | "report"
+  | "other";
 
-export type TicketUpdate = { at: Timestamp; by: string; byName: string; text: string; status?: TicketStatus };
+export type TicketUpdate = { at: Timestamp; by: string; byName: string; text: string; status?: TicketStatus; fromRaiser?: boolean };
 
 export type Ticket = {
   id: string;
@@ -26,6 +38,11 @@ export type Ticket = {
   source: "user" | "admin";
   /** The raiser's account, when they were logged in. */
   uid?: string;
+  /** "student", "mentor" or "employee" for requests raised from a dashboard. */
+  raiserRole?: string;
+  /** Leave / absence requests: first and last day (YYYY-MM-DD). */
+  fromDate?: string;
+  toDate?: string;
   assignedTo?: string;
   assignedName?: string;
   createdBy?: string;
@@ -44,7 +61,19 @@ export const ticketCategories: { id: TicketCategory; label: string }[] = [
   { id: "quiz", label: "Daily quiz" },
   { id: "other", label: "Something else" },
 ];
-export const categoryLabel = (c: string) => ticketCategories.find((x) => x.id === c)?.label ?? c;
+/** What tutors and employees raise from their dashboard. */
+export const staffCategories: { id: TicketCategory; label: string }[] = [
+  { id: "leave", label: "Leave request" },
+  { id: "absence", label: "Can't attend a class" },
+  { id: "transfer", label: "Transfer request" },
+  { id: "suggestion", label: "Suggestion" },
+  { id: "report", label: "Report a problem" },
+  { id: "other", label: "Something else" },
+];
+const allCategories = [...ticketCategories.slice(0, -1), ...staffCategories];
+/** Requests with a date range. */
+export const datedCategory = (c: string) => c === "leave" || c === "absence" || c === "transfer";
+export const categoryLabel = (c: string) => allCategories.find((x) => x.id === c)?.label ?? c;
 
 export const ticketStatuses: { id: TicketStatus; label: string; tone: string }[] = [
   { id: "open", label: "Open", tone: "bg-blue-100 text-blue-800" },
@@ -57,7 +86,17 @@ export const statusInfo = (s: string) => ticketStatuses.find((x) => x.id === s) 
 /** Short reference shown to people, e.g. "TKT-8F3K2Q". */
 export const ticketRef = (id: string) => `TKT-${id.slice(0, 6).toUpperCase()}`;
 
-type NewTicket = { name: string; email: string; phone?: string; memberId?: string; category: TicketCategory; message: string };
+type NewTicket = {
+  name: string;
+  email: string;
+  phone?: string;
+  memberId?: string;
+  category: TicketCategory;
+  message: string;
+  raiserRole?: string;
+  fromDate?: string;
+  toDate?: string;
+};
 
 const clean = (t: NewTicket) => ({
   name: t.name.trim().slice(0, 100),
@@ -66,7 +105,13 @@ const clean = (t: NewTicket) => ({
   ...(t.memberId?.trim() ? { memberId: t.memberId.trim().toUpperCase().slice(0, 10) } : {}),
   category: t.category,
   message: t.message.trim().slice(0, 2000),
+  ...(t.raiserRole ? { raiserRole: t.raiserRole } : {}),
+  ...(t.fromDate ? { fromDate: t.fromDate } : {}),
+  ...(t.toDate ? { toDate: t.toDate } : {}),
 });
+
+/** Someone a ticket can be assigned to: an admin, an employee or a tutor. */
+export type Assignee = { uid: string; name: string; role: string; designation?: string };
 
 /** A learner (or someone who can't log in) raises a ticket. Returns its reference. */
 export async function raiseTicket(t: NewTicket) {
@@ -98,7 +143,10 @@ export async function createTicket(t: NewTicket & { uid?: string }, me: { uid: s
   return ticketRef(ref.id);
 }
 
-/** Admin: assigns, changes status and/or posts an update; every change is logged on the ticket. */
+/**
+ * Admin (or an employee who handles tickets): assigns, changes status and/or posts an update;
+ * every change is logged on the ticket. The assignee may change the status and post updates.
+ */
 export function updateTicket(
   id: string,
   me: { uid: string; name: string },
@@ -142,7 +190,20 @@ function useTicketQuery(make: (() => ReturnType<typeof query> | ReturnType<typeo
   return state.key === key ? state : { rows: null, error: "" };
 }
 
+/** The person who raised a ticket replies to the team; the reply shows in the ticket's history. */
+export function replyToTicket(id: string, me: { uid: string; name: string }, text: string) {
+  return updateDoc(doc(db, "tickets", id), {
+    updates: arrayUnion({ at: Timestamp.now(), by: me.uid, byName: me.name, text: text.trim().slice(0, 2000), fromRaiser: true }),
+    updatedAt: serverTimestamp(),
+  });
+}
+
 /** Admin: every ticket, newest first. */
-export const useAllTickets = () => useTicketQuery(() => collection(db, "tickets"), "all");
+export const useAllTickets = (enabled = true) => useTicketQuery(enabled ? () => collection(db, "tickets") : null, enabled ? "all" : "off");
+/** Tutor / employee: tickets an admin assigned to them. */
+export const useAssignedTickets = (uid: string) =>
+  useTicketQuery(() => query(collection(db, "tickets"), where("assignedTo", "==", uid)), `assigned:${uid}`);
+/** Still needs work: open or in progress. */
+export const isActive = (t: Pick<Ticket, "status">) => t.status === "open" || t.status === "in-progress";
 /** Learner: the tickets they raised while logged in. */
 export const useMyTickets = (uid: string) => useTicketQuery(() => query(collection(db, "tickets"), where("uid", "==", uid)), `mine:${uid}`);

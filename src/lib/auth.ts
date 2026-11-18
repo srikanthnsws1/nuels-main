@@ -19,6 +19,7 @@ import { deleteField, doc, getDoc, onSnapshot, runTransaction, serverTimestamp, 
 import { useSyncExternalStore } from "react";
 import { auth, db } from "./firebase";
 import { groupForClass } from "@/data/dailyQuiz";
+import { assertAvailable, claimsFor, type Claim } from "./unique";
 
 /**
  * Firebase Auth session plus the user's role, read from Firestore `users/{uid}`.
@@ -151,21 +152,30 @@ const detailKeys = ["institution", "syllabus", "country", "state", "district", "
  * profile in the same transaction. firestore.rules reject IDs that are taken, malformed or
  * don't match the account type. Retries on collisions.
  */
-export async function withMemberId(uid: string, prefix: "S" | "T" | "E", newProfile?: Record<string, unknown>): Promise<string> {
+export async function withMemberId(uid: string, prefix: "S" | "T" | "E", newProfile?: Record<string, unknown>, claims: Claim[] = []): Promise<string> {
   const userRef = doc(db, "users", uid);
   for (let attempt = 0; attempt < 20; attempt++) {
     const id = prefix + String(Math.floor(Math.random() * 10000)).padStart(4, "0");
     const outcome = await runTransaction(db, async (tx) => {
-      const [idSnap, userSnap] = await Promise.all([tx.get(doc(db, "memberIds", id)), tx.get(userRef)]);
+      const [idSnap, userSnap, ...claimSnaps] = await Promise.all([
+        tx.get(doc(db, "memberIds", id)),
+        tx.get(userRef),
+        ...claims.map((c) => tx.get(doc(db, c.col, c.key))),
+      ]);
       if (idSnap.exists()) return "taken";
       if (newProfile && userSnap.exists()) return "exists";
       if (!newProfile && userSnap.data()?.memberId) return "exists";
+      // Name / phone registered by someone else in the meantime.
+      const lost = claims.find((c, i) => claimSnaps[i].exists() && claimSnaps[i].data()?.uid !== uid);
+      if (lost) return lost.col === "uniquePhones" ? "phone-taken" : "name-taken";
+      claims.forEach((c, i) => !claimSnaps[i].exists() && tx.set(doc(db, c.col, c.key), { uid, createdAt: serverTimestamp() }));
       tx.set(doc(db, "memberIds", id), { uid, createdAt: serverTimestamp() });
       if (newProfile) tx.set(userRef, { ...newProfile, memberId: id });
       else tx.update(userRef, { memberId: id });
       return "ok";
     });
     if (outcome === "ok") return id;
+    if (outcome === "phone-taken" || outcome === "name-taken") throw Object.assign(new Error(outcome), { code: `nuels/${outcome}` });
     if (outcome === "exists") return (await getDoc(userRef)).data()?.memberId ?? "";
   }
   throw new Error("Could not allocate a member ID");
@@ -191,6 +201,7 @@ async function loadProfileOnce(user: User): Promise<AppUser> {
   if (!snap.exists()) {
     const assignedRole: Role = isSpecialAdmin ? "admin" : "student";
     const requestedRole = pendingProfile?.requestedRole;
+    const fromRegistration = !!pendingProfile;
     const name = pendingProfile?.name || user.displayName || nameFromEmail(email);
     const photo = pendingProfile?.photo || undefined;
     const details = Object.fromEntries(
@@ -215,8 +226,9 @@ async function loadProfileOnce(user: User): Promise<AppUser> {
 
     let memberId: string | undefined;
     try {
-      memberId = await withMemberId(user.uid, requestedRole === "mentor" ? "T" : "S", profile);
+      memberId = await withMemberId(user.uid, requestedRole === "mentor" ? "T" : "S", profile, fromRegistration ? claimsFor(profile) : []);
     } catch (err) {
+      if (String((err as { code?: string })?.code).startsWith("nuels/")) throw err;
       // e.g. the new rules aren't deployed yet: still create the account, the ID follows on next login.
       console.warn("Could not assign a member ID; creating the profile without one", err);
       await setDoc(ref, profile);
@@ -411,10 +423,19 @@ export async function register(details: {
     requestedRole: details.role === "mentor" ? "mentor" : undefined,
   };
   try {
+    // One account per phone number and per name (email is unique in Firebase Auth already).
+    await assertAvailable({ name: details.name, phone: details.phone });
     const { user } = await createUserWithEmailAndPassword(auth, details.email, details.password);
     // Verification proves the address belongs to them (required for admin access).
     sendEmailVerification(user).catch((err) => console.warn("Could not send verification email", err));
-    const profile = await loadProfile(user);
+    let profile: AppUser;
+    try {
+      profile = await loadProfile(user);
+    } catch (err) {
+      // Lost the name / phone to a sign-up at the same moment: don't leave a half-made account.
+      await user.delete().catch(() => undefined);
+      throw err;
+    }
     void syncLoginId(profile);
     return profile;
   } catch (err) {
@@ -466,6 +487,10 @@ export function authErrorMessage(err: unknown) {
       return "We couldn't find that ID. Check it, or log in with your email address.";
     case "nuels/account-removed":
       return "This account has been removed. Contact info@nuelsmart.com if you think this is a mistake.";
+    case "nuels/phone-taken":
+      return "An account with this phone number already exists. Log in instead, or raise a support ticket if you can't.";
+    case "nuels/name-taken":
+      return "Someone with this full name is already registered. If that's you, log in instead. Otherwise add your surname or initial.";
     case "auth/too-many-requests":
       return "Too many attempts. Please wait a moment and try again.";
     case "auth/network-request-failed":

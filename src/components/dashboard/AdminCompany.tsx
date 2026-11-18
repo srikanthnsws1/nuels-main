@@ -4,7 +4,9 @@
 import { collection, onSnapshot } from "firebase/firestore";
 import { useEffect, useState, type FormEvent } from "react";
 import { AwardIcon, BriefcaseIcon, CheckIcon, ClockIcon, GraduationIcon, ImageIcon } from "../icons";
+import ApplicationsCard from "./AdminApplications";
 import { Card, CardTitle, EmptyState, SearchBox, StatTiles, matchesSearch } from "./ui";
+import { useApplications } from "@/lib/careers";
 import { assignmentsFor, modulesFor } from "@/data/learning";
 import type { AppUser } from "@/lib/auth";
 import { courseTitle, syllabusFor, useCatalog } from "@/lib/catalog";
@@ -118,6 +120,8 @@ function JobForm({ initial, onDone }: { initial?: Job; onDone: () => void }) {
 /** Admin: job openings at Nuel Smart, shown to learners on their Jobs page. */
 export function AdminJobs() {
   const { rows, error } = useJobs();
+  const apps = useApplications();
+  const appsFor = (id: string) => (apps.rows ?? []).filter((a) => a.jobId === id);
   const [editing, setEditing] = useState<string | "new" | null>(null);
   const [filter, setFilter] = useState<"open" | "closed" | "all">("open");
   const [query, setQuery] = useState("");
@@ -126,6 +130,7 @@ export function AdminJobs() {
   const act = (job: () => Promise<unknown>) => job().catch((err) => console.error("Job update failed", err));
 
   return (
+    <div className="space-y-6">
     <Card>
       <CardTitle
         title="Job openings"
@@ -171,7 +176,15 @@ export function AdminJobs() {
                     {j.experience && ` · ${j.experience}`}
                     {j.lastDate && ` · Apply by ${dateFmt.format(new Date(j.lastDate))}`}
                   </p>
-                  <p className="text-xs text-slate-400">Posted {j.createdAt ? dateFmt.format(j.createdAt.toDate()) : "just now"}</p>
+                  <p className="text-xs text-slate-400">
+                    Posted {j.createdAt ? dateFmt.format(j.createdAt.toDate()) : "just now"} ·{" "}
+                    <a href="#applications" className="font-semibold text-forest-700">
+                      {appsFor(j.id).length} application{appsFor(j.id).length === 1 ? "" : "s"}
+                    </a>
+                    {appsFor(j.id).some((a) => a.status === "new") && (
+                      <span className="ml-1 rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{appsFor(j.id).filter((a) => a.status === "new").length} new</span>
+                    )}
+                  </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button type="button" onClick={() => setEditing(editing === j.id ? null : j.id)} className="rounded-full border border-forest-200 px-3 py-1.5 text-xs font-semibold text-forest-700 hover:bg-forest-50">
@@ -191,6 +204,8 @@ export function AdminJobs() {
         </ul>
       )}
     </Card>
+    <ApplicationsCard rows={apps.rows} error={apps.error} jobs={all} />
+    </div>
   );
 }
 

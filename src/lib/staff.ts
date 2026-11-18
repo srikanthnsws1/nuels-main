@@ -5,6 +5,7 @@ import { connectAuthEmulator, createUserWithEmailAndPassword, deleteUser, getAut
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { withMemberId, syncLoginId } from "./auth";
 import { auth, db, firebaseConfig } from "./firebase";
+import { assertAvailable, claimsFor } from "./unique";
 
 /**
  * Company employees: accounts with role "employee", a designation and a list of permissions
@@ -33,21 +34,37 @@ export const permissionList = [
   { id: "courses.manage", label: "Add & edit courses" },
   { id: "videos.manage", label: "Manage course videos" },
   { id: "staff.view", label: "View employee directory" },
+  { id: "tickets.manage", label: "Handle & assign all tickets" },
+  { id: "inbox.office", label: "Read the admin office inbox" },
+  { id: "inbox.learners", label: "Message students & tutors" },
+  { id: "jobs.manage", label: "Job openings & applications" },
 ] as const;
 
 export type Permission = (typeof permissionList)[number]["id"];
 
 /** Suggested access for each designation; admins can change it per employee. */
 export const defaultPermissions: Record<(typeof designations)[number], Permission[]> = {
-  HR: ["staff.view", "students.view"],
+  HR: ["staff.view", "students.view", "jobs.manage"],
   CA: ["payments.view"],
   Cashier: ["payments.view", "payments.approve"],
   Accountant: ["payments.view"],
   Coordinator: ["students.view", "learners.manage", "videos.manage"],
-  "Office Staff": ["students.view"],
-  "Front Office": ["students.view", "payments.view"],
+  "Office Staff": ["students.view", "tickets.manage"],
+  "Front Office": ["students.view", "payments.view", "tickets.manage", "inbox.office", "inbox.learners"],
   Sales: ["students.view", "payments.view"],
-  Manager: ["payments.view", "payments.approve", "students.view", "learners.manage", "courses.manage", "videos.manage", "staff.view"],
+  Manager: [
+    "payments.view",
+    "payments.approve",
+    "students.view",
+    "learners.manage",
+    "courses.manage",
+    "videos.manage",
+    "staff.view",
+    "tickets.manage",
+    "inbox.office",
+    "inbox.learners",
+    "jobs.manage",
+  ],
   "Assistant Manager": ["payments.view", "students.view", "learners.manage", "courses.manage", "staff.view"],
   Other: [],
 };
@@ -82,10 +99,13 @@ function creatorAuth() {
  * login is deleted again so the email address stays free for another try.
  */
 export async function createAccount(email: string, password: string, profile: Record<string, unknown>, prefix: "S" | "T" | "E") {
+  const details = { name: profile.name as string | undefined, phone: profile.phone as string | undefined };
+  // Same rule as self sign-up: one account per phone number and per full name.
+  await assertAvailable(details);
   const creator = creatorAuth();
   const { user } = await createUserWithEmailAndPassword(creator, email.trim(), password);
   try {
-    const memberId = await withMemberId(user.uid, prefix, { ...profile, email: user.email ?? email.trim(), createdAt: serverTimestamp() });
+    const memberId = await withMemberId(user.uid, prefix, { ...profile, email: user.email ?? email.trim(), createdAt: serverTimestamp() }, claimsFor(details));
     await syncLoginId({ uid: user.uid, email: user.email ?? email.trim(), memberId });
     return { uid: user.uid, memberId };
   } catch (err) {

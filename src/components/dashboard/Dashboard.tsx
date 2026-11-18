@@ -2,12 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRightIcon, AwardIcon, BookIcon, CalendarIcon, CartIcon, CheckIcon, ClipboardIcon, ClockIcon, GraduationIcon, GridIcon, HelpIcon, LockIcon, SparkIcon, StarIcon } from "../icons";
+import { ArrowRightIcon, AwardIcon, BookIcon, CalendarIcon, CartIcon, CheckIcon, ClipboardIcon, ClockIcon, GraduationIcon, GridIcon, HelpIcon, InboxIcon, LockIcon, SparkIcon, StarIcon } from "../icons";
 import { CertificatesPage, SupportPage } from "./StudentExtras";
 import DailyQuiz, { QuizBanner } from "../quiz/DailyQuiz";
 import DashboardShell, { type Section } from "./DashboardShell";
+import InboxPage from "./Inbox";
 import { Card, CardTitle, EmptyState, WelcomeBanner, rupee } from "./ui";
-import { greetingName, type AppUser } from "@/lib/auth";
+import { greetingName, useAuth, type AppUser } from "@/lib/auth";
+import { useMemberBadges } from "@/lib/badges";
 import { ChapterMarks } from "../learn/ChapterSyllabus";
 import { chapterName, courseHref, courseTitle, learnHref, subjectGroups, useCatalog } from "@/lib/catalog";
 import { awaitingConfirmation, coursesFor, needsScreenshot, useMyOrders } from "@/lib/orders";
@@ -20,6 +22,7 @@ const sections: Section[] = [
   { id: "schedule", label: "Live Sessions", icon: CalendarIcon },
   { id: "assignments", label: "Assignments", icon: ClipboardIcon },
   { id: "certificates", label: "Certificates", icon: AwardIcon },
+  { id: "inbox", label: "Inbox", icon: InboxIcon },
   { id: "support", label: "Help & Support", icon: HelpIcon },
 ];
 
@@ -193,6 +196,7 @@ function StudentContent({ user, page }: { user: AppUser; page: string }) {
         </Card>
       )}
       {page === "certificates" && <CertificatesPage user={user} />}
+      {page === "inbox" && <InboxPage user={user} />}
       {page === "support" && <SupportPage user={user} />}
 
       {overview && history.length > 0 && (
@@ -250,8 +254,10 @@ function StudentContent({ user, page }: { user: AppUser; page: string }) {
 }
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const badges = useMemberBadges(user);
   return (
-    <DashboardShell role="student" sections={sections} sidebarCard={sidebarCard} paged>
+    <DashboardShell role="student" sections={sections} sidebarCard={sidebarCard} paged badges={badges}>
       {(user, page) => <StudentContent user={user} page={page} />}
     </DashboardShell>
   );

@@ -50,6 +50,7 @@ re-crawls the pages.
 
 - [PAYMENTS-SETUP.md](PAYMENTS-SETUP.md): UPI/bank payment details, screenshot approval, optional Razorpay.
 - [WHATSAPP-SETUP.md](WHATSAPP-SETUP.md): optional automatic WhatsApp welcome message.
+- [ACCOUNTS-SETUP.md](ACCOUNTS-SETUP.md): inbox, tickets, resumes and job applications; admin-set passwords (Blaze plan).
 
 ## Where things live
 

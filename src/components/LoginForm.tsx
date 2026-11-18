@@ -72,7 +72,9 @@ export default function LoginForm() {
     setLoading(true);
     try {
       const user = await signIn(email.trim(), password, remember);
-      router.push(landingFor(user.role));
+      // ?next=/jobs sends them back to the page that asked them to log in (same-site paths only).
+      const next = new URLSearchParams(window.location.search).get("next") ?? "";
+      router.push(/^\/(?!\/)[\w\-/#?=&]*$/.test(next) ? next : landingFor(user.role));
     } catch (err) {
       setAuthError(authErrorMessage(err));
       setLoading(false);

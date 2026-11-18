@@ -1,11 +1,14 @@
 "use client";
 
-import { greetingName } from "@/lib/auth";
+import { greetingName, useAuth } from "@/lib/auth";
+import { useMemberBadges } from "@/lib/badges";
 
 import Image from "next/image";
 import Link from "next/link";
-import { BookIcon, CalendarIcon, ClipboardIcon, ClockIcon, GridIcon, PlayIcon, UsersIcon } from "../icons";
+import { BookIcon, CalendarIcon, ClipboardIcon, ClockIcon, GridIcon, InboxIcon, PlayIcon, TicketIcon, UsersIcon } from "../icons";
 import DashboardShell, { type Section } from "./DashboardShell";
+import InboxPage from "./Inbox";
+import { AssignedTicketsPage, RequestsPage } from "./Requests";
 import { Card, CardTitle, EmptyState, StatTiles, WelcomeBanner } from "./ui";
 import { courseHref, useCatalog } from "@/lib/catalog";
 
@@ -15,13 +18,21 @@ const sections: Section[] = [
   { id: "students", label: "Students", icon: UsersIcon },
   { id: "sessions", label: "Live Sessions", icon: CalendarIcon },
   { id: "reviews", label: "Reviews", icon: ClipboardIcon },
+  { id: "inbox", label: "Inbox", icon: InboxIcon },
+  { id: "requests", label: "Requests & Leave", icon: ClipboardIcon },
+  { id: "assigned", label: "Assigned to me", icon: TicketIcon },
 ];
 
 export default function MentorDashboard() {
   const courses = useCatalog();
+  const { user: me } = useAuth();
+  const badges = useMemberBadges(me);
   return (
-    <DashboardShell role="mentor" sections={sections}>
-      {(user) => {
+    <DashboardShell role="mentor" sections={sections} paged badges={badges}>
+      {(user, page) => {
+        if (page === "inbox") return <InboxPage user={user} />;
+        if (page === "requests") return <RequestsPage user={user} />;
+        if (page === "assigned") return <AssignedTicketsPage user={user} />;
         // Courses are linked to a mentor by the name shown on the course page.
         const myCourses = courses.filter((c) => c.mentor === user.name);
         const stats = [
@@ -30,16 +41,20 @@ export default function MentorDashboard() {
           { label: "Hours of content", value: myCourses.reduce((s, c) => s + c.hours, 0), icon: ClockIcon },
         ];
 
+        const overview = page === "overview";
         return (
           <>
+            {overview && (
             <WelcomeBanner id="overview" title={<>Welcome, {greetingName(user)}!</>}>
               <p className="mt-3 text-sm leading-relaxed text-forest-100 sm:text-base">
                 Manage your courses, students, live sessions and project reviews from here.
               </p>
             </WelcomeBanner>
+            )}
 
-            <StatTiles stats={stats} />
+            {overview && <StatTiles stats={stats} />}
 
+            {(overview || page === "my-courses") && (
             <Card id="my-courses">
               <CardTitle title="My courses" />
               {myCourses.length ? (
@@ -73,21 +88,26 @@ export default function MentorDashboard() {
                 </EmptyState>
               )}
             </Card>
+            )}
 
-            <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+            {(overview || page === "students") && (
               <Card id="students">
                 <CardTitle title="Students" />
                 <EmptyState icon={UsersIcon} title="No students enrolled yet" />
               </Card>
+            )}
+            {(overview || page === "sessions") && (
               <Card id="sessions">
                 <CardTitle title="Upcoming live sessions" />
                 <EmptyState icon={CalendarIcon} title="No sessions scheduled" />
               </Card>
-              <Card id="reviews" className="lg:col-span-2 xl:col-span-1">
+            )}
+            {(overview || page === "reviews") && (
+              <Card id="reviews">
                 <CardTitle title="Pending reviews" />
                 <EmptyState icon={ClipboardIcon} title="Nothing to review" />
               </Card>
-            </div>
+            )}
           </>
         );
       }}

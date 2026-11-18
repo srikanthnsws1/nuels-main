@@ -367,3 +367,48 @@ export function LayoutIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function CopyIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="9" y="9" width="12" height="12" rx="2" />
+      <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+    </svg>
+  );
+}
+
+export function InboxIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+      <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z" />
+    </svg>
+  );
+}
+
+export function SendIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m22 2-7 20-4-9-9-4Z" />
+      <path d="M22 2 11 13" />
+    </svg>
+  );
+}
+
+export function FileIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+      <path d="M14 2v6h6M8 13h8M8 17h5" />
+    </svg>
+  );
+}
+
+export function UploadIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="m17 8-5-5-5 5M12 3v12" />
+    </svg>
+  );
+}

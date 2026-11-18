@@ -11,6 +11,7 @@ import {
   ChevronDownIcon,
   EyeIcon,
   EyeOffIcon,
+  FileIcon,
   GraduationIcon,
   GridIcon,
   HelpIcon,
@@ -20,6 +21,7 @@ import {
 } from "../icons";
 import Dialog from "./Dialog";
 import ClassDialog from "../quiz/ClassDialog";
+import ResumeDialog from "./Resume";
 import { Avatar } from "./ui";
 import { authErrorMessage, changePassword, displayRole, greetingName, homeFor, updateProfilePhoto, type AppUser } from "@/lib/auth";
 import { passwordRules, strengthLabels, strengthStyles } from "@/lib/password";
@@ -32,7 +34,7 @@ type MenuLink = { label: string; href: string; icon: ComponentType<IconProps>; b
  */
 export default function ProfileMenu({ user, onLogout }: { user: AppUser; onLogout: () => void }) {
   const [open, setOpen] = useState(false);
-  const [dialog, setDialog] = useState<"photo" | "password" | "class" | null>(null);
+  const [dialog, setDialog] = useState<"photo" | "password" | "class" | "resume" | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const menuId = useId();
   const closeDialog = useCallback(() => setDialog(null), []);
@@ -50,7 +52,7 @@ export default function ProfileMenu({ user, onLogout }: { user: AppUser; onLogou
     };
   }, [open]);
 
-  const show = (d: "photo" | "password" | "class") => {
+  const show = (d: "photo" | "password" | "class" | "resume") => {
     setOpen(false);
     setDialog(d);
   };
@@ -124,6 +126,9 @@ export default function ProfileMenu({ user, onLogout }: { user: AppUser; onLogou
             <button type="button" onClick={() => show("password")} className={item}>
               <LockIcon className="h-[18px] w-[18px] text-forest-600" /> Change password
             </button>
+            <button type="button" onClick={() => show("resume")} className={item}>
+              <FileIcon className="h-[18px] w-[18px] text-forest-600" /> My resume
+            </button>
             {user.role === "student" && (
               <button type="button" onClick={() => show("class")} className={item}>
                 <GraduationIcon className="h-[18px] w-[18px] text-forest-600" /> Change class
@@ -152,6 +157,7 @@ export default function ProfileMenu({ user, onLogout }: { user: AppUser; onLogou
       {dialog === "photo" && <PhotoDialog user={user} onClose={closeDialog} />}
       {dialog === "password" && <PasswordDialog onClose={closeDialog} />}
       {dialog === "class" && <ClassDialog user={user} onClose={closeDialog} />}
+      {dialog === "resume" && <ResumeDialog uid={user.uid} onClose={closeDialog} />}
     </div>
   );
 }

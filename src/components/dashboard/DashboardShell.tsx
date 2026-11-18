@@ -22,12 +22,15 @@ export default function DashboardShell({
   sections,
   sidebarCard,
   paged = false,
+  badges,
   children,
 }: {
   role: Role;
   sections: Section[];
   sidebarCard?: ReactNode;
   paged?: boolean;
+  /** Work waiting in each section (new tickets, unread messages, …), shown as a count on its sidebar item. */
+  badges?: Record<string, number>;
   children: (user: AppUser, page: string) => ReactNode;
 }) {
   const router = useRouter();
@@ -98,8 +101,18 @@ export default function DashboardShell({
               }`
         }
       >
-        <Icon className="h-[18px] w-[18px]" />
-        {s.label}
+        <Icon className="h-[18px] w-[18px] shrink-0" />
+        <span className="min-w-0 flex-1">{s.label}</span>
+        {!!badges?.[s.id] && (
+          <span
+            aria-label={`${badges[s.id]} waiting`}
+            className={`flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-bold ${
+              on && !compact ? "bg-forest-900 text-spark-400" : "bg-red-500 text-white shadow-sm shadow-red-900/30"
+            }`}
+          >
+            {badges[s.id] > 99 ? "99+" : badges[s.id]}
+          </span>
+        )}
       </a>
     );
   };
@@ -113,11 +126,11 @@ export default function DashboardShell({
         <div className="relative">
           <Logo light />
         </div>
-        <nav className="relative mt-10 flex flex-col gap-1" aria-label="Dashboard">
+        <nav className="no-scrollbar relative -mr-2 mt-10 flex min-h-0 flex-col gap-1 overflow-y-auto pr-2" aria-label="Dashboard">
           {sections.map((s) => navLink(s))}
         </nav>
 
-        <div className="relative mt-auto space-y-4">
+        <div className="relative mt-auto shrink-0 space-y-4 pt-4">
           {sidebarCard}
           <button
             type="button"

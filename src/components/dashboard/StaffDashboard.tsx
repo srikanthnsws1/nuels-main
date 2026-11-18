@@ -1,8 +1,12 @@
 "use client";
 
 import { collection, onSnapshot, query, where, type Timestamp } from "firebase/firestore";
-import { useEffect, useState } from "react";
-import { BookIcon, BriefcaseIcon, CartIcon, GraduationIcon, GridIcon, PlayIcon, SearchIcon, UsersIcon } from "../icons";
+import { useEffect, useMemo, useState } from "react";
+import { BookIcon, BriefcaseIcon, CartIcon, ClipboardIcon, GraduationIcon, GridIcon, InboxIcon, PlayIcon, SearchIcon, TicketIcon, UsersIcon } from "../icons";
+import { AdminJobs } from "./AdminCompany";
+import AdminTickets, { type TicketUser } from "./AdminTickets";
+import InboxPage from "./Inbox";
+import { AssignedTicketsPage, RequestsPage } from "./Requests";
 import { CoursesCard } from "./AdminCourses";
 import { CourseContentCard, LearnersCard } from "./AdminLearning";
 import { OrdersCard } from "./AdminPayments";
@@ -10,6 +14,7 @@ import { EmployeesCard } from "./AdminStaff";
 import DashboardShell, { type Section } from "./DashboardShell";
 import { Avatar, Card, CardTitle, EmptyState, WelcomeBanner } from "./ui";
 import { displayRole, greetingName, useAuth, type AppUser } from "@/lib/auth";
+import { useStaffBadges } from "@/lib/badges";
 import { courseTitle, useCatalog } from "@/lib/catalog";
 import { coursesFor } from "@/lib/orders";
 import { db } from "@/lib/firebase";
@@ -45,6 +50,20 @@ function useStudents(enabled: boolean) {
     );
   }, [enabled]);
   return { students, error };
+}
+
+/** Everyone (for ticket handlers: assignees and matching accounts). */
+function useEveryone(enabled: boolean) {
+  const [users, setUsers] = useState<TicketUser[] | null>(null);
+  useEffect(() => {
+    if (!enabled) return;
+    return onSnapshot(
+      collection(db, "users"),
+      (snap) => setUsers(snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as TicketUser)),
+      () => setUsers([]),
+    );
+  }, [enabled]);
+  return users;
 }
 
 function StudentsCard({ students, error }: { students: Student[] | null; error: string }) {
@@ -153,28 +172,36 @@ function ProfileCard({ user }: { user: AppUser }) {
   );
 }
 
-function StaffContent({ user }: { user: AppUser }) {
+function StaffContent({ user, page }: { user: AppUser; page: string }) {
   const showStudents = can(user, "students.view");
-  const needStudents = showStudents || can(user, "learners.manage");
+  const needStudents = (showStudents && page === "students") || (can(user, "learners.manage") && page === "learners");
   const { students, error } = useStudents(needStudents);
+  const everyone = useEveryone(can(user, "tickets.manage") && page === "tickets");
 
   return (
     <>
-      <WelcomeBanner id="overview" title={<>Welcome, {greetingName(user)}!</>}>
-        <p className="mt-3 text-sm leading-relaxed text-forest-100 sm:text-base">
-          {displayRole(user)}
-          {user.employeeNumber && ` · ${user.employeeNumber}`}. Everything you have access to is on this page.
-        </p>
-      </WelcomeBanner>
-
-      <ProfileCard user={user} />
-
-      {can(user, "payments.view") || can(user, "payments.approve") ? <OrdersCard me={user} canApprove={can(user, "payments.approve")} /> : null}
-      {showStudents && <StudentsCard students={students} error={error} />}
-      {can(user, "learners.manage") && <LearnersCard users={students} />}
-      {can(user, "courses.manage") && <CoursesCard />}
-      {can(user, "videos.manage") && <CourseContentCard />}
-      {can(user, "staff.view") && <EmployeesCard />}
+      {page === "overview" && (
+        <>
+          <WelcomeBanner id="overview" title={<>Welcome, {greetingName(user)}!</>}>
+            <p className="mt-3 text-sm leading-relaxed text-forest-100 sm:text-base">
+              {displayRole(user)}
+              {user.employeeNumber && ` · ${user.employeeNumber}`}. Use the menu to open each section you have access to.
+            </p>
+          </WelcomeBanner>
+          <ProfileCard user={user} />
+        </>
+      )}
+      {page === "inbox" && <InboxPage user={user} />}
+      {page === "requests" && <RequestsPage user={user} />}
+      {page === "assigned" && <AssignedTicketsPage user={user} />}
+      {page === "tickets" && can(user, "tickets.manage") && <AdminTickets me={user} users={everyone} />}
+      {page === "jobs" && can(user, "jobs.manage") && <AdminJobs />}
+      {page === "orders" && (can(user, "payments.view") || can(user, "payments.approve")) && <OrdersCard me={user} canApprove={can(user, "payments.approve")} />}
+      {page === "students" && showStudents && <StudentsCard students={students} error={error} />}
+      {page === "learners" && can(user, "learners.manage") && <LearnersCard users={students} />}
+      {page === "courses" && can(user, "courses.manage") && <CoursesCard />}
+      {page === "course-content" && can(user, "videos.manage") && <CourseContentCard />}
+      {page === "employees" && can(user, "staff.view") && <EmployeesCard />}
     </>
   );
 }
@@ -182,21 +209,30 @@ function StaffContent({ user }: { user: AppUser }) {
 /** Dashboard for company employees; its sections follow the permissions an admin granted. */
 export default function StaffDashboard() {
   const { user } = useAuth();
-  const has = (p: Parameters<typeof can>[1]) => !!user && can(user, p);
-  const sections: Section[] = [
-    { id: "overview", label: "Overview", icon: GridIcon },
-    { id: "profile", label: "My Profile", icon: UsersIcon },
-    ...(has("payments.view") || has("payments.approve") ? [{ id: "orders", label: "Payments", icon: CartIcon }] : []),
-    ...(has("students.view") ? [{ id: "students", label: "Students", icon: GraduationIcon }] : []),
-    ...(has("learners.manage") ? [{ id: "learners", label: "Learners", icon: GraduationIcon }] : []),
-    ...(has("courses.manage") ? [{ id: "courses", label: "Courses", icon: BookIcon }] : []),
-    ...(has("videos.manage") ? [{ id: "course-content", label: "Course Videos", icon: PlayIcon }] : []),
-    ...(has("staff.view") ? [{ id: "employees", label: "Employees", icon: BriefcaseIcon }] : []),
-  ];
+  const badges = useStaffBadges(user);
+  const perms = user?.role === "employee" ? user.permissions.join(",") : "";
+  // Rebuilt only when access changes, so the page in the URL isn't re-read on every render.
+  const sections: Section[] = useMemo(() => {
+    const has = (p: string) => perms.split(",").includes(p);
+    return [
+      { id: "overview", label: "Overview", icon: GridIcon },
+      { id: "inbox", label: "Inbox", icon: InboxIcon },
+      ...(has("tickets.manage") ? [{ id: "tickets", label: "Tickets", icon: TicketIcon }] : []),
+      { id: "assigned", label: "Assigned to me", icon: TicketIcon },
+      { id: "requests", label: "Requests & Leave", icon: ClipboardIcon },
+      ...(has("payments.view") || has("payments.approve") ? [{ id: "orders", label: "Payments", icon: CartIcon }] : []),
+      ...(has("students.view") ? [{ id: "students", label: "Students", icon: GraduationIcon }] : []),
+      ...(has("learners.manage") ? [{ id: "learners", label: "Learners", icon: GraduationIcon }] : []),
+      ...(has("courses.manage") ? [{ id: "courses", label: "Courses", icon: BookIcon }] : []),
+      ...(has("videos.manage") ? [{ id: "course-content", label: "Course Videos", icon: PlayIcon }] : []),
+      ...(has("jobs.manage") ? [{ id: "jobs", label: "Job openings", icon: BriefcaseIcon }] : []),
+      ...(has("staff.view") ? [{ id: "employees", label: "Employees", icon: UsersIcon }] : []),
+    ];
+  }, [perms]);
 
   return (
-    <DashboardShell role="employee" sections={sections}>
-      {(u) => <StaffContent user={u} />}
+    <DashboardShell role="employee" sections={sections} paged badges={badges}>
+      {(u, page) => <StaffContent user={u} page={page} />}
     </DashboardShell>
   );
 }
