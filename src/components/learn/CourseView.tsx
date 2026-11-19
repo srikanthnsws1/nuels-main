@@ -81,8 +81,10 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   );
 }
 
-function Player({ lesson, url, meetLink, session, done, onToggle, onPrev, onNext }: {
+function Player({ lesson, url, meetLink, session, done, onToggle, onPrev, onNext, nextVideo }: {
   lesson: Lesson;
+  /** When this topic has no video yet: the nearest topic that has one. */
+  nextVideo?: { title: string; play: () => void };
   url?: string;
   meetLink?: string;
   /** The next scheduled class for this topic, if any. */
@@ -118,6 +120,15 @@ function Player({ lesson, url, meetLink, session, done, onToggle, onPrev, onNext
             <p className="max-w-sm text-sm text-forest-200">
               {session ? `Live class ${sessionWhen(session, now)}. The recording is added after the class.` : meetLink ? "Join the live class below while your mentor uploads the recording." : "Your mentor is uploading this lesson. It's covered in the live sessions meanwhile."}
             </p>
+            {nextVideo && (
+              <button
+                type="button"
+                onClick={nextVideo.play}
+                className="mt-1 inline-flex max-w-full items-center gap-2 rounded-full bg-spark-500 px-5 py-2.5 text-sm font-bold text-forest-900 transition hover:bg-spark-400"
+              >
+                <PlayIcon className="h-4 w-4 shrink-0" /> <span className="truncate">Watch: {nextVideo.title}</span>
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -491,6 +502,11 @@ function CourseContent({ user, course, page, sessions }: { user: AppUser; course
               onToggle={() => toggle(lesson.id)}
               onPrev={index > 0 ? () => play(lessons[index - 1].id) : undefined}
               onNext={index < lessons.length - 1 ? () => play(lessons[index + 1].id) : undefined}
+              nextVideo={(() => {
+                if (videoFor(lesson.id)) return undefined;
+                const target = lessons.slice(index + 1).find((l) => videoFor(l.id)) ?? lessons.slice(0, index).reverse().find((l) => videoFor(l.id));
+                return target && { title: target.title, play: () => play(target.id) };
+              })()}
             />
           )}
           <ol className="max-h-[560px] space-y-4 overflow-y-auto pr-1" data-lenis-prevent>
@@ -511,25 +527,32 @@ function CourseContent({ user, course, page, sessions }: { user: AppUser; course
                       const isDone = progress.completed.includes(l.id);
                       const active = l.id === lesson?.id;
                       return (
-                        <li key={l.id} className={`flex items-center gap-2 rounded-xl px-2 py-1.5 ${active ? "bg-forest-50" : "hover:bg-forest-50/60"}`}>
+                        <li key={l.id}>
+                          {/* The whole row opens the topic in the player; "Mark as complete" sits under the video. */}
                           <button
                             type="button"
-                            onClick={() => toggle(l.id)}
-                            aria-label={isDone ? `Mark ${l.title} as not done` : `Mark ${l.title} as done`}
-                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${isDone ? "bg-forest-600 text-white" : "border border-slate-300"}`}
+                            onClick={() => play(l.id)}
+                            aria-current={active ? "true" : undefined}
+                            aria-label={`Play ${l.title}${isDone ? " (completed)" : ""}`}
+                            className={`flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left transition ${active ? "bg-forest-50 ring-1 ring-forest-200" : "hover:bg-forest-50/60"}`}
                           >
-                            {isDone && <CheckIcon className="h-3 w-3" />}
+                            <span
+                              aria-hidden
+                              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${isDone ? "bg-forest-600 text-white" : "border border-slate-300"}`}
+                            >
+                              {isDone && <CheckIcon className="h-3 w-3" />}
+                            </span>
+                            <span className={`min-w-0 flex-1 text-sm ${active ? "font-semibold text-forest-800" : "text-slate-700"}`}>{l.title}</span>
+                            {videos.free[l.id] ? (
+                              <span className="rounded-full bg-spark-500/25 px-2 py-0.5 text-[10px] font-bold text-forest-800">FREE</span>
+                            ) : videos.paid[l.id] ? (
+                              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-forest-700 text-spark-400">
+                                <PlayIcon className="h-3 w-3" />
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-400">Soon</span>
+                            )}
                           </button>
-                          <button type="button" onClick={() => play(l.id)} className={`min-w-0 flex-1 text-left text-sm ${active ? "font-semibold text-forest-800" : "text-slate-700"}`}>
-                            {l.title}
-                          </button>
-                          {videos.free[l.id] ? (
-                            <span className="rounded-full bg-spark-500/25 px-2 py-0.5 text-[10px] font-bold text-forest-800">FREE</span>
-                          ) : videos.paid[l.id] ? (
-                            <PlayIcon className="h-3.5 w-3.5 shrink-0 text-forest-600" />
-                          ) : (
-                            <span className="text-[10px] text-slate-400">Soon</span>
-                          )}
                         </li>
                       );
                     })}
