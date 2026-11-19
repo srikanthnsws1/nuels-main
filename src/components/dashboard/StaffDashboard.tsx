@@ -8,6 +8,7 @@ import AdminTickets, { type TicketUser } from "./AdminTickets";
 import InboxPage from "./Inbox";
 import { AssignedTicketsPage, RequestsPage } from "./Requests";
 import { CoursesCard } from "./AdminCourses";
+import { openCourseContent } from "./AdminCourseContent";
 import { CourseContentCard, LearnersCard } from "./AdminLearning";
 import { OrdersCard } from "./AdminPayments";
 import { EmployeesCard } from "./AdminStaff";
@@ -199,8 +200,8 @@ function StaffContent({ user, page }: { user: AppUser; page: string }) {
       {page === "orders" && (can(user, "payments.view") || can(user, "payments.approve")) && <OrdersCard me={user} canApprove={can(user, "payments.approve")} />}
       {page === "students" && showStudents && <StudentsCard students={students} error={error} />}
       {page === "learners" && can(user, "learners.manage") && <LearnersCard users={students} />}
-      {page === "courses" && can(user, "courses.manage") && <CoursesCard />}
-      {page === "course-content" && can(user, "videos.manage") && <CourseContentCard />}
+      {page === "courses" && can(user, "courses.manage") && <CoursesCard onContent={can(user, "videos.manage") ? openCourseContent : undefined} />}
+      {page === "course-content" && can(user, "videos.manage") && <CourseContentCard canEditCourse={can(user, "courses.manage")} />}
       {page === "employees" && can(user, "staff.view") && <EmployeesCard />}
     </>
   );
@@ -224,7 +225,7 @@ export default function StaffDashboard() {
       ...(has("students.view") ? [{ id: "students", label: "Students", icon: GraduationIcon }] : []),
       ...(has("learners.manage") ? [{ id: "learners", label: "Learners", icon: GraduationIcon }] : []),
       ...(has("courses.manage") ? [{ id: "courses", label: "Courses", icon: BookIcon }] : []),
-      ...(has("videos.manage") ? [{ id: "course-content", label: "Course Videos", icon: PlayIcon }] : []),
+      ...(has("videos.manage") ? [{ id: "course-content", label: "Videos & Live Classes", icon: PlayIcon }] : []),
       ...(has("jobs.manage") ? [{ id: "jobs", label: "Job openings", icon: BriefcaseIcon }] : []),
       ...(has("staff.view") ? [{ id: "employees", label: "Employees", icon: UsersIcon }] : []),
     ];

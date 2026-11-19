@@ -14,6 +14,8 @@ import { ChapterMarks } from "../learn/ChapterSyllabus";
 import { chapterName, courseHref, courseTitle, learnHref, subjectGroups, useCatalog } from "@/lib/catalog";
 import { awaitingConfirmation, coursesFor, needsScreenshot, useMyOrders } from "@/lib/orders";
 import { PaymentHistoryList, RejectedPaymentPopup } from "../PaymentHistory";
+import { LiveSessionsCard, NextSessionBanner, classesLeftToday, useNow } from "../learn/LiveSessions";
+import { useLiveSessions, type CourseSession } from "@/lib/learning";
 
 const sections: Section[] = [
   { id: "overview", label: "Overview", icon: GridIcon },
@@ -50,7 +52,7 @@ function Locked() {
   );
 }
 
-function StudentContent({ user, page }: { user: AppUser; page: string }) {
+function StudentContent({ user, page, sessions }: { user: AppUser; page: string; sessions: CourseSession[] | null }) {
   const catalog = useCatalog();
   const orders = useMyOrders(user.uid);
   // Subject chapters sit together, in chapter order, after the other courses' enrolment order.
@@ -84,6 +86,8 @@ function StudentContent({ user, page }: { user: AppUser; page: string }) {
         </Link>
       </WelcomeBanner>
       )}
+
+      {overview && <NextSessionBanner sessions={sessions} href="#schedule" />}
 
       {overview && <QuizBanner user={user} />}
 
@@ -184,10 +188,14 @@ function StudentContent({ user, page }: { user: AppUser; page: string }) {
 
       {/* Live sessions, assignments and certificates open up once a payment is approved. */}
       {page === "schedule" && (
-        <Card id="schedule">
-          <CardTitle title="Upcoming live sessions" />
-          {unlocked ? <EmptyState icon={CalendarIcon} title="No sessions scheduled" /> : <Locked />}
-        </Card>
+        unlocked ? (
+          <LiveSessionsCard sessions={sessions} showCourse />
+        ) : (
+          <Card id="schedule">
+            <CardTitle title="Live classes" />
+            <Locked />
+          </Card>
+        )
       )}
       {page === "assignments" && (
         <Card id="assignments">
@@ -255,10 +263,12 @@ function StudentContent({ user, page }: { user: AppUser; page: string }) {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const badges = useMemberBadges(user);
+  const sessions = useLiveSessions(user?.enrolledCourses ?? []);
+  const now = useNow(60_000);
+  const badges = { ...useMemberBadges(user), schedule: classesLeftToday(sessions, now) };
   return (
     <DashboardShell role="student" sections={sections} sidebarCard={sidebarCard} paged badges={badges}>
-      {(user, page) => <StudentContent user={user} page={page} />}
+      {(user, page) => <StudentContent user={user} page={page} sessions={sessions} />}
     </DashboardShell>
   );
 }

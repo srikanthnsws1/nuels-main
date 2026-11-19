@@ -6,6 +6,7 @@ import { useEffect, useId, useMemo, useState, type FormEvent } from "react";
 import DashboardShell, { type Section } from "../dashboard/DashboardShell";
 import ChapterSyllabus, { ChapterMarks, hasChapterSyllabus } from "./ChapterSyllabus";
 import MockTests from "./MockTests";
+import { LiveSessionsCard, NextSessionBanner, classesLeftToday, sessionWhen, useNow } from "./LiveSessions";
 import { useMyMockTests } from "@/lib/mockTests";
 import { Card, CardTitle, EmptyState, ProgressBar, WelcomeBanner } from "../dashboard/ui";
 import {
@@ -25,7 +26,7 @@ import {
   UsersIcon,
 } from "../icons";
 import { assignmentsFor, documentsFor, embedUrl, modulesFor, type Lesson } from "@/data/learning";
-import type { AppUser } from "@/lib/auth";
+import { useAuth, type AppUser } from "@/lib/auth";
 import { chapterName, courseHref, courseTitle, subjectGroups, syllabusFor, useCatalogLoaded, useCourse, type CatalogCourse } from "@/lib/catalog";
 import {
   cancelMockInterviewRequest,
@@ -37,12 +38,16 @@ import {
   isLiveClassLink,
   useCourseProgress,
   useCourseVideos,
+  useLiveSessions,
+  sessionPhase,
   type CourseProgress,
+  type CourseSession,
 } from "@/lib/learning";
 
 const sections: Section[] = [
   { id: "overview", label: "Overview", icon: GridIcon },
   { id: "lessons", label: "Course index & videos", icon: PlayIcon },
+  { id: "live", label: "Live classes", icon: UsersIcon },
   { id: "free-videos", label: "Free videos", icon: StarIcon },
   { id: "assignments", label: "Assignments", icon: ClipboardIcon },
   { id: "mock-tests", label: "Mock tests", icon: ClockIcon },
@@ -76,16 +81,20 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   );
 }
 
-function Player({ lesson, url, meetLink, done, onToggle, onPrev, onNext }: {
+function Player({ lesson, url, meetLink, session, done, onToggle, onPrev, onNext }: {
   lesson: Lesson;
   url?: string;
   meetLink?: string;
+  /** The next scheduled class for this topic, if any. */
+  session?: CourseSession;
   done: boolean;
   onToggle: () => void;
   onPrev?: () => void;
   onNext?: () => void;
 }) {
   const embed = url ? embedUrl(url) : null;
+  const now = useNow();
+  const phase = session ? sessionPhase(session, now) : null;
   return (
     <div>
       <div className="relative aspect-video overflow-hidden rounded-2xl bg-forest-950">
@@ -107,7 +116,7 @@ function Player({ lesson, url, meetLink, done, onToggle, onPrev, onNext }: {
             </span>
             <p className="font-semibold text-white">Video coming soon</p>
             <p className="max-w-sm text-sm text-forest-200">
-              {meetLink ? "Join the live class below while your mentor uploads the recording." : "Your mentor is uploading this lesson. It's covered in the live sessions meanwhile."}
+              {session ? `Live class ${sessionWhen(session, now)}. The recording is added after the class.` : meetLink ? "Join the live class below while your mentor uploads the recording." : "Your mentor is uploading this lesson. It's covered in the live sessions meanwhile."}
             </p>
           </div>
         )}
@@ -147,7 +156,28 @@ function Player({ lesson, url, meetLink, done, onToggle, onPrev, onNext }: {
           </button>
         </div>
       </div>
-      {isLiveClassLink(meetLink) && (
+      {session && (
+        <div className={`mt-4 flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${phase === "live" || phase === "soon" ? "border-red-200 bg-red-50" : "border-forest-100 bg-forest-50/70"}`}>
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-forest-700 text-spark-400">
+              <CalendarIcon className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-forest-950">{phase === "live" ? "Live class on now" : "Live class scheduled for this topic"}</p>
+              <p className="text-xs text-slate-600">{sessionWhen(session, now)}</p>
+            </div>
+          </div>
+          <a
+            href={session.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-forest-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-forest-600"
+          >
+            Join live class ↗
+          </a>
+        </div>
+      )}
+      {!session && isLiveClassLink(meetLink) && (
         <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-forest-100 bg-forest-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-forest-700 text-spark-400">
@@ -328,7 +358,7 @@ function printCertificate(name: string, course: CatalogCourse, memberId?: string
   win.document.close();
 }
 
-function CourseContent({ user, course, page }: { user: AppUser; course: CatalogCourse; page: string }) {
+function CourseContent({ user, course, page, sessions }: { user: AppUser; course: CatalogCourse; page: string; sessions: CourseSession[] | null }) {
   const slug = course.slug;
   const progress = useCourseProgress(user.uid, slug);
   const videos = useCourseVideos(slug, true);
@@ -441,6 +471,10 @@ function CourseContent({ user, course, page }: { user: AppUser; course: CatalogC
       </WelcomeBanner>
       )}
 
+      {page === "overview" && <NextSessionBanner sessions={sessions} href="#live" showCourse={false} />}
+
+      {page === "live" && <LiveSessionsCard sessions={sessions} />}
+
       {page === "syllabus" && <ChapterSyllabus course={course} />}
 
       {page === "lessons" && (
@@ -452,6 +486,7 @@ function CourseContent({ user, course, page }: { user: AppUser; course: CatalogC
               lesson={lesson}
               url={videoFor(lesson.id)}
               meetLink={videos.meet[lesson.id]}
+              session={sessions?.find((s) => s.lessonId === lesson.id && sessionPhase(s) !== "ended")}
               done={progress.completed.includes(lesson.id)}
               onToggle={() => toggle(lesson.id)}
               onPrev={index > 0 ? () => play(lessons[index - 1].id) : undefined}
@@ -714,9 +749,13 @@ export default function CourseView({ slug }: { slug: string }) {
   const loaded = useCatalogLoaded();
   // Subject chapters (e.g. Class 10 Maths) get a page with the board's full chapter syllabus.
   const withSyllabus = !!course && hasChapterSyllabus(course.slug);
+  const { user: me } = useAuth();
+  // Only enrolled learners can read the class links.
+  const sessions = useLiveSessions(course && me?.enrolledCourses.includes(course.slug) ? [course.slug] : []);
+  const now = useNow(60_000);
   const pages = useMemo(() => (withSyllabus ? [sections[0], { id: "syllabus", label: "Chapter syllabus", icon: BookIcon }, ...sections.slice(1)] : sections), [withSyllabus]);
   return (
-    <DashboardShell role="student" sections={pages} sidebarCard={sidebarCard} paged>
+    <DashboardShell role="student" sections={pages} sidebarCard={sidebarCard} paged badges={{ live: classesLeftToday(sessions, now) }}>
       {(user, page) =>
         !course && !loaded ? (
           <div className="flex justify-center py-20">
@@ -731,7 +770,7 @@ export default function CourseView({ slug }: { slug: string }) {
             </EmptyState>
           </Card>
         ) : user.enrolledCourses.includes(course.slug) ? (
-          <CourseContent user={user} course={course} page={page} />
+          <CourseContent user={user} course={course} page={page} sessions={sessions} />
         ) : (
           <Card>
             <div className="flex flex-col items-center gap-4 py-10 text-center sm:flex-row sm:text-left">

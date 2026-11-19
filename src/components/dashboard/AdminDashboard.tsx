@@ -9,6 +9,7 @@ import AdminHomeContent from "./AdminHomeContent";
 import AdminTickets from "./AdminTickets";
 import AdminQuizReports from "./AdminQuizReports";
 import { CoursesCard } from "./AdminCourses";
+import { openCourseContent } from "./AdminCourseContent";
 import { CourseContentCard, LearnersCard } from "./AdminLearning";
 import { OrdersCard, PaymentDetailsCard } from "./AdminPayments";
 import { EmployeesCard } from "./AdminStaff";
@@ -38,7 +39,7 @@ const sections: Section[] = [
   { id: "tickets", label: "Tickets", icon: TicketIcon },
   { id: "enquiries", label: "Enquiries", icon: MailIcon },
   { id: "courses", label: "Courses", icon: BookIcon },
-  { id: "course-content", label: "Course Videos", icon: PlayIcon },
+  { id: "course-content", label: "Videos & Live Classes", icon: PlayIcon },
   { id: "website", label: "Website content", icon: LayoutIcon },
   { id: "jobs", label: "Job openings", icon: BriefcaseIcon },
   { id: "gallery", label: "Gallery", icon: ImageIcon },
@@ -655,9 +656,9 @@ function AdminContent({ me, page }: { me: AppUser; page: string }) {
 
       {page === "gallery" && <AdminGallery me={me} />}
 
-      {page === "courses" && <CoursesCard extraMentors={(current ?? []).filter((u) => u.role === "mentor").map((u) => u.name)} />}
+      {page === "courses" && <CoursesCard extraMentors={(current ?? []).filter((u) => u.role === "mentor").map((u) => u.name)} onContent={openCourseContent} />}
 
-      {page === "course-content" && <CourseContentCard />}
+      {page === "course-content" && <CourseContentCard canEditCourse />}
     </>
   );
 }

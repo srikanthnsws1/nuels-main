@@ -1,6 +1,6 @@
 "use client";
 
-import { arrayRemove, arrayUnion, deleteField, doc, onSnapshot, serverTimestamp, setDoc, updateDoc, type Timestamp } from "firebase/firestore";
+import { arrayRemove, arrayUnion, deleteField, doc, onSnapshot, serverTimestamp, setDoc, Timestamp, updateDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { db } from "./firebase";
 
@@ -136,4 +136,115 @@ export function recordForLearner(uid: string, slug: string, data: { attendance?:
     ...(data.interview ? { interviews: arrayUnion(data.interview), interviewRequest: deleteField() } : {}),
     ...(data.grade ? { [`grades.${data.grade.id}`]: { score: data.grade.score, ...(data.grade.feedback ? { feedback: data.grade.feedback } : {}) } } : {}),
   });
+}
+
+/**
+ * Scheduled live classes for a course, kept in `courseContent/{slug}/paid/sessions` as a map
+ * (`list.{id}`), so the same rules apply as for paid videos: admins and staff with
+ * videos.manage write; only enrolled learners can read the class links.
+ */
+export type LiveSession = {
+  id: string;
+  title: string;
+  /** Start time, in milliseconds. */
+  startsAt: number;
+  minutes: number;
+  link: string;
+  /** The topic (lesson id) the class covers, if any. */
+  lessonId?: string;
+  note?: string;
+  /** Recording link, added after the class. */
+  recording?: string;
+};
+export type CourseSession = LiveSession & { slug: string };
+
+const sessionsRef = (slug: string) => doc(db, "courseContent", slug, "paid", "sessions");
+
+function toSessions(slug: string, list: Record<string, Record<string, unknown>> | undefined): CourseSession[] {
+  return Object.entries(list ?? {})
+    .map(([id, s]) => {
+      const at = s.startsAt as Timestamp | number | undefined;
+      return {
+        id,
+        slug,
+        title: String(s.title ?? ""),
+        startsAt: typeof at === "number" ? at : (at?.toMillis?.() ?? 0),
+        minutes: Number(s.minutes) || 60,
+        link: String(s.link ?? ""),
+        ...(s.lessonId ? { lessonId: String(s.lessonId) } : {}),
+        ...(s.note ? { note: String(s.note) } : {}),
+        ...(s.recording ? { recording: String(s.recording) } : {}),
+      };
+    })
+    .filter((s) => s.startsAt > 0)
+    .sort((a, b) => a.startsAt - b.startsAt);
+}
+
+/** Live classes of several courses (oldest first); null while loading. */
+export function useLiveSessions(slugs: string[]): CourseSession[] | null {
+  const key = [...new Set(slugs)].sort().join("|");
+  const [bySlug, setBySlug] = useState<Record<string, CourseSession[]>>({});
+  useEffect(() => {
+    const list = key ? key.split("|") : [];
+    setBySlug({});
+    const stops = list.map((slug) =>
+      onSnapshot(
+        sessionsRef(slug),
+        (snap) => setBySlug((x) => ({ ...x, [slug]: toSessions(slug, snap.data()?.list) })),
+        () => setBySlug((x) => ({ ...x, [slug]: [] })),
+      ),
+    );
+    return () => stops.forEach((stop) => stop());
+  }, [key]);
+  const list = key ? key.split("|") : [];
+  if (!list.every((s) => bySlug[s])) return null;
+  return list.flatMap((s) => bySlug[s]).sort((a, b) => a.startsAt - b.startsAt);
+}
+
+/** Admin: adds or updates live classes (one write for a whole series). */
+export function saveLiveSessions(slug: string, sessions: LiveSession[]) {
+  const list: Record<string, unknown> = {};
+  for (const s of sessions) {
+    list[s.id] = {
+      title: s.title.trim(),
+      startsAt: Timestamp.fromMillis(s.startsAt),
+      minutes: s.minutes,
+      link: s.link.trim(),
+      lessonId: s.lessonId || deleteField(),
+      note: s.note?.trim() || deleteField(),
+      recording: s.recording?.trim() || deleteField(),
+    };
+  }
+  return setDoc(sessionsRef(slug), { list }, { merge: true });
+}
+
+export function deleteLiveSession(slug: string, id: string) {
+  return setDoc(sessionsRef(slug), { list: { [id]: deleteField() } }, { merge: true });
+}
+
+/** Where a class is right now. Learners can join from 30 minutes before the start. */
+export function sessionPhase(s: Pick<LiveSession, "startsAt" | "minutes">, now = Date.now()): "upcoming" | "soon" | "live" | "ended" {
+  const end = s.startsAt + s.minutes * 60_000;
+  if (now >= end) return "ended";
+  if (now >= s.startsAt) return "live";
+  return s.startsAt - now <= 30 * 60_000 ? "soon" : "upcoming";
+}
+
+/** Video links the player can show: YouTube, Vimeo, Google Drive or a video file, over https. */
+export const isVideoLink = (url?: string) =>
+  !!url &&
+  /^https:\/\//i.test(url.trim()) &&
+  /(youtube\.com\/|youtu\.be\/|vimeo\.com\/|drive\.google\.com\/file\/d\/|\.(mp4|webm|ogg)(\?|$))/i.test(url.trim());
+
+/** "Add to Google Calendar" link for a class. */
+export function calendarLink(s: LiveSession, course: string) {
+  const fmt = (ms: number) => new Date(ms).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const q = new URLSearchParams({
+    action: "TEMPLATE",
+    text: `${s.title} · ${course}`,
+    dates: `${fmt(s.startsAt)}/${fmt(s.startsAt + s.minutes * 60_000)}`,
+    details: `Nuel Smart live class.\nJoin: ${s.link}${s.note ? `\n\n${s.note}` : ""}`,
+    location: s.link,
+  });
+  return `https://calendar.google.com/calendar/render?${q}`;
 }

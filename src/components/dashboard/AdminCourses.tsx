@@ -51,7 +51,7 @@ function toDraft(c?: CatalogCourse): Draft {
   };
 }
 
-function CourseEditor({ course, mentorNames, onClose }: { course?: CatalogCourse; mentorNames: string[]; onClose: () => void }) {
+export function CourseEditor({ course, mentorNames, onClose }: { course?: CatalogCourse; mentorNames: string[]; onClose: () => void }) {
   const id = useId();
   const catalog = useCatalog(true);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -307,7 +307,7 @@ function CourseEditor({ course, mentorNames, onClose }: { course?: CatalogCourse
 }
 
 /** The course catalog with add, edit and hide. `extraMentors` are tutor accounts to offer as mentors. */
-export function CoursesCard({ extraMentors = [] }: { extraMentors?: string[] }) {
+export function CoursesCard({ extraMentors = [], onContent }: { extraMentors?: string[]; /** Opens the videos & live classes page for a course. */ onContent?: (slug: string) => void }) {
   const catalog = useCatalog(true);
   const [editing, setEditing] = useState<CatalogCourse | "new" | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -390,6 +390,15 @@ export function CoursesCard({ extraMentors = [] }: { extraMentors?: string[] }) 
                     >
                       Edit
                     </button>
+                    {onContent && (
+                      <button
+                        type="button"
+                        onClick={() => onContent(c.slug)}
+                        className="whitespace-nowrap rounded-full border border-forest-200 px-3 py-1 text-xs font-semibold text-forest-700 transition hover:bg-forest-50"
+                      >
+                        Videos &amp; classes
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => toggle(c)}
