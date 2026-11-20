@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- gallery previews are data-URL images */
 
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, getDocs, limit, onSnapshot, query, where } from "firebase/firestore";
 import { useEffect, useState, type FormEvent } from "react";
 import { AwardIcon, BriefcaseIcon, CheckIcon, ClockIcon, GraduationIcon, ImageIcon } from "../icons";
 import ApplicationsCard from "./AdminApplications";
@@ -16,6 +16,8 @@ import {
   deleteJob,
   galleryCategories,
   issueCertificate,
+  quizDateLabel,
+  updateTopper,
   jobTypes,
   revokeCertificate,
   saveJob,
@@ -211,17 +213,130 @@ export function AdminJobs() {
 
 // ======================= Gallery =======================
 
+const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+/**
+ * Admin: publishes a quiz topper's certificate to the Gallery's "Quiz Toppers" section, with the
+ * student's name, ID, score and quiz date. With `editing`, changes an existing one (new picture optional).
+ */
+function TopperForm({ me, editing, onDone }: { me: AppUser; editing: GalleryItem | null; onDone: () => void }) {
+  const [student, setStudent] = useState("");
+  const [memberId, setMemberId] = useState("");
+  const [score, setScore] = useState("");
+  const [quizDate, setQuizDate] = useState(todayISO());
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    setStudent(editing?.student ?? "");
+    setMemberId(editing?.memberId ?? "");
+    setScore(editing?.score ?? "");
+    setQuizDate(editing?.quizDate ?? todayISO());
+    setFile(null);
+    if (editing) setMsg("");
+  }, [editing]);
+  useEffect(() => {
+    if (!file) return setPreview("");
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  // Typing a student ID fills in the name from their account.
+  const lookUp = async (id: string) => {
+    const clean = id.trim().toUpperCase();
+    if (!/^S\d{4}$/.test(clean) || student.trim()) return;
+    const snap = await getDocs(query(collection(db, "users"), where("memberId", "==", clean), limit(1))).catch(() => null);
+    const name = snap?.docs[0]?.data().name;
+    if (typeof name === "string") setStudent(name);
+  };
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setMsg("");
+    if (!student.trim()) return setMsg("Enter the student's name.");
+    if (!editing && !file) return setMsg("Choose the certificate image.");
+    setBusy(true);
+    try {
+      const picture = file
+        ? await Promise.all([compressImage(file, { maxSide: 1600 }), compressImage(file, { maxSide: 720 })]).then(([image, thumb]) => ({ image, thumb }))
+        : undefined;
+      const details = { student, memberId: memberId.trim().toUpperCase(), score, quizDate, title: `Quiz Topper: ${student.trim()}`.slice(0, 100) };
+      if (editing) await updateTopper(editing.id, details, picture);
+      else await addGalleryImage({ ...details, category: "Quiz Toppers", ...picture! }, me.uid);
+      setMsg(editing ? "Topper updated." : `${student.trim()}'s certificate is now on the Gallery page.`);
+      setStudent("");
+      setMemberId("");
+      setScore("");
+      setFile(null);
+      onDone();
+    } catch (err) {
+      setMsg((err as Error).message || "Couldn't publish. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+      <p className="font-semibold text-forest-950">{editing ? `Edit quiz topper: ${editing.student || editing.title}` : "🏆 Publish a quiz topper's certificate"}</p>
+      <p className="mt-0.5 text-xs text-slate-500">It appears first on the Gallery page, under “Quiz Toppers”, with the student&apos;s name, score and quiz date.</p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <label className="text-xs font-semibold text-slate-600">
+          Student ID
+          <input value={memberId} onChange={(e) => setMemberId(e.target.value)} onBlur={(e) => lookUp(e.target.value)} placeholder="S0741" className={`${input} mt-1 font-mono uppercase`} />
+        </label>
+        <label className="text-xs font-semibold text-slate-600">
+          Student name *
+          <input value={student} onChange={(e) => setStudent(e.target.value)} placeholder="Gowrav Dasari" className={`${input} mt-1`} />
+        </label>
+        <label className="text-xs font-semibold text-slate-600">
+          Score
+          <input value={score} onChange={(e) => setScore(e.target.value)} placeholder="25/25 (100%)" className={`${input} mt-1`} />
+        </label>
+        <label className="text-xs font-semibold text-slate-600">
+          Quiz date
+          <input type="date" value={quizDate} max={todayISO()} onChange={(e) => setQuizDate(e.target.value)} className={`${input} mt-1`} />
+        </label>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <label className="cursor-pointer rounded-full border border-forest-200 bg-white px-4 py-2.5 text-sm font-semibold text-forest-800 hover:bg-forest-50">
+          {file ? "Change image" : editing ? "Replace certificate image (optional)" : "Choose certificate image *"}
+          <input type="file" accept="image/*" className="hidden" onChange={(e) => (setFile(e.target.files?.[0] ?? null), (e.target.value = ""))} />
+        </label>
+        {preview && <img src={preview} alt="Chosen certificate" className="h-20 rounded-lg border border-forest-100 object-contain" />}
+        {file && <span className="max-w-[12rem] truncate text-xs text-slate-500">{file.name}</span>}
+        <button type="submit" disabled={busy} className={`${btn} ml-auto`}>
+          {busy ? "Publishing…" : editing ? "Save changes" : "Publish to Gallery"}
+        </button>
+        {editing && (
+          <button type="button" onClick={onDone} className="text-sm font-semibold text-slate-500">
+            Cancel
+          </button>
+        )}
+      </div>
+      {msg && <p className="mt-2 text-sm font-medium text-forest-700">{msg}</p>}
+    </form>
+  );
+}
+
 /** Admin: upload company, employee and event photos for the learners' Gallery page. */
 export function AdminGallery({ me }: { me: AppUser }) {
   const { rows, error } = useGallery();
-  const [category, setCategory] = useState<GalleryItem["category"]>("Company");
+  const [category, setCategory] = useState<GalleryItem["category"]>("Events");
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState("");
   const [filter, setFilter] = useState<"all" | GalleryItem["category"]>("all");
-  const [query, setQuery] = useState("");
+  const [search, setSearch] = useState("");
+  const [editing, setEditing] = useState<GalleryItem | null>(null);
   const all = rows ?? [];
-  const shown = all.filter((g) => (filter === "all" || g.category === filter) && matchesSearch(query, g.title, g.category));
+  const shown = all.filter((g) => (filter === "all" || g.category === filter) && matchesSearch(search, g.title, g.category, g.student, g.memberId));
 
   const upload = async (files: FileList | null) => {
     if (!files?.length) return;
@@ -250,13 +365,15 @@ export function AdminGallery({ me }: { me: AppUser }) {
   };
 
   return (
-    <Card>
+    <Card id="gallery-admin">
       <CardTitle title="Gallery" />
-      <p className="mt-1 text-sm text-slate-500">Photos of the company, team and events. Learners see them on their Gallery page.</p>
-      <div className="mt-5 grid gap-3 rounded-2xl bg-forest-50/60 p-4 sm:grid-cols-[1fr_200px_auto] sm:items-center">
+      <p className="mt-1 text-sm text-slate-500">Quiz toppers&apos; certificates and photos of the company, team and events, shown on the website&apos;s Gallery page.</p>
+      <TopperForm me={me} editing={editing} onDone={() => setEditing(null)} />
+      <p className="mt-5 text-sm font-semibold text-forest-950">Other photos</p>
+      <div className="mt-2 grid gap-3 rounded-2xl bg-forest-50/60 p-4 sm:grid-cols-[1fr_200px_auto] sm:items-center">
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title (optional; otherwise the file name)" aria-label="Photo title" className={input} />
         <select value={category} onChange={(e) => setCategory(e.target.value as GalleryItem["category"])} aria-label="Category" className={input}>
-          {galleryCategories.map((c) => (
+          {galleryCategories.filter((c) => c !== "Quiz Toppers").map((c) => (
             <option key={c}>{c}</option>
           ))}
         </select>
@@ -272,7 +389,7 @@ export function AdminGallery({ me }: { me: AppUser }) {
           onChange={setFilter}
           items={[{ id: "all" as const, label: `All (${all.length})` }, ...galleryCategories.map((c) => ({ id: c, label: `${c} (${all.filter((g) => g.category === c).length})` }))]}
         />
-        <SearchBox value={query} onChange={setQuery} placeholder="Search photos" className="sm:w-56" />
+        <SearchBox value={search} onChange={setSearch} placeholder="Search photos" className="sm:w-56" />
       </div>
       {rows === null ? (
         <p className="mt-6 text-sm text-slate-500">Loading…</p>
@@ -282,14 +399,26 @@ export function AdminGallery({ me }: { me: AppUser }) {
         <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {shown.map((g) => (
             <li key={g.id} className="overflow-hidden rounded-2xl border border-forest-100">
-              <img src={g.thumb} alt={g.title} className="aspect-square w-full object-cover" />
+              <img src={g.thumb} alt={g.title} className={`aspect-square w-full ${g.category === "Quiz Toppers" ? "bg-slate-50 object-contain" : "object-cover"}`} />
               <div className="p-2">
-                <p className="truncate text-sm font-semibold text-forest-950">{g.title}</p>
-                <p className="text-xs text-slate-500">{g.category}</p>
+                <p className="truncate text-sm font-semibold text-forest-950">{g.category === "Quiz Toppers" && g.student ? g.student : g.title}</p>
+                <p className="truncate text-xs text-slate-500">
+                  {g.category === "Quiz Toppers" ? [g.memberId, g.score, quizDateLabel(g.quizDate)].filter(Boolean).join(" · ") || "Quiz Toppers: add details" : g.category}
+                </p>
                 <div className="mt-1 flex gap-2">
-                  <button type="button" onClick={() => rename(g)} className="text-xs font-semibold text-forest-700">
-                    Rename
-                  </button>
+                  {g.category === "Quiz Toppers" ? (
+                    <button
+                      type="button"
+                      onClick={() => (setEditing(g), document.getElementById("gallery-admin")?.scrollIntoView({ behavior: "smooth" }))}
+                      className="text-xs font-semibold text-forest-700"
+                    >
+                      Edit
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => rename(g)} className="text-xs font-semibold text-forest-700">
+                      Rename
+                    </button>
+                  )}
                   <select
                     value={g.category}
                     onChange={(e) => updateGalleryItem(g.id, { title: g.title, category: e.target.value as GalleryItem["category"] })}

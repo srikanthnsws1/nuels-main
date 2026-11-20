@@ -1,6 +1,6 @@
 "use client";
 
-import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, updateDoc, where, writeBatch, type Timestamp } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, deleteField, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, updateDoc, where, writeBatch, type Timestamp } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { db } from "./firebase";
 
@@ -62,8 +62,25 @@ export const applyHref = (j: Job) => {
 
 // ---------------- Gallery: `gallery/{id}` (small preview) + `galleryImages/{id}` (full image) ----------------
 
-export const galleryCategories = ["Company", "Employees", "Events", "Students", "Other"] as const;
-export type GalleryItem = { id: string; title: string; category: (typeof galleryCategories)[number]; thumb: string; createdAt?: Timestamp };
+export const galleryCategories = ["Quiz Toppers", "Company", "Employees", "Events", "Students", "Other"] as const;
+/** A quiz topper's certificate also carries who, what score and which day's quiz. */
+export type TopperDetails = { student?: string; memberId?: string; score?: string; quizDate?: string };
+export type GalleryItem = TopperDetails & { id: string; title: string; category: (typeof galleryCategories)[number]; thumb: string; createdAt?: Timestamp };
+
+/** "2026-11-15" -> "15 Nov 2026". */
+export const quizDateLabel = (d?: string) =>
+  d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(`${d}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "";
+
+/** Quiz toppers, newest quiz first. */
+export const toppersFirst = (items: GalleryItem[]) =>
+  items
+    .filter((g) => g.category === "Quiz Toppers")
+    .sort((a, b) => (b.quizDate ?? "").localeCompare(a.quizDate ?? "") || (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
+
+const topperFields = (t: TopperDetails) =>
+  Object.fromEntries(
+    (["student", "memberId", "score", "quizDate"] as const).map((k) => [k, t[k]?.trim() ? t[k]!.trim().slice(0, 100) : deleteField()]),
+  );
 
 export const useGallery = () => useList<GalleryItem>("gallery");
 
@@ -74,11 +91,23 @@ export function loadGalleryImage(id: string) {
   return fullCache.get(id)!;
 }
 
-export async function addGalleryImage(item: { title: string; category: GalleryItem["category"]; thumb: string; image: string }, by: string) {
+export async function addGalleryImage(item: TopperDetails & { title: string; category: GalleryItem["category"]; thumb: string; image: string }, by: string) {
   const ref = doc(collection(db, "gallery"));
   const batch = writeBatch(db);
   batch.set(doc(db, "galleryImages", ref.id), { image: item.image });
-  batch.set(ref, { title: item.title, category: item.category, thumb: item.thumb, createdBy: by, createdAt: serverTimestamp() });
+  const details = Object.fromEntries(Object.entries(topperFields(item)).filter(([, v]) => typeof v === "string"));
+  batch.set(ref, { title: item.title, category: item.category, thumb: item.thumb, ...details, createdBy: by, createdAt: serverTimestamp() });
+  await batch.commit();
+}
+
+/** Admin: changes a quiz topper's details, and the certificate picture when a new one is given. */
+export async function updateTopper(id: string, t: TopperDetails & { title: string }, picture?: { thumb: string; image: string }) {
+  const batch = writeBatch(db);
+  batch.update(doc(db, "gallery", id), { title: t.title, category: "Quiz Toppers", ...topperFields(t), ...(picture ? { thumb: picture.thumb } : {}) });
+  if (picture) {
+    batch.set(doc(db, "galleryImages", id), { image: picture.image });
+    fullCache.delete(id);
+  }
   await batch.commit();
 }
 export const updateGalleryItem = (id: string, data: { title: string; category: GalleryItem["category"] }) => updateDoc(doc(db, "gallery", id), data);

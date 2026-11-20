@@ -12,7 +12,7 @@ export const metadata: Metadata = pageMetadata({
 export default function Gallery() {
   return (
     <>
-      <PageHero eyebrow="Gallery" title="Life at" highlight="Nuel Smart" subtitle="Our company, team, classes and events." />
+      <PageHero eyebrow="Gallery" title="Life at" highlight="Nuel Smart" subtitle="Our quiz toppers, team, classes and events." />
       <section className="pb-20 sm:pb-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <GalleryPage />

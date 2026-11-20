@@ -12,7 +12,7 @@ import { MyTickets } from "./Requests";
 import { Card, CardTitle, EmptyState } from "./ui";
 import { useAuth, type AppUser } from "@/lib/auth";
 import { applicationStatus, applyToJob, useMyApplications, useResume } from "@/lib/careers";
-import { applyHref, galleryCategories, isNewJob, loadGalleryImage, useGallery, useJobs, useMyCertificates, type Certificate, type GalleryItem, type Job } from "@/lib/company";
+import { applyHref, galleryCategories, isNewJob, loadGalleryImage, quizDateLabel, toppersFirst, useGallery, useJobs, useMyCertificates, type Certificate, type GalleryItem, type Job } from "@/lib/company";
 
 const dateFmt = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "long", year: "numeric" });
 
@@ -204,7 +204,7 @@ function Lightbox({ items, index, onClose, onMove }: { items: GalleryItem[]; ind
     <div className="fixed inset-0 z-[80] flex flex-col bg-forest-950/95 p-4" role="dialog" aria-modal="true" aria-label={item.title}>
       <div className="flex items-center justify-between gap-3 text-white">
         <p className="min-w-0 truncate font-semibold">
-          {item.title} <span className="text-sm font-normal text-forest-200">· {item.category}</span>
+          {captionOf(item)} <span className="text-sm font-normal text-forest-200">· {item.category}</span>
         </p>
         <button type="button" onClick={onClose} aria-label="Close" className="rounded-full p-2 hover:bg-white/10">
           <CloseIcon className="h-6 w-6" />
@@ -230,17 +230,41 @@ function Lightbox({ items, index, onClose, onMove }: { items: GalleryItem[]; ind
   );
 }
 
+/** "Gowrav Dasari · S0741 · 25/25 (100%) · 15 Nov 2026" for a quiz topper, else the photo's title. */
+const captionOf = (g: GalleryItem) =>
+  g.category === "Quiz Toppers" && g.student ? [g.student, g.memberId, g.score, quizDateLabel(g.quizDate)].filter(Boolean).join(" · ") : g.title;
+
+function TopperCard({ g, onOpen }: { g: GalleryItem; onOpen: () => void }) {
+  return (
+    <li>
+      <button type="button" onClick={onOpen} className="group block w-full overflow-hidden rounded-2xl border border-amber-200 bg-white text-left shadow-sm transition hover:shadow-md">
+        <span className="block bg-amber-50/50 p-2">
+          <img src={g.thumb} alt={`Certificate: ${g.student || g.title}`} loading="lazy" className="aspect-[4/5] w-full object-contain transition duration-500 group-hover:scale-[1.03]" />
+        </span>
+        <span className="block p-3">
+          <span className="block truncate font-semibold text-forest-950">{g.student || g.title}</span>
+          <span className="mt-0.5 block truncate text-xs text-slate-500">{[g.memberId, quizDateLabel(g.quizDate)].filter(Boolean).join(" · ")}</span>
+          {g.score && <span className="mt-1.5 inline-block rounded-full bg-forest-700 px-2.5 py-0.5 text-xs font-bold text-white">{g.score}</span>}
+        </span>
+      </button>
+    </li>
+  );
+}
+
 export function GalleryPage() {
   const { rows, error } = useGallery();
   const [filter, setFilter] = useState<"All" | GalleryItem["category"]>("All");
-  const [open, setOpen] = useState<number | null>(null);
+  const [open, setOpen] = useState<{ list: GalleryItem[]; index: number } | null>(null);
   const all = rows ?? [];
-  const shown = filter === "All" ? all : all.filter((g) => g.category === filter);
+  const toppers = toppersFirst(all);
+  const photos = all.filter((g) => g.category !== "Quiz Toppers" && (filter === "All" || g.category === filter));
+  const showToppers = (filter === "All" || filter === "Quiz Toppers") && toppers.length > 0;
+  const showPhotos = filter !== "Quiz Toppers" && photos.length > 0;
   const cats = galleryCategories.filter((c) => all.some((g) => g.category === c));
   return (
     <Card id="gallery">
       <CardTitle title="Gallery" />
-      <p className="mt-1 text-sm text-slate-500">Life at Nuel Smart: our company, team and events.</p>
+      <p className="mt-1 text-sm text-slate-500">Life at Nuel Smart: our quiz toppers, company, team and events.</p>
       {cats.length > 1 && (
         <div className="no-scrollbar mt-5 flex gap-2 overflow-x-auto">
           {(["All", ...cats] as const).map((c) => (
@@ -251,7 +275,7 @@ export function GalleryPage() {
               onClick={() => setFilter(c)}
               className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-semibold ${filter === c ? "bg-forest-700 text-white" : "bg-forest-50 text-forest-800 hover:bg-forest-100"}`}
             >
-              {c}
+              {c === "Quiz Toppers" ? "🏆 Quiz Toppers" : c}
             </button>
           ))}
         </div>
@@ -259,21 +283,43 @@ export function GalleryPage() {
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
       {rows === null ? (
         <p className="mt-6 text-sm text-slate-500">Loading…</p>
-      ) : shown.length === 0 ? (
+      ) : !showToppers && !showPhotos ? (
         <EmptyState icon={ImageIcon} title="No photos yet" />
       ) : (
-        <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {shown.map((g, i) => (
-            <li key={g.id}>
-              <button type="button" onClick={() => setOpen(i)} className="group block w-full overflow-hidden rounded-2xl text-left">
-                <img src={g.thumb} alt={g.title} loading="lazy" className="aspect-square w-full object-cover transition duration-500 group-hover:scale-105" />
-                <span className="mt-1.5 block truncate text-sm font-medium text-forest-950">{g.title}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          {showToppers && (
+            <section aria-labelledby="toppers-heading" className="mt-6">
+              <h3 id="toppers-heading" className="text-lg font-bold text-forest-950">
+                🏆 Quiz Toppers
+              </h3>
+              <p className="text-sm text-slate-500">Top scorers in the Daily Learning Quiz. Well done!</p>
+              <ul className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                {toppers.map((g, i) => (
+                  <TopperCard key={g.id} g={g} onOpen={() => setOpen({ list: toppers, index: i })} />
+                ))}
+              </ul>
+            </section>
+          )}
+          {showPhotos && (
+            <section aria-label="Photos" className={showToppers ? "mt-10" : "mt-5"}>
+              {showToppers && <h3 className="mb-4 text-lg font-bold text-forest-950">Photos</h3>}
+              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {photos.map((g, i) => (
+                  <li key={g.id}>
+                    <button type="button" onClick={() => setOpen({ list: photos, index: i })} className="group block w-full overflow-hidden rounded-2xl text-left">
+                      <img src={g.thumb} alt={g.title} loading="lazy" className="aspect-square w-full object-cover transition duration-500 group-hover:scale-105" />
+                      <span className="mt-1.5 block truncate text-sm font-medium text-forest-950">{g.title}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </>
       )}
-      {open !== null && shown[open] && <Lightbox items={shown} index={open} onClose={() => setOpen(null)} onMove={setOpen} />}
+      {open && open.list[open.index] && (
+        <Lightbox items={open.list} index={open.index} onClose={() => setOpen(null)} onMove={(index) => setOpen({ ...open, index })} />
+      )}
     </Card>
   );
 }
