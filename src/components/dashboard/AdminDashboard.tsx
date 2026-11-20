@@ -1,7 +1,7 @@
 "use client";
 
 import { collection, doc, getDocs, onSnapshot, serverTimestamp, updateDoc, type Timestamp } from "firebase/firestore";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AwardIcon, BookIcon, BriefcaseIcon, CartIcon, GraduationIcon, GridIcon, ImageIcon, InboxIcon, LayoutIcon, MailIcon, PlayIcon, SearchIcon, ShieldIcon, StarIcon, TicketIcon, UsersIcon } from "../icons";
 import { AdminCertificates, AdminGallery, AdminJobs } from "./AdminCompany";
 import AdminEnquiries from "./AdminEnquiries";
@@ -24,7 +24,7 @@ import { useAdminBadges } from "@/lib/badges";
 import { db } from "@/lib/firebase";
 import { passwordRules } from "@/lib/password";
 import { createAccount } from "@/lib/staff";
-import { claimIfFree, releaseClaims, syncClaims } from "@/lib/unique";
+import { claimIfFree, emailKey, nameKey, phoneKey, releaseClaims, syncClaims } from "@/lib/unique";
 
 const sections: Section[] = [
   { id: "overview", label: "Overview", icon: GridIcon },
@@ -200,7 +200,7 @@ function UsersCard({
   onRoleChange: (uid: string, role: Role) => Promise<void>;
   onStatusChange: (uid: string, status: AccountStatus) => Promise<void>;
 }) {
-  const [filter, setFilter] = useState<Role | "all" | "removed">("all");
+  const [filter, setFilter] = useState<Role | "all" | "removed" | "duplicates">("all");
   const [query, setQuery] = useState("");
   const [studyClass, setStudyClass] = useState("all");
   const [saving, setSaving] = useState<string | null>(null);
@@ -211,12 +211,47 @@ function UsersCard({
   // Removed accounts only show under their own filter.
   const removedCount = (users ?? []).filter((u) => statusOf(u) === "removed").length;
   const byClass = filter === "all" || filter === "student";
+  // Accounts sharing a name, mobile number or email with another account (same rules as sign-up).
+  const dupes = useMemo(() => {
+    const live = (users ?? []).filter((u) => statusOf(u) !== "removed");
+    const keys = [
+      ["name", (u: UserRow) => nameKey(u.name)],
+      ["mobile", (u: UserRow) => phoneKey(u.phone)],
+      ["email", (u: UserRow) => emailKey(u.email)],
+    ] as const;
+    const why = new Map<string, string[]>();
+    const group = new Map<string, string>();
+    for (const [label, key] of keys) {
+      const seen = new Map<string, UserRow[]>();
+      for (const u of live) {
+        const k = key(u);
+        if (k) seen.set(k, [...(seen.get(k) ?? []), u]);
+      }
+      for (const [k, list] of seen)
+        if (list.length > 1)
+          for (const u of list) {
+            why.set(u.uid, [...new Set([...(why.get(u.uid) ?? []), label])]);
+            if (!group.has(u.uid)) group.set(u.uid, `${label}:${k}`);
+          }
+    }
+    return { why, group };
+  }, [users]);
   const visible = (users ?? []).filter(
     (u) =>
-      (filter === "removed" ? statusOf(u) === "removed" : statusOf(u) !== "removed" && (filter === "all" || u.role === filter)) &&
+      (filter === "removed"
+        ? statusOf(u) === "removed"
+        : filter === "duplicates"
+          ? dupes.why.has(u.uid)
+          : statusOf(u) !== "removed" && (filter === "all" || u.role === filter)) &&
       (!byClass || studyClass === "all" || (studyClass === "none" ? u.role === "student" && !u.studyClass : u.studyClass === studyClass)) &&
       matchesSearch(query, u.name, u.email, u.memberId, u.phone, u.institution, u.city, u.district, u.state, studyClassById(u.studyClass)?.label),
   );
+  // Duplicates sit next to each other, oldest account first (that's usually the one to keep).
+  if (filter === "duplicates")
+    visible.sort(
+      (a, b) =>
+        (dupes.group.get(a.uid) ?? "").localeCompare(dupes.group.get(b.uid) ?? "") || (a.createdAt?.toMillis() ?? 0) - (b.createdAt?.toMillis() ?? 0),
+    );
   // How many students are in each class, for the class drop-down.
   const classCount = (id: string) => (users ?? []).filter((u) => statusOf(u) !== "removed" && u.role === "student" && (id === "none" ? !u.studyClass : u.studyClass === id)).length;
 
@@ -264,6 +299,18 @@ function UsersCard({
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="no-scrollbar flex gap-2 overflow-x-auto">
+            {dupes.why.size > 0 && (
+              <button
+                type="button"
+                onClick={() => setFilter("duplicates")}
+                aria-pressed={filter === "duplicates"}
+                className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  filter === "duplicates" ? "bg-amber-500 text-white" : "border border-amber-200 text-amber-700 hover:bg-amber-50"
+                }`}
+              >
+                Duplicates ({dupes.why.size})
+              </button>
+            )}
             {(["all", ...roles] as const).map((r) => (
               <button
                 key={r}
@@ -353,6 +400,12 @@ function UsersCard({
                           {statusLabel[statusOf(u)]}
                         </span>
                       )}
+                      {dupes.why.has(u.uid) && (
+                        <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                          Same {dupes.why.get(u.uid)!.join(" + ")}
+                        </span>
+                      )}
+                      {filter === "duplicates" && u.phone && <span className="block text-xs font-normal text-slate-500">Mobile {u.phone}</span>}
                       {(u.memberId || u.institution || u.studyClass) && (
                         <span className="block text-xs font-normal text-slate-500">
                           {u.memberId && <span className="font-mono font-semibold text-forest-700">{u.memberId}</span>}
@@ -542,6 +595,9 @@ function OverviewUserList({
 function AdminContent({ me, page }: { me: AppUser; page: string }) {
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [error, setError] = useState("");
+  // The first snapshot can come from the local cache and hold only the admin's own profile;
+  // the one-off backfills below must wait for the full list from the server.
+  const [fromServer, setFromServer] = useState(false);
 
   useEffect(
     () =>
@@ -551,6 +607,7 @@ function AdminContent({ me, page }: { me: AppUser; page: string }) {
           const rows = snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as UserRow);
           rows.sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
           setUsers(rows);
+          if (!snap.metadata.fromCache) setFromServer(true);
         },
         () => setError("Couldn't load users. Make sure the Firestore rules are deployed."),
       ),
@@ -560,7 +617,7 @@ function AdminContent({ me, page }: { me: AppUser; page: string }) {
   // Accounts made before ID login existed: give each one its member-ID -> email record, once.
   const backfilled = useRef(false);
   useEffect(() => {
-    if (!users || backfilled.current) return;
+    if (!users || !fromServer || backfilled.current) return;
     backfilled.current = true;
     getDocs(collection(db, "loginIds"))
       .then((snap) => {
@@ -570,8 +627,8 @@ function AdminContent({ me, page }: { me: AppUser; page: string }) {
       })
       .catch((err) => console.warn("Couldn't backfill login IDs", err));
     // Names and phone numbers of older accounts, so new sign-ups can't reuse them.
-    syncClaims(users).catch((err) => console.warn("Couldn't backfill name / phone checks", err));
-  }, [users]);
+    syncClaims(users).catch((err) => console.warn("Couldn't backfill name / phone / email checks", err));
+  }, [users, fromServer]);
 
   const setRole = (uid: string, role: Role) => updateDoc(doc(db, "users", uid), { role });
   const setStatus = async (uid: string, status: AccountStatus) => {

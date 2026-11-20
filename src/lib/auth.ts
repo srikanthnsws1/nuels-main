@@ -19,7 +19,7 @@ import { deleteField, doc, getDoc, onSnapshot, runTransaction, serverTimestamp, 
 import { useSyncExternalStore } from "react";
 import { auth, db } from "./firebase";
 import { groupForClass } from "@/data/dailyQuiz";
-import { assertAvailable, claimsFor, type Claim } from "./unique";
+import { assertAvailable, claimIfFree, claimsFor, type Claim } from "./unique";
 
 /**
  * Firebase Auth session plus the user's role, read from Firestore `users/{uid}`.
@@ -267,6 +267,10 @@ async function loadProfileOnce(user: User): Promise<AppUser> {
       console.warn("Could not auto-elevate admin role in Firestore:", err);
     }
   }
+
+  // Accounts made before the duplicate checks: claim this account's name, phone and email
+  // (where nobody holds them yet) so a new sign-up can't copy them.
+  claimIfFree(user.uid, { name: data.name, phone: data.phone, email }).catch((err) => console.warn("Couldn't claim name / phone / email", err));
 
   // Accounts created before member IDs existed get one on their next login.
   let memberId: string | undefined = data.memberId;

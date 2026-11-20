@@ -117,10 +117,20 @@ export async function syncClaims(users: (Details & { uid: string; status?: strin
   const snaps = await Promise.all(cols.map((c) => getDocs(collection(db, c)).catch(() => null)));
   const have = Object.fromEntries(cols.map((c, i) => [c, new Set(snaps[i]?.docs.map((d) => d.id) ?? [])])) as Record<Claim["col"], Set<string>>;
   const active = users.filter((u) => u.status !== "removed").sort((a, b) => (a.createdAt?.toMillis() ?? 0) - (b.createdAt?.toMillis() ?? 0));
+  // Oldest account wins each name / phone / email; work out every missing claim first...
+  const todo: { c: Claim; uid: string }[] = [];
   for (const u of active)
     for (const c of claimsFor(u)) {
       if (have[c.col].has(c.key)) continue;
       have[c.col].add(c.key);
-      await setDoc(doc(db, c.col, c.key), { uid: u.uid, createdAt: serverTimestamp() }).catch((err) => console.warn("Could not claim", c, err));
+      todo.push({ c, uid: u.uid });
     }
+  // ...then write them 25 at a time, so a few hundred accounts finish in seconds, not minutes.
+  for (let i = 0; i < todo.length; i += 25)
+    await Promise.all(
+      todo.slice(i, i + 25).map(({ c, uid }) =>
+        setDoc(doc(db, c.col, c.key), { uid, createdAt: serverTimestamp() }).catch((err) => console.warn("Could not claim", c, err)),
+      ),
+    );
+  return todo.length;
 }
