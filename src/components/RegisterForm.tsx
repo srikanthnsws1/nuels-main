@@ -9,6 +9,7 @@ import AvatarPicker from "./AvatarPicker";
 import { authErrorMessage, greetingName, homeFor, register, type AppUser, type Role } from "@/lib/auth";
 import { countries, districtsByState, indianStates, syllabusOptions } from "@/data/locations";
 import { QUIZ_LANDING_KEY, studyClassGroups } from "@/data/dailyQuiz";
+import { emailTypo } from "@/lib/unique";
 
 const passwordRules = [
   { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
@@ -55,7 +56,13 @@ export default function RegisterForm({ defaultRole }: { defaultRole?: Role }) {
   const [created, setCreated] = useState<AppUser | null>(null);
 
   const nameError = submitted && name.trim().length < 2 ? "Please enter your full name." : "";
-  const emailError = submitted && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? "Please enter a valid email address." : "";
+  const emailError = !submitted
+    ? ""
+    : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+      ? "Please enter a valid email address."
+      : emailTypo(email)
+        ? `Check the spelling. Did you mean @${emailTypo(email)}?`
+        : "";
   const phoneError =
     submitted && !/^(\+91[\s-]?)?[6-9]\d{9}$/.test(phone.replace(/\s/g, "")) ? "Please enter a valid 10-digit mobile number." : "";
   const passwordError = submitted && !passwordRules.every((r) => r.test(password)) ? "Password does not meet requirements." : "";
@@ -85,6 +92,7 @@ export default function RegisterForm({ defaultRole }: { defaultRole?: Role }) {
     if (
       name.trim().length < 2 ||
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+      !!emailTypo(email) ||
       !/^(\+91[\s-]?)?[6-9]\d{9}$/.test(phone.replace(/\s/g, "")) ||
       missingDetails ||
       (role === "student" && !studyClass) ||

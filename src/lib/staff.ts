@@ -99,8 +99,8 @@ function creatorAuth() {
  * login is deleted again so the email address stays free for another try.
  */
 export async function createAccount(email: string, password: string, profile: Record<string, unknown>, prefix: "S" | "T" | "E") {
-  const details = { name: profile.name as string | undefined, phone: profile.phone as string | undefined };
-  // Same rule as self sign-up: one account per phone number and per full name.
+  const details = { name: profile.name as string | undefined, phone: profile.phone as string | undefined, email };
+  // Same rule as self sign-up: one account per phone number, per full name and per email.
   await assertAvailable(details);
   const creator = creatorAuth();
   const { user } = await createUserWithEmailAndPassword(creator, email.trim(), password);

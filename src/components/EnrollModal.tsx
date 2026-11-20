@@ -10,6 +10,7 @@ import type { Course } from "@/data/site";
 import { authErrorMessage, register } from "@/lib/auth";
 import { addToCart } from "@/lib/orders";
 import { passwordRules, strengthLabels, strengthStyles } from "@/lib/password";
+import { emailTypo } from "@/lib/unique";
 
 const rupee = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
@@ -20,6 +21,7 @@ function validate(f: Fields) {
   const errors: Partial<Record<keyof Fields, string>> = {};
   if (f.name.trim().length < 2) errors.name = "Please enter your full name.";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) errors.email = "Please enter a valid email address.";
+  else if (emailTypo(f.email)) errors.email = `Check the spelling. Did you mean @${emailTypo(f.email)}?`;
   if (!/^(\+91[\s-]?)?[6-9]\d{9}$/.test(f.phone.replace(/\s/g, ""))) errors.phone = "Please enter a valid 10-digit mobile number.";
   if (!passwordRules.every((r) => r.test(f.password))) errors.password = "Password doesn't meet all the requirements.";
   if (!f.confirm) errors.confirm = "Please confirm your password.";

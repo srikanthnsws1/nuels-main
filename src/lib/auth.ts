@@ -167,7 +167,7 @@ export async function withMemberId(uid: string, prefix: "S" | "T" | "E", newProf
       if (!newProfile && userSnap.data()?.memberId) return "exists";
       // Name / phone registered by someone else in the meantime.
       const lost = claims.find((c, i) => claimSnaps[i].exists() && claimSnaps[i].data()?.uid !== uid);
-      if (lost) return lost.col === "uniquePhones" ? "phone-taken" : "name-taken";
+      if (lost) return lost.col === "uniquePhones" ? "phone-taken" : lost.col === "uniqueEmails" ? "email-taken" : "name-taken";
       claims.forEach((c, i) => !claimSnaps[i].exists() && tx.set(doc(db, c.col, c.key), { uid, createdAt: serverTimestamp() }));
       tx.set(doc(db, "memberIds", id), { uid, createdAt: serverTimestamp() });
       if (newProfile) tx.set(userRef, { ...newProfile, memberId: id });
@@ -175,7 +175,7 @@ export async function withMemberId(uid: string, prefix: "S" | "T" | "E", newProf
       return "ok";
     });
     if (outcome === "ok") return id;
-    if (outcome === "phone-taken" || outcome === "name-taken") throw Object.assign(new Error(outcome), { code: `nuels/${outcome}` });
+    if (outcome === "phone-taken" || outcome === "name-taken" || outcome === "email-taken") throw Object.assign(new Error(outcome), { code: `nuels/${outcome}` });
     if (outcome === "exists") return (await getDoc(userRef)).data()?.memberId ?? "";
   }
   throw new Error("Could not allocate a member ID");
@@ -423,8 +423,8 @@ export async function register(details: {
     requestedRole: details.role === "mentor" ? "mentor" : undefined,
   };
   try {
-    // One account per phone number and per name (email is unique in Firebase Auth already).
-    await assertAvailable({ name: details.name, phone: details.phone });
+    // One account per phone number, per name and per email (Gmail aliases count as the same email).
+    await assertAvailable({ name: details.name, phone: details.phone, email: details.email });
     const { user } = await createUserWithEmailAndPassword(auth, details.email, details.password);
     // Verification proves the address belongs to them (required for admin access).
     sendEmailVerification(user).catch((err) => console.warn("Could not send verification email", err));
@@ -489,6 +489,10 @@ export function authErrorMessage(err: unknown) {
       return "This account has been removed. Contact info@nuelsmart.com if you think this is a mistake.";
     case "nuels/phone-taken":
       return "An account with this phone number already exists. Log in instead, or raise a support ticket if you can't.";
+    case "nuels/email-taken":
+      return "An account with this email already exists. Try logging in instead.";
+    case "nuels/email-typo":
+      return `That email address looks mistyped. Did you mean @${(err as { suggestion?: string }).suggestion}?`;
     case "nuels/name-taken":
       return "Someone with this full name is already registered. If that's you, log in instead. Otherwise add your surname or initial.";
     case "auth/too-many-requests":

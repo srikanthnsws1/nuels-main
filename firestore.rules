@@ -169,6 +169,18 @@ service cloud.firestore {
       allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
     }
 
+    // uniqueEmails/{lowercase address, Gmail dots and +tags removed}: Firebase Auth only stops the
+    // exact same address, this also stops "a.bhi@gmail.com" next to "abhi@gmail.com".
+    match /uniqueEmails/{key} {
+      allow get: if true;
+      allow list, update: if isAdmin();
+      allow create: if signedIn()
+        && key.matches('^[a-z0-9._%+-]{1,64}@[a-z0-9.-]{1,190}$')
+        && request.resource.data.keys().hasOnly(['uid', 'createdAt'])
+        && (request.resource.data.uid == request.auth.uid || isAdmin());
+      allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+    }
+
     match /loginIds/{id} {
       allow get: if id.matches('^[STE][0-9]{4}$');
       allow list, delete: if isAdmin();
